@@ -27,101 +27,75 @@ defmodule NathanForUsWeb.FeedLive do
   def render(assigns) do
     ~H"""
     <%= if assigns[:current_user] do %>
-    <div>
-        <div style="margin-bottom: 2rem;">
-          <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary">
-            New Post
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 p-6">
+      <div class="max-w-2xl mx-auto">
+        <div class="mb-8">
+          <.link navigate={~p"/posts/new"} class="inline-block bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors">
+            Share something
           </.link>
         </div>
 
-        <div>
+        <div class="space-y-6">
           <%= for post <- @posts do %>
-            <div class="business-post">
-              <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                <div class="business-avatar">
+            <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center font-medium text-lg">
                   <%= String.upcase(String.first(post.user.email)) %>
                 </div>
-                <div style="margin-left: 1rem;">
-                  <.link navigate={~p"/users/#{post.user.id}"} class="business-username">
+                <div class="ml-4">
+                  <.link navigate={~p"/users/#{post.user.id}"} class="font-medium text-gray-900 hover:underline">
                     @<%= String.split(post.user.email, "@") |> hd %>
                   </.link>
-                  <div class="business-timestamp">
+                  <div class="text-sm text-gray-500">
                     <%= Calendar.strftime(post.inserted_at, "%B %d at %I:%M %p") %>
                   </div>
                 </div>
               </div>
 
               <%= if post.content do %>
-                <div class="business-content"><%= post.content %></div>
+                <div class="text-gray-900 mb-4 leading-relaxed"><%= post.content %></div>
               <% end %>
 
               <%= if post.image_url do %>
-                <img src={post.image_url} alt="Post attachment" class="business-image" />
+                <img src={post.image_url} alt="Post attachment" class="w-full rounded-lg mb-4" />
               <% end %>
 
-              <div class="business-actions">
-                <button class="business-action-btn">Like</button>
-                <button class="business-action-btn">Comment</button>
-                <button class="business-action-btn">Share</button>
+              <div class="flex space-x-6 text-sm text-gray-500">
+                <button class="hover:text-gray-700 transition-colors">Like</button>
+                <button class="hover:text-gray-700 transition-colors">Comment</button>
+                <button class="hover:text-gray-700 transition-colors">Share</button>
               </div>
             </div>
           <% end %>
 
           <%= if @posts == [] do %>
-            <div class="business-empty">
-              <h3 style="font-size: 1.5rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 1rem;">
-                Welcome to your feed
+            <div class="text-center py-12">
+              <h3 class="text-2xl font-normal text-gray-900 mb-4">
+                Your professional network awaits
               </h3>
-              <p style="font-size: 1rem; margin-bottom: 2rem; color: var(--nathan-gray);">
-                Follow other users to see their posts here.
+              <p class="text-gray-600 mb-6">
+                Follow other business understanders to see their insights.
               </p>
             </div>
           <% end %>
         </div>
+      </div>
     </div>
     <% else %>
-        <div style="
-          height: 100vh;
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          text-align: center;
-          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-          padding-top: 10vh;
-        ">
-          <div style="max-width: 800px; padding: 0 2rem;">
-            <h1 style="
-              font-size: clamp(2.5rem, 7vw, 5rem);
-              font-weight: 400;
-              color: #1a202c;
-              margin-bottom: 4rem;
-              letter-spacing: -0.025em;
-              line-height: 1.1;
-            ">
-              Do you enjoy<br>Nathan Fielder?
-            </h1>
+      <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 flex items-start justify-center pt-[10vh] text-center">
+        <div class="max-w-4xl px-8">
+          <h1 class="text-5xl md:text-7xl lg:text-8xl font-normal text-gray-900 mb-16 leading-tight tracking-tight">
+            Do you enjoy<br>Nathan Fielder?
+          </h1>
 
-            <.link
-              navigate={~p"/users/register"}
-              style="
-                display: inline-block;
-                background: #1a202c;
-                color: white;
-                padding: 1rem 3rem;
-                font-size: 1.125rem;
-                font-weight: 500;
-                text-decoration: none;
-                border-radius: 8px;
-                transition: all 0.2s ease;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-              "
-              onmouseover="this.style.background='#2d3748'; this.style.transform='translateY(-2px)'"
-              onmouseout="this.style.background='#1a202c'; this.style.transform='translateY(0)'"
-            >
-              Yes? Join Us.
-            </.link>
-          </div>
+          <.link
+            navigate={~p"/users/register"}
+            class="inline-block bg-gray-900 text-white px-12 py-4 text-xl font-medium rounded-lg hover:bg-gray-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+          >
+            Yes
+          </.link>
         </div>
+      </div>
     <% end %>
     """
   end
