@@ -21,7 +21,6 @@ defmodule NathanForUsWeb.ProfileLiveTest do
       first_letter = String.upcase(String.first(user.email))
 
       assert html =~ "@#{username}"
-      assert html =~ "Certified Business Understander"
       assert html =~ first_letter
     end
 
@@ -35,22 +34,22 @@ defmodule NathanForUsWeb.ProfileLiveTest do
 
       {:ok, view, _html} = live(conn, ~p"/users/#{user.id}")
 
-      assert has_element?(view, ".business-stat", "1 Strategic Partnerships")
-      assert has_element?(view, ".business-stat", "1 Professional Followers")
-      assert has_element?(view, ".business-stat", "1 Business Insights")
+      assert has_element?(view, ".business-stat", "1 Following")
+      assert has_element?(view, ".business-stat", "1 Followers")
+      assert has_element?(view, ".business-stat", "1 Posts")
     end
 
     test "does not show follow/unfollow buttons for own profile", %{conn: conn, user: user} do
       {:ok, view, _html} = live(conn, ~p"/users/#{user.id}")
 
-      refute has_element?(view, "button", "Form Strategic Partnership")
-      refute has_element?(view, "button", "End Partnership")
+      refute has_element?(view, "button", "Follow")
+      refute has_element?(view, "button", "Unfollow")
     end
 
-    test "shows 'Share Your First Business Insight' when user has no posts", %{conn: conn, user: user} do
+    test "shows 'Create your first post' when user has no posts", %{conn: conn, user: user} do
       {:ok, view, _html} = live(conn, ~p"/users/#{user.id}")
 
-      assert has_element?(view, "a[href='/posts/new']", "Share Your First Business Insight")
+      assert has_element?(view, "a[href='/posts/new']", "Create your first post")
     end
 
     test "sets correct page title", %{conn: conn, user: user} do
@@ -76,15 +75,14 @@ defmodule NathanForUsWeb.ProfileLiveTest do
       first_letter = String.upcase(String.first(profile_user.email))
 
       assert html =~ "@#{username}"
-      assert html =~ "Certified Business Understander"
       assert html =~ first_letter
     end
 
     test "shows follow button when not following", %{conn: conn, profile_user: profile_user} do
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
-      assert has_element?(view, "button", "Form Strategic Partnership")
-      refute has_element?(view, "button", "End Partnership")
+      assert has_element?(view, "button", "Follow")
+      refute has_element?(view, "button", "Unfollow")
     end
 
     test "shows unfollow button when already following", %{conn: conn, current_user: current_user, profile_user: profile_user} do
@@ -92,25 +90,25 @@ defmodule NathanForUsWeb.ProfileLiveTest do
 
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
-      assert has_element?(view, "button", "End Partnership")
-      refute has_element?(view, "button", "Form Strategic Partnership")
+      assert has_element?(view, "button", "Unfollow")
+      refute has_element?(view, "button", "Follow")
     end
 
     test "follows user when follow button is clicked", %{conn: conn, current_user: current_user, profile_user: profile_user} do
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
       view
-      |> element("button", "Form Strategic Partnership")
+      |> element("button", "Follow")
       |> render_click()
 
       # Should now show unfollow button
-      assert has_element?(view, "button", "End Partnership")
+      assert has_element?(view, "button", "Unfollow")
       
       # Verify follow relationship was created
       assert Social.following?(current_user.id, profile_user.id)
       
       # Should show success message
-      assert render(view) =~ "You are now following this business professional!"
+      assert render(view) =~ "You are now following this user."
     end
 
     test "unfollows user when unfollow button is clicked", %{conn: conn, current_user: current_user, profile_user: profile_user} do
@@ -119,11 +117,11 @@ defmodule NathanForUsWeb.ProfileLiveTest do
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
       view
-      |> element("button", "End Partnership")
+      |> element("button", "Unfollow")
       |> render_click()
 
       # Should now show follow button
-      assert has_element?(view, "button", "Form Strategic Partnership")
+      assert has_element?(view, "button", "Follow")
       
       # Verify follow relationship was removed
       refute Social.following?(current_user.id, profile_user.id)
@@ -136,36 +134,36 @@ defmodule NathanForUsWeb.ProfileLiveTest do
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
       # Initially 0 followers
-      assert has_element?(view, ".business-stat", "0 Professional Followers")
+      assert has_element?(view, ".business-stat", "0 Followers")
 
       # Follow the user
       view
-      |> element("button", "Form Strategic Partnership")
+      |> element("button", "Follow")
       |> render_click()
 
       # Should now show 1 follower
-      assert has_element?(view, ".business-stat", "1 Professional Followers")
+      assert has_element?(view, ".business-stat", "1 Followers")
 
       # Unfollow the user
       view
-      |> element("button", "End Partnership")
+      |> element("button", "Unfollow")
       |> render_click()
 
       # Should go back to 0 followers
-      assert has_element?(view, ".business-stat", "0 Professional Followers")
+      assert has_element?(view, ".business-stat", "0 Followers")
     end
 
     test "shows professional consultation button", %{conn: conn, profile_user: profile_user} do
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
-      assert has_element?(view, "button", "Professional Consultation")
+      assert has_element?(view, "button", "Message")
     end
 
     test "does not show create post button for other users with no posts", %{conn: conn, profile_user: profile_user} do
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
-      refute has_element?(view, "a", "Share Your First Business Insight")
-      assert render(view) =~ "No business insights published yet!"
+      refute has_element?(view, "a", "Create your first post")
+      assert render(view) =~ "No posts yet"
     end
   end
 
@@ -178,11 +176,11 @@ defmodule NathanForUsWeb.ProfileLiveTest do
     end
 
     test "displays user's posts", %{conn: conn, profile_user: profile_user} do
-      post = post_fixture(%{user: profile_user, content: "Amazing business strategy"})
+      post = post_fixture(%{user: profile_user, content: "Amazing post content"})
 
       {:ok, _view, html} = live(conn, ~p"/users/#{profile_user.id}")
 
-      assert html =~ "Amazing business strategy"
+      assert html =~ "Amazing post content"
       username = String.split(profile_user.email, "@") |> hd
       assert html =~ "@#{username}"
     end
@@ -197,7 +195,7 @@ defmodule NathanForUsWeb.ProfileLiveTest do
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
       assert has_element?(view, "img[src='/uploads/business-chart.png']")
-      assert has_element?(view, "img[alt='Business insight visualization']")
+      assert has_element?(view, "img[alt='Post attachment']")
     end
 
     test "displays posts in chronological order (newest first)", %{conn: conn, profile_user: profile_user} do
@@ -220,23 +218,22 @@ defmodule NathanForUsWeb.ProfileLiveTest do
 
       {:ok, view, _html} = live(conn, ~p"/users/#{profile_user.id}")
 
-      assert has_element?(view, "button", "Professional Endorsement")
-      assert has_element?(view, "button", "Business Excellence")
-      assert has_element?(view, "button", "Strategic Value")
-      assert has_element?(view, "button", "Revenue Opportunity")
+      assert has_element?(view, "button", "Like")
+      assert has_element?(view, "button", "Comment")
+      assert has_element?(view, "button", "Share")
     end
 
     test "shows empty state when user has no posts", %{conn: conn, profile_user: profile_user} do
       {:ok, _view, html} = live(conn, ~p"/users/#{profile_user.id}")
 
-      assert html =~ "No business insights published yet!"
-      assert html =~ "This business professional is currently developing revolutionary strategies"
+      assert html =~ "No posts yet"
+      assert html =~ "When this user shares posts, they'll appear here."
     end
 
     test "shows business intelligence section title", %{conn: conn, profile_user: profile_user} do
       {:ok, _view, html} = live(conn, ~p"/users/#{profile_user.id}")
 
-      assert html =~ "Business Intelligence & Strategic Insights"
+      assert html =~ "Posts"
     end
   end
 
@@ -276,20 +273,20 @@ defmodule NathanForUsWeb.ProfileLiveTest do
 
       # Mock a follow error by trying to follow twice rapidly
       view
-      |> element("button", "Form Strategic Partnership")
+      |> element("button", "Follow")
       |> render_click()
 
       # Try to follow again (should already be following)
       view
-      |> element("button", "End Partnership")
+      |> element("button", "Unfollow")
       |> render_click()
 
       view
-      |> element("button", "Form Strategic Partnership")
+      |> element("button", "Follow")
       |> render_click()
 
       # Should still work normally
-      assert has_element?(view, "button", "End Partnership")
+      assert has_element?(view, "button", "Unfollow")
     end
   end
 end

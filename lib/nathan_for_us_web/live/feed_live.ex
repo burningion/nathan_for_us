@@ -27,18 +27,10 @@ defmodule NathanForUsWeb.FeedLive do
   def render(assigns) do
     ~H"""
     <div>
-      <div class="business-hero">
-        <h1 class="business-title">The Business Understander</h1>
-        <p class="business-subtitle">"I graduated from one of Canada's top business schools with really good grades."</p>
-        <p style="font-size: 1.2rem; color: var(--nathan-navy); margin-top: 1rem;">
-          Where serious professionals share revolutionary business strategies
-        </p>
-      </div>
-
       <%= if assigns[:current_user] do %>
         <div style="margin-bottom: 2rem;">
-          <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
-            🚀 Share Your Business Wisdom
+          <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary">
+            New Post
           </.link>
         </div>
 
@@ -64,63 +56,60 @@ defmodule NathanForUsWeb.FeedLive do
               <% end %>
 
               <%= if post.image_url do %>
-                <img src={post.image_url} alt="Business insight visualization" class="business-image" />
+                <img src={post.image_url} alt="Post attachment" class="business-image" />
               <% end %>
 
               <div class="business-actions">
-                <button class="business-action-btn">👍 Professional Endorsement</button>
-                <button class="business-action-btn">💼 Business Excellence</button>
-                <button class="business-action-btn">🤝 Strategic Partnership</button>
-                <button class="business-action-btn">📈 Revenue Potential</button>
+                <button class="business-action-btn">Like</button>
+                <button class="business-action-btn">Comment</button>
+                <button class="business-action-btn">Share</button>
               </div>
             </div>
           <% end %>
 
           <%= if @posts == [] do %>
             <div class="business-empty">
-              <div class="business-empty-icon">🤝</div>
-              <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--nathan-navy); margin-bottom: 1rem;">
-                No business insights yet!
+              <h3 style="font-size: 1.5rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 1rem;">
+                Welcome to your feed
               </h3>
-              <p style="font-size: 1.1rem; margin-bottom: 2rem;">
-                Follow other business professionals to see their revolutionary strategies and ideas.
+              <p style="font-size: 1rem; margin-bottom: 2rem; color: var(--nathan-gray);">
+                Follow other users to see their posts here.
               </p>
-              <.link navigate={~p"/users/register"} class="business-btn business-btn--primary">
-                Expand Your Network
-              </.link>
             </div>
           <% end %>
         </div>
       <% else %>
-        <div class="business-card">
-          <div class="business-card-header">
-            <h2 style="font-size: 2rem; font-weight: 800; color: var(--nathan-navy); margin: 0;">
-              🎯 Welcome to The Business Understander
-            </h2>
+        <div style="max-width: 600px; margin: 0 auto; padding: 3rem 1.5rem; text-align: center;">
+          <h1 style="font-size: 2.5rem; font-weight: 300; color: var(--nathan-navy); margin-bottom: 1.5rem; line-height: 1.2;">
+            Connect with professionals who understand business
+          </h1>
+          <p style="font-size: 1.2rem; line-height: 1.6; margin-bottom: 3rem; color: var(--nathan-gray); max-width: 500px; margin-left: auto; margin-right: auto;">
+            A platform for sharing insights, strategies, and connecting with like-minded business professionals.
+          </p>
+          
+          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <.link navigate={~p"/users/register"} class="business-btn business-btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+              Get Started
+            </.link>
+            <.link navigate={~p"/users/log_in"} class="business-btn business-btn--secondary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+              Log In
+            </.link>
           </div>
-          <div class="business-card-body">
-            <p style="font-size: 1.3rem; line-height: 1.7; margin-bottom: 2rem; color: var(--nathan-navy);">
-              The most exclusive social network for <strong>serious business professionals</strong> who understand 
-              that success comes from thinking outside the conventional business paradigm.
-            </p>
-            
-            <div style="background: var(--nathan-beige); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 2px solid var(--nathan-brown);">
-              <h3 style="color: var(--nathan-navy); font-weight: 700; margin-bottom: 1rem;">Platform Features:</h3>
-              <ul style="color: var(--nathan-gray); line-height: 1.8;">
-                <li>💡 Share revolutionary business strategies</li>
-                <li>🤝 Network with fellow business understanders</li>
-                <li>📊 Exchange proven methodologies</li>
-                <li>🎯 Discover unconventional success approaches</li>
-              </ul>
-            </div>
 
-            <div class="business-cta">
-              <.link navigate={~p"/users/register"} class="business-btn business-btn--success" style="padding: 1rem 2rem; font-size: 1.1rem;">
-                🚀 Join the Business Elite
-              </.link>
-              <.link navigate={~p"/users/log_in"} class="business-btn business-btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
-                🔐 Access Your Account
-              </.link>
+          <div style="margin-top: 4rem; padding-top: 3rem; border-top: 1px solid #e2e8f0;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; max-width: 800px; margin: 0 auto;">
+              <div style="text-align: left;">
+                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">Share Ideas</h3>
+                <p style="color: var(--nathan-gray); line-height: 1.5;">Post your business insights and strategies with the community.</p>
+              </div>
+              <div style="text-align: left;">
+                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">Build Network</h3>
+                <p style="color: var(--nathan-gray); line-height: 1.5;">Connect with other professionals in your industry.</p>
+              </div>
+              <div style="text-align: left;">
+                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">Learn & Grow</h3>
+                <p style="color: var(--nathan-gray); line-height: 1.5;">Discover new perspectives and business approaches.</p>
+              </div>
             </div>
           </div>
         </div>

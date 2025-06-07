@@ -16,37 +16,34 @@ defmodule NathanForUsWeb.PostLiveTest do
     test "displays post creation form", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/posts/new")
 
-      assert html =~ "Share Your Business Wisdom"
-      assert html =~ "Enlighten the business community with your strategic insights"
-      assert html =~ "Your Business Strategy"
-      assert html =~ "Supporting Visual Evidence"
+      assert html =~ "Create Post"
     end
 
     test "shows correct page title", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/posts/new")
 
-      assert page_title(view) =~ "Share Your Business Wisdom"
+      assert page_title(view) =~ "Create Post"
     end
 
     test "has content textarea field", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/posts/new")
 
       assert has_element?(view, "textarea[name='post[content]']")
-      assert has_element?(view, "textarea[placeholder*='revolutionary business approach']")
+      assert has_element?(view, "textarea[placeholder*='mind']")
     end
 
     test "has image upload field", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/posts/new")
 
       assert has_element?(view, "input[type='file']")
-      assert has_element?(view, "button", "Select Professional Image")
+      assert has_element?(view, "button", "Choose File")
     end
 
     test "has submit and cancel buttons", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/posts/new")
 
-      assert has_element?(view, "button[type='submit']", "Publish Business Insight")
-      assert has_element?(view, "a[href='/']", "Return to Feed")
+      assert has_element?(view, "button[type='submit']", "Post")
+      assert has_element?(view, "a[href='/']", "Cancel")
     end
 
     test "validates form on change", %{conn: conn} do
@@ -85,8 +82,7 @@ defmodule NathanForUsWeb.PostLiveTest do
       |> render_submit()
 
       flash = assert_redirect(view, ~p"/")
-      assert flash["info"] =~ "Post shared successfully"
-      assert flash["info"] =~ "The business world thanks you"
+      assert flash["info"] =~ "Post created successfully"
     end
 
     test "displays validation errors for invalid post", %{conn: conn} do
@@ -235,7 +231,7 @@ defmodule NathanForUsWeb.PostLiveTest do
       |> render_submit()
 
       # Should stay on form and show validation message
-      assert html =~ "Share Your Business Wisdom"
+      assert html =~ "Create Post"
       assert html =~ "must have either content or image"
     end
 

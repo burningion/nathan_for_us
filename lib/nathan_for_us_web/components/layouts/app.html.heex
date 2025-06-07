@@ -10,20 +10,20 @@
       <nav class="business-nav">
         <%= if assigns[:current_user] do %>
           <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary">
-            Share Wisdom
+            Post
           </.link>
           <.link navigate={~p"/users/#{@current_user.id}"} class="business-btn business-btn--secondary">
-            My Profile
+            Profile
           </.link>
           <.link href={~p"/users/log_out"} method="delete" class="business-btn business-btn--danger">
-            Exit
+            Log Out
           </.link>
         <% else %>
           <.link navigate={~p"/users/log_in"} class="business-btn business-btn--primary">
-            Enter
+            Log In
           </.link>
           <.link navigate={~p"/users/register"} class="business-btn business-btn--success">
-            Join the Network
+            Sign Up
           </.link>
         <% end %>
       </nav>

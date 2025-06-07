@@ -10,7 +10,7 @@ defmodule NathanForUsWeb.PostLive do
     {:ok,
      socket
      |> assign(:changeset, changeset)
-     |> assign(:page_title, "Share Your Business Wisdom")
+     |> assign(:page_title, "Create Post")
      |> allow_upload(:image,
        accept: ~w(.jpg .jpeg .png .gif),
        max_entries: 1,
@@ -30,25 +30,29 @@ defmodule NathanForUsWeb.PostLive do
 
   @impl true
   def handle_event("save", %{"post" => post_params}, socket) do
-    image_url = upload_image(socket)
-    
-    post_params = 
-      post_params
-      |> Map.put("user_id", socket.assigns.current_user.id)
-      |> Map.put("image_url", image_url)
+    if Map.has_key?(socket.assigns, :current_user) && socket.assigns.current_user do
+      image_url = upload_image(socket)
+      
+      post_params = 
+        post_params
+        |> Map.put("user_id", socket.assigns.current_user.id)
+        |> Map.put("image_url", image_url)
 
-    case Social.create_post(post_params) do
-      {:ok, post} ->
-        post = NathanForUs.Repo.preload(post, :user)
-        Phoenix.PubSub.broadcast(NathanForUs.PubSub, "posts", {:post_created, post})
+      case Social.create_post(post_params) do
+        {:ok, post} ->
+          post = NathanForUs.Repo.preload(post, :user)
+          Phoenix.PubSub.broadcast(NathanForUs.PubSub, "posts", {:post_created, post})
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Post shared successfully! The business world thanks you.")
-         |> push_navigate(to: ~p"/")}
+          {:noreply,
+           socket
+           |> put_flash(:info, "Post created successfully.")
+           |> push_navigate(to: ~p"/")}
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, changeset: changeset)}
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:noreply, assign(socket, changeset: changeset)}
+      end
+    else
+      {:noreply, socket}
     end
   end
 
@@ -74,51 +78,45 @@ defmodule NathanForUsWeb.PostLive do
     <div style="max-width: 600px; margin: 0 auto;">
       <div class="business-card">
         <div class="business-card-header">
-          <h1 style="font-size: 2rem; font-weight: 800; color: var(--nathan-navy); margin: 0; text-align: center;">
-            🚀 Share Your Business Wisdom
+          <h1 style="font-size: 1.8rem; font-weight: 600; color: var(--nathan-navy); margin: 0; text-align: center;">
+            Create Post
           </h1>
-          <p style="margin-top: 0.5rem; color: var(--nathan-navy); text-align: center; font-size: 1.1rem;">
-            Enlighten the business community with your strategic insights
-          </p>
         </div>
         
         <div class="business-card-body">
-          <.form for={@changeset} phx-change="validate" phx-submit="save" class="business-form">
+          <.form :let={f} for={@changeset} phx-change="validate" phx-submit="save" class="business-form" id="post-form">
             <div style="margin-bottom: 1.5rem;">
-              <label style="display: block; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">
-                📝 Your Business Strategy
-              </label>
               <.input
-                field={@changeset[:content]}
+                field={f[:content]}
                 type="textarea"
-                placeholder="Share your revolutionary business approach that will disrupt conventional thinking..."
+                placeholder="What's on your mind?"
                 class="business-input business-textarea"
-                style="font-size: 1.1rem; line-height: 1.6;"
+                style="font-size: 1rem; line-height: 1.5; min-height: 120px;"
               />
             </div>
 
             <div style="margin-bottom: 1.5rem;">
-              <label style="display: block; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">
-                📊 Supporting Visual Evidence (Optional)
+              <label style="display: block; font-weight: 500; color: var(--nathan-navy); margin-bottom: 0.5rem;">
+                Add Image (Optional)
               </label>
-              <div style="border: 3px dashed var(--nathan-brown); border-radius: 12px; padding: 2rem; text-align: center; background: var(--nathan-beige);">
+              <div style="border: 2px dashed #cbd5e0; border-radius: 8px; padding: 1.5rem; text-align: center; background: #f8fafc;">
                 <.live_file_input upload={@uploads.image} style="display: none;" />
                 <button
                   type="button"
                   phx-click={JS.dispatch("click", to: "##{@uploads.image.ref}")}
                   class="business-btn business-btn--secondary"
-                  style="margin-bottom: 1rem;"
+                  style="margin-bottom: 0.5rem;"
                 >
-                  📁 Select Professional Image
+                  Choose File
                 </button>
-                <p style="color: var(--nathan-gray); font-size: 0.9rem; font-family: 'JetBrains Mono', monospace;">
-                  JPG, PNG, GIF • Maximum 5MB • Business-appropriate content only
+                <p style="color: var(--nathan-gray); font-size: 0.85rem;">
+                  JPG, PNG, GIF up to 5MB
                 </p>
               </div>
 
               <%= for entry <- @uploads.image.entries do %>
-                <div style="margin-top: 1rem; padding: 1rem; background: white; border: 2px solid var(--nathan-brown); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
-                  <span style="color: var(--nathan-navy); font-weight: 500;"><%= entry.client_name %></span>
+                <div style="margin-top: 1rem; padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                  <span style="color: var(--nathan-navy);"><%= entry.client_name %></span>
                   <button
                     type="button"
                     phx-click="cancel-upload"
@@ -126,27 +124,27 @@ defmodule NathanForUsWeb.PostLive do
                     class="business-btn business-btn--danger"
                     style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
                   >
-                    ✕ Remove
+                    Remove
                   </button>
                 </div>
               <% end %>
             </div>
 
-            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <div style="display: flex; gap: 1rem;">
               <button
                 type="submit"
                 disabled={!@changeset.valid?}
-                class="business-btn business-btn--success"
-                style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: 700;"
+                class="business-btn business-btn--primary"
+                style="flex: 1; padding: 0.75rem;"
               >
-                🎯 Publish Business Insight
+                Post
               </button>
               <.link
                 navigate={~p"/"}
                 class="business-btn business-btn--secondary"
-                style="flex: 1; padding: 1rem; font-size: 1.1rem; text-align: center; text-decoration: none;"
+                style="flex: 1; padding: 0.75rem; text-align: center; text-decoration: none;"
               >
-                ↩️ Return to Feed
+                Cancel
               </.link>
             </div>
           </.form>

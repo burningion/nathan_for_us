@@ -11,10 +11,9 @@ defmodule NathanForUsWeb.FeedLiveTest do
     test "displays welcome message and sign up options", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/")
 
-      assert html =~ "Welcome to The Business Understander"
-      assert html =~ "Join the Business Elite"
-      assert html =~ "Access Your Account"
-      assert html =~ "The most exclusive social network"
+      assert html =~ "Connect with professionals who understand business"
+      assert html =~ "Get Started"
+      assert html =~ "Log In"
     end
 
     test "shows login and register links", %{conn: conn} do
@@ -27,9 +26,9 @@ defmodule NathanForUsWeb.FeedLiveTest do
     test "does not show authenticated user features", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/")
 
-      refute html =~ "Share Your Business Wisdom"
-      refute html =~ "My Profile"
-      refute html =~ "Exit"
+      refute html =~ "New Post"
+      refute html =~ "Profile"
+      refute html =~ "Log Out"
     end
   end
 
@@ -43,38 +42,36 @@ defmodule NathanForUsWeb.FeedLiveTest do
     test "displays the business hero section", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/")
 
-      assert html =~ "The Business Understander"
-      assert html =~ "I graduated from one of Canada's top business schools"
-      assert html =~ "Where serious professionals share revolutionary business strategies"
+      assert html =~ "New Post"
     end
 
     test "shows authenticated user navigation", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/")
 
-      assert has_element?(view, "a[href='/posts/new']", "Share Wisdom")
-      assert has_element?(view, "a", "My Profile")
-      assert has_element?(view, "a", "Exit")
+      assert has_element?(view, "a[href='/posts/new']", "Post")
+      assert has_element?(view, "a", "Profile")
+      assert has_element?(view, "a", "Log Out")
     end
 
     test "shows share wisdom button", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/")
 
-      assert has_element?(view, "a[href='/posts/new']", "Share Your Business Wisdom")
+      assert has_element?(view, "a[href='/posts/new']", "New Post")
     end
 
     test "displays empty state when no posts", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/")
 
-      assert html =~ "No business insights yet!"
-      assert html =~ "Follow other business professionals"
+      assert html =~ "Welcome to your feed"
+      assert html =~ "Follow other users to see their posts here."
     end
 
     test "displays user's own posts", %{conn: conn, user: user} do
-      post = post_fixture(%{user: user, content: "My brilliant business strategy"})
+      post = post_fixture(%{user: user, content: "My test post"})
 
       {:ok, _view, html} = live(conn, ~p"/")
 
-      assert html =~ "My brilliant business strategy"
+      assert html =~ "My test post"
       assert html =~ "@#{String.split(user.email, "@") |> hd}"
     end
 
@@ -82,21 +79,21 @@ defmodule NathanForUsWeb.FeedLiveTest do
       followed_user = user_fixture()
       {:ok, _follow} = Social.follow_user(user.id, followed_user.id)
       
-      post = post_fixture(%{user: followed_user, content: "Followed user's strategy"})
+      post = post_fixture(%{user: followed_user, content: "Followed user's post"})
 
       {:ok, _view, html} = live(conn, ~p"/")
 
-      assert html =~ "Followed user's strategy"
+      assert html =~ "Followed user's post"
       assert html =~ "@#{String.split(followed_user.email, "@") |> hd}"
     end
 
     test "does not display posts from non-followed users", %{conn: conn} do
       other_user = user_fixture()
-      _post = post_fixture(%{user: other_user, content: "Other user's strategy"})
+      _post = post_fixture(%{user: other_user, content: "Other user's post"})
 
       {:ok, _view, html} = live(conn, ~p"/")
 
-      refute html =~ "Other user's strategy"
+      refute html =~ "Other user's post"
     end
 
     test "displays posts with images", %{conn: conn, user: user} do
@@ -109,7 +106,7 @@ defmodule NathanForUsWeb.FeedLiveTest do
       {:ok, view, _html} = live(conn, ~p"/")
 
       assert has_element?(view, "img[src='/uploads/chart.png']")
-      assert has_element?(view, "img[alt='Business insight visualization']")
+      assert has_element?(view, "img[alt='Post attachment']")
     end
 
     test "displays post actions", %{conn: conn, user: user} do
@@ -117,10 +114,9 @@ defmodule NathanForUsWeb.FeedLiveTest do
 
       {:ok, view, _html} = live(conn, ~p"/")
 
-      assert has_element?(view, "button", "Professional Endorsement")
-      assert has_element?(view, "button", "Business Excellence")
-      assert has_element?(view, "button", "Strategic Partnership")
-      assert has_element?(view, "button", "Revenue Potential")
+      assert has_element?(view, "button", "Like")
+      assert has_element?(view, "button", "Comment")
+      assert has_element?(view, "button", "Share")
     end
 
     test "displays posts in chronological order (newest first)", %{conn: conn, user: user} do
