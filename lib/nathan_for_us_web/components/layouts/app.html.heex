@@ -1,37 +1,37 @@
-<header class="bg-yellow-400 border-b-4 border-black px-4 sm:px-6 lg:px-8">
-  <div class="flex items-center justify-between py-4">
-    <div class="flex items-center gap-4">
-      <.link navigate={~p"/"} class="flex items-center space-x-2">
-        <div class="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-          <span class="text-yellow-400 font-bold text-lg">N</span>
+<header class="business-header">
+  <div class="business-container">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 0;">
+      <.link navigate={~p"/"} class="business-logo">
+        <div class="business-logo-icon">
+          N
         </div>
-        <span class="font-bold text-black text-lg">The Business Understander</span>
+        <span>The Business Understander</span>
       </.link>
-    </div>
-    <div class="flex items-center gap-4">
-      <%= if @current_user do %>
-        <.link navigate={~p"/posts/new"} class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded border-2 border-black text-sm">
-          Post
-        </.link>
-        <.link navigate={~p"/users/#{@current_user.id}"} class="bg-white hover:bg-gray-100 text-black font-bold py-1 px-3 rounded border-2 border-black text-sm">
-          Profile
-        </.link>
-        <.link href={~p"/users/log_out"} method="delete" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded border-2 border-black text-sm">
-          Log Out
-        </.link>
-      <% else %>
-        <.link navigate={~p"/users/log_in"} class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded border-2 border-black text-sm">
-          Log In
-        </.link>
-        <.link navigate={~p"/users/register"} class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded border-2 border-black text-sm">
-          Sign Up
-        </.link>
-      <% end %>
+      <nav class="business-nav">
+        <%= if assigns[:current_user] do %>
+          <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary">
+            Share Wisdom
+          </.link>
+          <.link navigate={~p"/users/#{@current_user.id}"} class="business-btn business-btn--secondary">
+            My Profile
+          </.link>
+          <.link href={~p"/users/log_out"} method="delete" class="business-btn business-btn--danger">
+            Exit
+          </.link>
+        <% else %>
+          <.link navigate={~p"/users/log_in"} class="business-btn business-btn--primary">
+            Enter
+          </.link>
+          <.link navigate={~p"/users/register"} class="business-btn business-btn--success">
+            Join the Network
+          </.link>
+        <% end %>
+      </nav>
     </div>
   </div>
 </header>
-<main class="min-h-screen bg-gray-100 py-6">
-  <div class="mx-auto max-w-4xl">
+<main class="business-main">
+  <div class="business-container">
     <.flash_group flash={@flash} />
     {@inner_content}
   </div>

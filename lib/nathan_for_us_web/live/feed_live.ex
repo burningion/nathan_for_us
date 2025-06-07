@@ -9,7 +9,7 @@ defmodule NathanForUsWeb.FeedLive do
       Phoenix.PubSub.subscribe(NathanForUs.PubSub, "posts")
     end
 
-    posts = if socket.assigns.current_user do
+    posts = if Map.has_key?(socket.assigns, :current_user) && socket.assigns.current_user do
       Social.list_feed_posts(socket.assigns.current_user.id)
     else
       []
@@ -26,74 +26,102 @@ defmodule NathanForUsWeb.FeedLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-2xl mx-auto p-4">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-yellow-600 mb-2">The Business Understander</h1>
-        <p class="text-gray-600 italic">"I graduated from one of Canada's top business schools with really good grades."</p>
+    <div>
+      <div class="business-hero">
+        <h1 class="business-title">The Business Understander</h1>
+        <p class="business-subtitle">"I graduated from one of Canada's top business schools with really good grades."</p>
+        <p style="font-size: 1.2rem; color: var(--nathan-navy); margin-top: 1rem;">
+          Where serious professionals share revolutionary business strategies
+        </p>
       </div>
 
-      <%= if @current_user do %>
-        <div class="mb-6">
-          <.link navigate={~p"/posts/new"} class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded border-2 border-black shadow-md transform hover:translate-y-[-2px] transition-all">
-            Share a Business Idea
+      <%= if assigns[:current_user] do %>
+        <div style="margin-bottom: 2rem;">
+          <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+            🚀 Share Your Business Wisdom
           </.link>
         </div>
 
-        <div class="space-y-6">
+        <div>
           <%= for post <- @posts do %>
-            <div class="bg-white border-2 border-gray-300 rounded-lg p-4 shadow-lg">
-              <div class="flex items-center mb-3">
-                <div class="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-black">
-                  <span class="text-black font-bold text-sm">
-                    <%= String.upcase(String.first(post.user.email)) %>
-                  </span>
+            <div class="business-post">
+              <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div class="business-avatar">
+                  <%= String.upcase(String.first(post.user.email)) %>
                 </div>
-                <div class="ml-3">
-                  <.link navigate={~p"/users/#{post.user.id}"} class="font-bold text-blue-600 hover:underline">
+                <div style="margin-left: 1rem;">
+                  <.link navigate={~p"/users/#{post.user.id}"} class="business-username">
                     @<%= String.split(post.user.email, "@") |> hd %>
                   </.link>
-                  <p class="text-gray-500 text-sm">
+                  <div class="business-timestamp">
                     <%= Calendar.strftime(post.inserted_at, "%B %d at %I:%M %p") %>
-                  </p>
+                  </div>
                 </div>
               </div>
 
               <%= if post.content do %>
-                <p class="text-gray-800 mb-3 leading-relaxed"><%= post.content %></p>
+                <div class="business-content"><%= post.content %></div>
               <% end %>
 
               <%= if post.image_url do %>
-                <img src={post.image_url} alt="Post image" class="w-full rounded border-2 border-gray-200 mb-3" />
+                <img src={post.image_url} alt="Business insight visualization" class="business-image" />
               <% end %>
 
-              <div class="flex space-x-4 text-sm text-gray-500">
-                <button class="hover:text-yellow-600 transition-colors">👍 Endorse</button>
-                <button class="hover:text-yellow-600 transition-colors">💼 Very Professional</button>
-                <button class="hover:text-yellow-600 transition-colors">🤝 Great for Business</button>
+              <div class="business-actions">
+                <button class="business-action-btn">👍 Professional Endorsement</button>
+                <button class="business-action-btn">💼 Business Excellence</button>
+                <button class="business-action-btn">🤝 Strategic Partnership</button>
+                <button class="business-action-btn">📈 Revenue Potential</button>
               </div>
             </div>
           <% end %>
 
           <%= if @posts == [] do %>
-            <div class="text-center py-12">
-              <div class="text-6xl mb-4">🤝</div>
-              <h3 class="text-xl font-bold text-gray-700 mb-2">No posts yet!</h3>
-              <p class="text-gray-500">Follow some business-minded individuals to see their ideas here.</p>
+            <div class="business-empty">
+              <div class="business-empty-icon">🤝</div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--nathan-navy); margin-bottom: 1rem;">
+                No business insights yet!
+              </h3>
+              <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+                Follow other business professionals to see their revolutionary strategies and ideas.
+              </p>
+              <.link navigate={~p"/users/register"} class="business-btn business-btn--primary">
+                Expand Your Network
+              </.link>
             </div>
           <% end %>
         </div>
       <% else %>
-        <div class="text-center py-12">
-          <div class="text-6xl mb-4">💼</div>
-          <h3 class="text-xl font-bold text-gray-700 mb-2">Welcome to The Business Understander</h3>
-          <p class="text-gray-500 mb-6">The premier social network for serious business professionals.</p>
-          <div class="space-x-4">
-            <.link navigate={~p"/users/log_in"} class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded border-2 border-black">
-              Log In
-            </.link>
-            <.link navigate={~p"/users/register"} class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded border-2 border-black">
-              Sign Up
-            </.link>
+        <div class="business-card">
+          <div class="business-card-header">
+            <h2 style="font-size: 2rem; font-weight: 800; color: var(--nathan-navy); margin: 0;">
+              🎯 Welcome to The Business Understander
+            </h2>
+          </div>
+          <div class="business-card-body">
+            <p style="font-size: 1.3rem; line-height: 1.7; margin-bottom: 2rem; color: var(--nathan-navy);">
+              The most exclusive social network for <strong>serious business professionals</strong> who understand 
+              that success comes from thinking outside the conventional business paradigm.
+            </p>
+            
+            <div style="background: var(--nathan-beige); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border: 2px solid var(--nathan-brown);">
+              <h3 style="color: var(--nathan-navy); font-weight: 700; margin-bottom: 1rem;">Platform Features:</h3>
+              <ul style="color: var(--nathan-gray); line-height: 1.8;">
+                <li>💡 Share revolutionary business strategies</li>
+                <li>🤝 Network with fellow business understanders</li>
+                <li>📊 Exchange proven methodologies</li>
+                <li>🎯 Discover unconventional success approaches</li>
+              </ul>
+            </div>
+
+            <div class="business-cta">
+              <.link navigate={~p"/users/register"} class="business-btn business-btn--success" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                🚀 Join the Business Elite
+              </.link>
+              <.link navigate={~p"/users/log_in"} class="business-btn business-btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                🔐 Access Your Account
+              </.link>
+            </div>
           </div>
         </div>
       <% end %>

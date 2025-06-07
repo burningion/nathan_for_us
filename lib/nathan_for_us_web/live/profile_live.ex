@@ -57,95 +57,101 @@ defmodule NathanForUsWeb.ProfileLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-2xl mx-auto p-4">
-      <div class="bg-white border-2 border-gray-300 rounded-lg p-6 shadow-lg mb-6">
-        <div class="flex items-center space-x-4 mb-4">
-          <div class="w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center border-4 border-black">
-            <span class="text-black font-bold text-2xl">
-              <%= String.upcase(String.first(@user.email)) %>
-            </span>
-          </div>
-          <div class="flex-1">
-            <h1 class="text-2xl font-bold text-gray-800">
-              @<%= String.split(@user.email, "@") |> hd %>
-            </h1>
-            <p class="text-gray-600">Business Professional</p>
-            <div class="flex space-x-4 mt-2 text-sm">
-              <span><strong><%= @following_count %></strong> Following</span>
-              <span><strong><%= @follower_count %></strong> Followers</span>
-              <span><strong><%= length(@posts) %></strong> Business Ideas</span>
-            </div>
-          </div>
+    <div>
+      <div class="business-profile-header">
+        <div class="business-profile-avatar">
+          <%= String.upcase(String.first(@user.email)) %>
+        </div>
+        <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--nathan-navy); margin-bottom: 0.5rem;">
+          @<%= String.split(@user.email, "@") |> hd %>
+        </h1>
+        <p style="font-size: 1.3rem; color: var(--nathan-navy); margin-bottom: 1rem; font-weight: 600;">
+          🎯 Certified Business Understander
+        </p>
+        <div class="business-stats">
+          <div class="business-stat"><strong><%= @following_count %></strong> Strategic Partnerships</div>
+          <div class="business-stat"><strong><%= @follower_count %></strong> Professional Followers</div>
+          <div class="business-stat"><strong><%= length(@posts) %></strong> Business Insights</div>
         </div>
 
-        <%= if @current_user && @current_user.id != @user.id do %>
-          <div class="flex space-x-3">
+        <%= if assigns[:current_user] && @current_user.id != @user.id do %>
+          <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: center;">
             <%= if @is_following do %>
               <button
                 phx-click="unfollow"
-                class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded border-2 border-gray-400"
+                class="business-btn business-btn--secondary"
+                style="padding: 0.75rem 1.5rem;"
               >
-                Unfollow
+                ❌ End Partnership
               </button>
             <% else %>
               <button
                 phx-click="follow"
-                class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded border-2 border-black transform hover:translate-y-[-2px] transition-all"
+                class="business-btn business-btn--success"
+                style="padding: 0.75rem 1.5rem;"
               >
-                Follow
+                🤝 Form Strategic Partnership
               </button>
             <% end %>
-            <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded border-2 border-black">
-              Send Business Message
+            <button class="business-btn business-btn--primary" style="padding: 0.75rem 1.5rem;">
+              💼 Professional Consultation
             </button>
           </div>
         <% end %>
       </div>
 
-      <div class="space-y-6">
-        <h2 class="text-xl font-bold text-gray-800 border-b-2 border-yellow-500 pb-2">
-          Business Ideas & Insights
+      <div>
+        <h2 class="business-section-title">
+          📊 Business Intelligence & Strategic Insights
         </h2>
 
         <%= for post <- @posts do %>
-          <div class="bg-white border-2 border-gray-300 rounded-lg p-4 shadow-lg">
-            <div class="flex items-center mb-3">
-              <div class="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-black">
-                <span class="text-black font-bold text-sm">
-                  <%= String.upcase(String.first(post.user.email)) %>
-                </span>
+          <div class="business-post">
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+              <div class="business-avatar">
+                <%= String.upcase(String.first(post.user.email)) %>
               </div>
-              <div class="ml-3">
-                <p class="font-bold text-blue-600">
+              <div style="margin-left: 1rem;">
+                <div class="business-username">
                   @<%= String.split(post.user.email, "@") |> hd %>
-                </p>
-                <p class="text-gray-500 text-sm">
+                </div>
+                <div class="business-timestamp">
                   <%= Calendar.strftime(post.inserted_at, "%B %d at %I:%M %p") %>
-                </p>
+                </div>
               </div>
             </div>
 
             <%= if post.content do %>
-              <p class="text-gray-800 mb-3 leading-relaxed"><%= post.content %></p>
+              <div class="business-content"><%= post.content %></div>
             <% end %>
 
             <%= if post.image_url do %>
-              <img src={post.image_url} alt="Post image" class="w-full rounded border-2 border-gray-200 mb-3" />
+              <img src={post.image_url} alt="Business insight visualization" class="business-image" />
             <% end %>
 
-            <div class="flex space-x-4 text-sm text-gray-500">
-              <button class="hover:text-yellow-600 transition-colors">👍 Endorse</button>
-              <button class="hover:text-yellow-600 transition-colors">💼 Very Professional</button>
-              <button class="hover:text-yellow-600 transition-colors">🤝 Great for Business</button>
+            <div class="business-actions">
+              <button class="business-action-btn">👍 Professional Endorsement</button>
+              <button class="business-action-btn">💼 Business Excellence</button>
+              <button class="business-action-btn">🤝 Strategic Value</button>
+              <button class="business-action-btn">📈 Revenue Opportunity</button>
             </div>
           </div>
         <% end %>
 
         <%= if @posts == [] do %>
-          <div class="text-center py-12">
-            <div class="text-6xl mb-4">📊</div>
-            <h3 class="text-xl font-bold text-gray-700 mb-2">No posts yet!</h3>
-            <p class="text-gray-500">This business professional hasn't shared any insights yet.</p>
+          <div class="business-empty">
+            <div class="business-empty-icon">📊</div>
+            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--nathan-navy); margin-bottom: 1rem;">
+              No business insights published yet!
+            </h3>
+            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+              This business professional is currently developing revolutionary strategies.
+            </p>
+            <%= if assigns[:current_user] && @current_user.id == @user.id do %>
+              <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary">
+                🚀 Share Your First Business Insight
+              </.link>
+            <% end %>
           </div>
         <% end %>
       </div>

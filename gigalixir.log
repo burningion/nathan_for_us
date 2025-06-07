@@ -226,3 +226,37 @@ Warning: A new version is available.
 2025-06-07T15:08:36.543750+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m15:08:36.542 request_id=4c70a0256228c73b1e385a0f02d9f7bf [info] Sent 404 in 396µs
 2025-06-07T15:08:36.543695+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m15:08:36.542 request_id=4c70a0256228c73b1e385a0f02d9f7bf [info] GET /posts/new
 2025-06-07T15:09:50.283069+00:00 sick-motionless-roach[b'run-1m48nhv-vjcw2']: Attempting to run 'mix ecto.migrate' in a new container.
+2025-06-07T15:13:46.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T15:13:47.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T15:13:48.972684+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: Starting 'sick-motionless-roach'
+2025-06-07T15:13:48.972691+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: Attempting health checks on port 4000
+2025-06-07T15:13:49.316098+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T15:13:50.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T15:13:51.229789+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m15:13:51.228 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T15:13:51.230136+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m15:13:51.229 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T15:13:53.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Shutting down
+2025-06-07T15:14:13.559402+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m15:14:13.557 request_id=c8435d06744a6636e5667b9d5af3d423 [info] GET /
+2025-06-07T15:14:13.560415+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m15:14:13.558 request_id=c8435d06744a6636e5667b9d5af3d423 [info] Sent 500 in 464µs
+2025-06-07T15:14:13.560447+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m15:14:13.559 request_id=c8435d06744a6636e5667b9d5af3d423 [error] ** (KeyError) key :current_user not found in: %{flash: %{}, __changed__: %{}, live_action: nil}
+2025-06-07T15:14:13.560454+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/live/feed_live.ex:12: NathanForUsWeb.FeedLive.mount/3
+2025-06-07T15:14:13.560456+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix_live_view 1.0.17) lib/phoenix_live_view/utils.ex:348: anonymous fn/6 in Phoenix.LiveView.Utils.maybe_call_live_view_mount!/5
+2025-06-07T15:14:13.560622+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (telemetry 1.3.0) /tmp/build/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+2025-06-07T15:14:13.560631+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:321: Phoenix.LiveView.Static.call_mount_and_handle_params!/5
+2025-06-07T15:14:13.560632+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:155: Phoenix.LiveView.Static.do_render/4
+2025-06-07T15:14:13.560633+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix_live_view 1.0.17) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+2025-06-07T15:14:13.560633+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix 1.7.21) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5
+2025-06-07T15:14:13.560641+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/endpoint.ex:1: NathanForUsWeb.Endpoint.plug_builder_call/2
+2025-06-07T15:14:13.560643+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m
+2025-06-07T15:14:13.766726+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m15:14:13.763 request_id=4634f66949fe863d9f61b7e07c2c5746 [info] GET /
+2025-06-07T15:14:13.766735+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m15:14:13.764 request_id=4634f66949fe863d9f61b7e07c2c5746 [info] Sent 500 in 393µs
+2025-06-07T15:14:13.766798+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m15:14:13.765 request_id=4634f66949fe863d9f61b7e07c2c5746 [error] ** (KeyError) key :current_user not found in: %{flash: %{}, __changed__: %{}, live_action: nil}
+2025-06-07T15:14:13.766835+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/live/feed_live.ex:12: NathanForUsWeb.FeedLive.mount/3
+2025-06-07T15:14:13.766846+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix_live_view 1.0.17) lib/phoenix_live_view/utils.ex:348: anonymous fn/6 in Phoenix.LiveView.Utils.maybe_call_live_view_mount!/5
+2025-06-07T15:14:13.766911+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (telemetry 1.3.0) /tmp/build/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+2025-06-07T15:14:13.766936+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:321: Phoenix.LiveView.Static.call_mount_and_handle_params!/5
+2025-06-07T15:14:13.766966+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:155: Phoenix.LiveView.Static.do_render/4
+2025-06-07T15:14:13.767190+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix_live_view 1.0.17) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+2025-06-07T15:14:13.767206+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (phoenix 1.7.21) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5
+2025-06-07T15:14:13.767240+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/endpoint.ex:1: NathanForUsWeb.Endpoint.plug_builder_call/2
+2025-06-07T15:14:13.767314+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m
+2025-06-07T15:14:23.646380+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Shutting down 'sick-motionless-roach'

@@ -71,68 +71,86 @@ defmodule NathanForUsWeb.PostLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-lg mx-auto p-4">
-      <div class="bg-white border-2 border-gray-300 rounded-lg p-6 shadow-lg">
-        <h1 class="text-2xl font-bold text-yellow-600 mb-6 text-center">Share Your Business Wisdom</h1>
+    <div style="max-width: 600px; margin: 0 auto;">
+      <div class="business-card">
+        <div class="business-card-header">
+          <h1 style="font-size: 2rem; font-weight: 800; color: var(--nathan-navy); margin: 0; text-align: center;">
+            🚀 Share Your Business Wisdom
+          </h1>
+          <p style="margin-top: 0.5rem; color: var(--nathan-navy); text-align: center; font-size: 1.1rem;">
+            Enlighten the business community with your strategic insights
+          </p>
+        </div>
         
-        <.form for={@changeset} phx-change="validate" phx-submit="save" class="space-y-4">
-          <div>
-            <.input
-              field={@changeset[:content]}
-              type="textarea"
-              placeholder="What brilliant business strategy would you like to share with the professional community?"
-              rows="4"
-              class="w-full border-2 border-gray-300 rounded p-3 focus:border-yellow-500 focus:ring-0"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              📸 Add a Professional Image (Optional)
-            </label>
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <.live_file_input upload={@uploads.image} class="hidden" />
-              <button
-                type="button"
-                phx-click={JS.dispatch("click", to: "##{@uploads.image.ref}")}
-                class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded border-2 border-gray-300"
-              >
-                Choose File
-              </button>
-              <p class="text-xs text-gray-500 mt-2">JPG, PNG, GIF up to 5MB</p>
+        <div class="business-card-body">
+          <.form for={@changeset} phx-change="validate" phx-submit="save" class="business-form">
+            <div style="margin-bottom: 1.5rem;">
+              <label style="display: block; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">
+                📝 Your Business Strategy
+              </label>
+              <.input
+                field={@changeset[:content]}
+                type="textarea"
+                placeholder="Share your revolutionary business approach that will disrupt conventional thinking..."
+                class="business-input business-textarea"
+                style="font-size: 1.1rem; line-height: 1.6;"
+              />
             </div>
 
-            <%= for entry <- @uploads.image.entries do %>
-              <div class="mt-2 p-2 bg-gray-50 rounded border flex items-center justify-between">
-                <span class="text-sm text-gray-700"><%= entry.client_name %></span>
+            <div style="margin-bottom: 1.5rem;">
+              <label style="display: block; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">
+                📊 Supporting Visual Evidence (Optional)
+              </label>
+              <div style="border: 3px dashed var(--nathan-brown); border-radius: 12px; padding: 2rem; text-align: center; background: var(--nathan-beige);">
+                <.live_file_input upload={@uploads.image} style="display: none;" />
                 <button
                   type="button"
-                  phx-click="cancel-upload"
-                  phx-value-ref={entry.ref}
-                  class="text-red-500 hover:text-red-700"
+                  phx-click={JS.dispatch("click", to: "##{@uploads.image.ref}")}
+                  class="business-btn business-btn--secondary"
+                  style="margin-bottom: 1rem;"
                 >
-                  ✕
+                  📁 Select Professional Image
                 </button>
+                <p style="color: var(--nathan-gray); font-size: 0.9rem; font-family: 'JetBrains Mono', monospace;">
+                  JPG, PNG, GIF • Maximum 5MB • Business-appropriate content only
+                </p>
               </div>
-            <% end %>
-          </div>
 
-          <div class="flex space-x-3">
-            <button
-              type="submit"
-              disabled={!@changeset.valid?}
-              class="flex-1 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 text-black font-bold py-3 px-4 rounded border-2 border-black transform hover:translate-y-[-2px] transition-all disabled:transform-none"
-            >
-              Share Wisdom
-            </button>
-            <.link
-              navigate={~p"/"}
-              class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-4 rounded border-2 border-gray-400 text-center"
-            >
-              Cancel
-            </.link>
-          </div>
-        </.form>
+              <%= for entry <- @uploads.image.entries do %>
+                <div style="margin-top: 1rem; padding: 1rem; background: white; border: 2px solid var(--nathan-brown); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                  <span style="color: var(--nathan-navy); font-weight: 500;"><%= entry.client_name %></span>
+                  <button
+                    type="button"
+                    phx-click="cancel-upload"
+                    phx-value-ref={entry.ref}
+                    class="business-btn business-btn--danger"
+                    style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
+                  >
+                    ✕ Remove
+                  </button>
+                </div>
+              <% end %>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+              <button
+                type="submit"
+                disabled={!@changeset.valid?}
+                class="business-btn business-btn--success"
+                style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: 700;"
+              >
+                🎯 Publish Business Insight
+              </button>
+              <.link
+                navigate={~p"/"}
+                class="business-btn business-btn--secondary"
+                style="flex: 1; padding: 1rem; font-size: 1.1rem; text-align: center; text-decoration: none;"
+              >
+                ↩️ Return to Feed
+              </.link>
+            </div>
+          </.form>
+        </div>
       </div>
     </div>
     """

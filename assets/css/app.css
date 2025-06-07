@@ -2,4 +2,433 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* This file is for your main application CSS */
+/* Nathan For You: The Business Understander */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --nathan-yellow: #FFD700;
+  --nathan-orange: #FF8C42;
+  --nathan-brown: #8B4513;
+  --nathan-beige: #F5F5DC;
+  --nathan-navy: #1B2951;
+  --nathan-gray: #4A5568;
+  --nathan-red: #E53E3E;
+  --nathan-green: #38A169;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, var(--nathan-beige) 0%, #F0F8FF 100%);
+  min-height: 100vh;
+  margin: 0;
+  color: var(--nathan-navy);
+  line-height: 1.6;
+}
+
+.business-header {
+  background: linear-gradient(45deg, var(--nathan-yellow) 0%, var(--nathan-orange) 100%);
+  border-bottom: 4px solid var(--nathan-brown);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.business-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.business-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: var(--nathan-navy);
+  font-weight: 800;
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.business-logo:hover {
+  transform: scale(1.05);
+}
+
+.business-logo-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--nathan-navy);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--nathan-yellow);
+  font-weight: 900;
+  font-size: 1.5rem;
+  border: 3px solid var(--nathan-brown);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.business-nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.business-btn {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  border: 2px solid var(--nathan-brown);
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transform: translateY(0);
+}
+
+.business-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.business-btn--primary {
+  background: var(--nathan-navy);
+  color: var(--nathan-yellow);
+}
+
+.business-btn--primary:hover {
+  background: #2D3748;
+}
+
+.business-btn--secondary {
+  background: white;
+  color: var(--nathan-navy);
+}
+
+.business-btn--secondary:hover {
+  background: var(--nathan-beige);
+}
+
+.business-btn--success {
+  background: var(--nathan-green);
+  color: white;
+}
+
+.business-btn--danger {
+  background: var(--nathan-red);
+  color: white;
+}
+
+.business-main {
+  padding: 2rem 0;
+  min-height: calc(100vh - 80px);
+}
+
+.business-card {
+  background: white;
+  border: 3px solid var(--nathan-brown);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(139, 69, 19, 0.15);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.business-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(139, 69, 19, 0.2);
+}
+
+.business-card-header {
+  background: linear-gradient(135deg, var(--nathan-yellow) 0%, var(--nathan-orange) 100%);
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--nathan-brown);
+}
+
+.business-card-body {
+  padding: 1.5rem;
+}
+
+.business-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--nathan-navy);
+  text-align: center;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.business-subtitle {
+  font-size: 1.1rem;
+  color: var(--nathan-gray);
+  text-align: center;
+  font-style: italic;
+  margin-bottom: 2rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.business-form {
+  background: white;
+  border: 3px solid var(--nathan-brown);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 8px 24px rgba(139, 69, 19, 0.15);
+}
+
+.business-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--nathan-brown);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.business-input:focus {
+  outline: none;
+  border-color: var(--nathan-orange);
+  box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.2);
+}
+
+.business-textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+.business-post {
+  background: white;
+  border: 3px solid var(--nathan-brown);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 6px 20px rgba(139, 69, 19, 0.12);
+  transition: all 0.3s ease;
+}
+
+.business-post:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(139, 69, 19, 0.18);
+}
+
+.business-avatar {
+  width: 48px;
+  height: 48px;
+  background: var(--nathan-yellow);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--nathan-brown);
+  font-weight: 700;
+  color: var(--nathan-navy);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.business-username {
+  font-weight: 600;
+  color: var(--nathan-navy);
+  text-decoration: none;
+  font-size: 1.1rem;
+}
+
+.business-username:hover {
+  color: var(--nathan-orange);
+  text-decoration: underline;
+}
+
+.business-timestamp {
+  color: var(--nathan-gray);
+  font-size: 0.875rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.business-content {
+  color: var(--nathan-navy);
+  font-size: 1.1rem;
+  line-height: 1.7;
+  margin: 1rem 0;
+}
+
+.business-image {
+  width: 100%;
+  border-radius: 8px;
+  border: 2px solid var(--nathan-brown);
+  margin: 1rem 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.business-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--nathan-beige);
+}
+
+.business-action-btn {
+  background: none;
+  border: none;
+  color: var(--nathan-gray);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.business-action-btn:hover {
+  background: var(--nathan-beige);
+  color: var(--nathan-orange);
+  transform: scale(1.05);
+}
+
+.business-hero {
+  text-align: center;
+  padding: 3rem 0;
+  background: linear-gradient(135deg, var(--nathan-yellow) 0%, var(--nathan-orange) 100%);
+  border: 4px solid var(--nathan-brown);
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 12px 32px rgba(139, 69, 19, 0.2);
+}
+
+.business-cta {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.business-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--nathan-gray);
+}
+
+.business-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.business-stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--nathan-gray);
+}
+
+.business-stat {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.business-stat strong {
+  color: var(--nathan-navy);
+  font-weight: 600;
+}
+
+.business-profile-header {
+  background: linear-gradient(135deg, var(--nathan-yellow) 0%, var(--nathan-orange) 100%);
+  border: 4px solid var(--nathan-brown);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(139, 69, 19, 0.2);
+}
+
+.business-profile-avatar {
+  width: 80px;
+  height: 80px;
+  background: var(--nathan-navy);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid var(--nathan-brown);
+  font-weight: 900;
+  color: var(--nathan-yellow);
+  font-size: 2rem;
+  margin: 0 auto 1rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.business-section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--nathan-navy);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid var(--nathan-orange);
+  display: inline-block;
+}
+
+/* Flash messages */
+.business-flash {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 2px solid;
+  font-weight: 500;
+}
+
+.business-flash--info {
+  background: #EBF8FF;
+  border-color: #3182CE;
+  color: #2A4365;
+}
+
+.business-flash--error {
+  background: #FED7D7;
+  border-color: var(--nathan-red);
+  color: #742A2A;
+}
+
+.business-flash--success {
+  background: #F0FFF4;
+  border-color: var(--nathan-green);
+  color: #22543D;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .business-container {
+    padding: 0 1rem;
+  }
+  
+  .business-nav {
+    gap: 0.5rem;
+  }
+  
+  .business-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+  
+  .business-title {
+    font-size: 2rem;
+  }
+  
+  .business-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .business-cta {
+    flex-direction: column;
+    align-items: center;
+  }
+}
