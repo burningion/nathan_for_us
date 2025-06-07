@@ -26,8 +26,8 @@ defmodule NathanForUsWeb.FeedLive do
   @impl true
   def render(assigns) do
     ~H"""
+    <%= if assigns[:current_user] do %>
     <div>
-      <%= if assigns[:current_user] do %>
         <div style="margin-bottom: 2rem;">
           <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary">
             New Post
@@ -78,43 +78,49 @@ defmodule NathanForUsWeb.FeedLive do
             </div>
           <% end %>
         </div>
-      <% else %>
-        <div style="max-width: 600px; margin: 0 auto; padding: 3rem 1.5rem; text-align: center;">
-          <h1 style="font-size: 2.5rem; font-weight: 300; color: var(--nathan-navy); margin-bottom: 1.5rem; line-height: 1.2;">
-            Connect with professionals who understand business
-          </h1>
-          <p style="font-size: 1.2rem; line-height: 1.6; margin-bottom: 3rem; color: var(--nathan-gray); max-width: 500px; margin-left: auto; margin-right: auto;">
-            A platform for sharing insights, strategies, and connecting with like-minded business professionals.
-          </p>
-          
-          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-            <.link navigate={~p"/users/register"} class="business-btn business-btn--primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
-              Get Started
+    </div>
+    <% else %>
+        <div style="
+          height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        ">
+          <div style="max-width: 400px; padding: 0 2rem;">
+            <h1 style="
+              font-size: 2.25rem;
+              font-weight: 400;
+              color: #1a202c;
+              margin-bottom: 3rem;
+              letter-spacing: -0.025em;
+            ">
+              Do you enjoy Nathan Fielder?
+            </h1>
+            
+            <.link 
+              navigate={~p"/users/register"} 
+              style="
+                display: inline-block;
+                background: #1a202c;
+                color: white;
+                padding: 1rem 3rem;
+                font-size: 1.125rem;
+                font-weight: 500;
+                text-decoration: none;
+                border-radius: 8px;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              "
+              onmouseover="this.style.background='#2d3748'; this.style.transform='translateY(-2px)'"
+              onmouseout="this.style.background='#1a202c'; this.style.transform='translateY(0)'"
+            >
+              Yes
             </.link>
-            <.link navigate={~p"/users/log_in"} class="business-btn business-btn--secondary" style="padding: 1rem 2rem; font-size: 1.1rem;">
-              Log In
-            </.link>
-          </div>
-
-          <div style="margin-top: 4rem; padding-top: 3rem; border-top: 1px solid #e2e8f0;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; max-width: 800px; margin: 0 auto;">
-              <div style="text-align: left;">
-                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">Share Ideas</h3>
-                <p style="color: var(--nathan-gray); line-height: 1.5;">Post your business insights and strategies with the community.</p>
-              </div>
-              <div style="text-align: left;">
-                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">Build Network</h3>
-                <p style="color: var(--nathan-gray); line-height: 1.5;">Connect with other professionals in your industry.</p>
-              </div>
-              <div style="text-align: left;">
-                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">Learn & Grow</h3>
-                <p style="color: var(--nathan-gray); line-height: 1.5;">Discover new perspectives and business approaches.</p>
-              </div>
-            </div>
           </div>
         </div>
-      <% end %>
-    </div>
+    <% end %>
     """
   end
 end

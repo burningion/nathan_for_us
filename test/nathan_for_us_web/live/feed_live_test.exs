@@ -8,18 +8,16 @@ defmodule NathanForUsWeb.FeedLiveTest do
   alias NathanForUs.Social
 
   describe "FeedLive for unauthenticated users" do
-    test "displays welcome message and sign up options", %{conn: conn} do
+    test "displays Nathan Fielder question and sign up", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/")
 
-      assert html =~ "Connect with professionals who understand business"
-      assert html =~ "Get Started"
-      assert html =~ "Log In"
+      assert html =~ "Do you enjoy Nathan Fielder?"
+      assert html =~ "Yes"
     end
 
-    test "shows login and register links", %{conn: conn} do
+    test "shows register link", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/")
 
-      assert has_element?(view, "a[href='/users/log_in']")
       assert has_element?(view, "a[href='/users/register']")
     end
 

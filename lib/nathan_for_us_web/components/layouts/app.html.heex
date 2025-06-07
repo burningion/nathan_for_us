@@ -1,14 +1,14 @@
-<header class="business-header">
-  <div class="business-container">
-    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 0;">
-      <.link navigate={~p"/"} class="business-logo">
-        <div class="business-logo-icon">
-          N
-        </div>
-        <span>The Business Understander</span>
-      </.link>
-      <nav class="business-nav">
-        <%= if assigns[:current_user] do %>
+<%= if assigns[:current_user] do %>
+  <header class="business-header">
+    <div class="business-container">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 0;">
+        <.link navigate={~p"/"} class="business-logo">
+          <div class="business-logo-icon">
+            N
+          </div>
+          <span>The Business Understander</span>
+        </.link>
+        <nav class="business-nav">
           <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary">
             Post
           </.link>
@@ -18,21 +18,19 @@
           <.link href={~p"/users/log_out"} method="delete" class="business-btn business-btn--danger">
             Log Out
           </.link>
-        <% else %>
-          <.link navigate={~p"/users/log_in"} class="business-btn business-btn--primary">
-            Log In
-          </.link>
-          <.link navigate={~p"/users/register"} class="business-btn business-btn--success">
-            Sign Up
-          </.link>
-        <% end %>
-      </nav>
+        </nav>
+      </div>
     </div>
-  </div>
-</header>
-<main class="business-main">
-  <div class="business-container">
+  </header>
+  <main class="business-main">
+    <div class="business-container">
+      <.flash_group flash={@flash} />
+      {@inner_content}
+    </div>
+  </main>
+<% else %>
+  <main style="padding: 0; margin: 0;">
     <.flash_group flash={@flash} />
     {@inner_content}
-  </div>
-</main>
+  </main>
+<% end %>
