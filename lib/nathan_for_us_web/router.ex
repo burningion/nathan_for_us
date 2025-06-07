@@ -20,7 +20,7 @@ defmodule NathanForUsWeb.Router do
   scope "/", NathanForUsWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", FeedLive
   end
 
   # Other scopes may use custom stacks.
@@ -63,6 +63,9 @@ defmodule NathanForUsWeb.Router do
   scope "/", NathanForUsWeb do
     pipe_through [:browser, :require_authenticated_user]
 
+    live "/posts/new", PostLive
+    live "/users/:id", ProfileLive
+    
     get "/users/settings", UserSettingsController, :edit
     put "/users/settings", UserSettingsController, :update
     get "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email

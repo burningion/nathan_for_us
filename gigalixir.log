@@ -1,0 +1,228 @@
+Warning: A new version is available.
+  Current version:  1.13.1
+  Latest version:   1.14.0
+2025-06-07T14:40:46.776000+00:00 sick-motionless-roach[gigalixir]: GIGALIXIR set config var(s): 'DATABASE_URL' 'POOL_SIZE'
+2025-06-07T14:40:46.829000+00:00 sick-motionless-roach[gigalixir]: bobbbygrayson@gmail.com created database 'us-central1-e93e04e5-3cf1-41f7-91c9-be4daac28830' of size 0.6
+2025-06-07T14:41:06.104000+00:00 sick-motionless-roach[gigalixir]: bobbbygrayson@gmail.com set config var(s): 'SECRET_KEY_BASE'
+2025-06-07T14:41:11.030000+00:00 sick-motionless-roach[gigalixir]: bobbbygrayson@gmail.com set config var(s): 'PHX_HOST'
+2025-06-07T14:44:05.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:44:07.103139+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: Starting 'sick-motionless-roach'
+2025-06-07T14:44:07.103145+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: Attempting health checks on port 4000
+2025-06-07T14:44:06.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:44:07.417738+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T14:44:09.140274+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:44:09.139 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T14:44:09.140668+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:44:09.140 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T14:44:31.729578+00:00 sick-motionless-roach[b'run-1m48m2c-sg5vt']: Attempting to run '/app/bin/nathan_for_us eval \NathanForUs.Release.migrate\' in a new container.
+2025-06-07T14:44:31.794887+00:00 sick-motionless-roach[b'run-1m48m2c-sg5vt']: [Errno 2] No such file or directory: '/app/bin/nathan_for_us eval \\NathanForUs.Release.migrate\\'
+2025-06-07T14:45:12.275624+00:00 sick-motionless-roach[b'run-1m48m3n-g98g2']: Attempting to run 'mix ecto.migrate' in a new container.
+2025-06-07T14:45:12.339755+00:00 sick-motionless-roach[b'run-1m48m3n-g98g2']: [Errno 2] No such file or directory: 'mix ecto.migrate'
+2025-06-07T14:45:50.138647+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:45:50.136 request_id=3bb74990e11ac4fcf96718d65fc10762 [info] GET /
+2025-06-07T14:45:50.141778+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:45:50.139 request_id=3bb74990e11ac4fcf96718d65fc10762 [info] Sent 200 in 3ms
+2025-06-07T14:45:51.973925+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:45:51.973 request_id=119eb99cf9929056a3d183352765ca90 [info] GET /apple-touch-icon-precomposed.png
+2025-06-07T14:45:51.973960+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:45:51.973 request_id=119eb99cf9929056a3d183352765ca90 [info] Sent 404 in 299µs
+2025-06-07T14:45:51.975988+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:45:51.975 request_id=3c9dffaa1d57b002784be873a8d5fa90 [info] GET /apple-touch-icon.png
+2025-06-07T14:45:51.975996+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:45:51.975 request_id=3c9dffaa1d57b002784be873a8d5fa90 [info] Sent 404 in 242µs
+2025-06-07T14:45:57.651864+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:45:57.651 request_id=08047da83685b9e9c00a608dfb76ded4 [info] GET /users/register
+2025-06-07T14:45:57.652772+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:45:57.652 request_id=08047da83685b9e9c00a608dfb76ded4 [info] Sent 200 in 1ms
+2025-06-07T14:46:10.994637+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:10.993 request_id=fd4b25ec593d26e75ea44c2d36403726 [info] POST /users/register
+2025-06-07T14:46:11.000305+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:10.998 request_id=fd4b25ec593d26e75ea44c2d36403726 [info] Sent 500 in 4ms
+2025-06-07T14:46:11.000371+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:10.999 request_id=fd4b25ec593d26e75ea44c2d36403726 [error] ** (Postgrex.Error) ERROR 42P01 (undefined_table) relation "users" does not exist
+2025-06-07T14:46:11.000466+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    query: SELECT TRUE FROM "users" AS u0 WHERE (u0."email" = $1) LIMIT 1
+2025-06-07T14:46:11.000387+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m
+2025-06-07T14:46:11.000601+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto 3.12.5) lib/ecto/repo/queryable.ex:19: Ecto.Repo.Queryable.all/3
+2025-06-07T14:46:11.000587+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto_sql 3.12.1) lib/ecto/adapters/sql.ex:1096: Ecto.Adapters.SQL.raise_sql_call_error/1
+2025-06-07T14:46:11.000600+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto_sql 3.12.1) lib/ecto/adapters/sql.ex:994: Ecto.Adapters.SQL.execute/6
+2025-06-07T14:46:11.000601+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto 3.12.5) lib/ecto/repo/queryable.ex:232: Ecto.Repo.Queryable.execute/4
+2025-06-07T14:46:11.000629+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto 3.12.5) lib/ecto/repo/queryable.ex:136: Ecto.Repo.Queryable.exists?/3
+2025-06-07T14:46:11.000657+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto 3.12.5) lib/ecto/changeset.ex:2701: Ecto.Changeset.unsafe_validate_unique/4
+2025-06-07T14:46:11.000851+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us/accounts/user.ex:84: NathanForUs.Accounts.User.maybe_validate_unique_email/2
+2025-06-07T14:46:11.000865+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us/accounts/user.ex:41: NathanForUs.Accounts.User.registration_changeset/3
+2025-06-07T14:46:11.000869+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m
+2025-06-07T14:46:11.398762+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:11.398 request_id=ced8c2bd9214280f8eabad5b398eaa5d [info] GET /apple-touch-icon-precomposed.png
+2025-06-07T14:46:11.398784+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:11.398 request_id=ced8c2bd9214280f8eabad5b398eaa5d [info] Sent 404 in 255µs
+2025-06-07T14:46:11.445970+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:11.445 request_id=81b1e9d0d18765d6cdf99f59ed37b1a9 [info] GET /apple-touch-icon.png
+2025-06-07T14:46:11.445979+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:11.445 request_id=81b1e9d0d18765d6cdf99f59ed37b1a9 [info] Sent 404 in 265µs
+2025-06-07T14:48:01.427677+00:00 sick-motionless-roach[b'run-1m48m8y-q7bsj']: Attempting to run '/app/bin/nathan_for_us eval "NathanForUs.Release.migrate()"' in a new container.
+2025-06-07T14:48:01.507512+00:00 sick-motionless-roach[b'run-1m48m8y-q7bsj']: [Errno 2] No such file or directory: '/app/bin/nathan_for_us eval "NathanForUs.Release.migrate()"'
+2025-06-07T14:49:07.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:49:09.066077+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Starting 'sick-motionless-roach'
+2025-06-07T14:49:09.066083+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Attempting health checks on port 4000
+2025-06-07T14:49:08.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:49:09.384841+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T14:49:11.192594+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:11.191 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T14:49:11.193092+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:11.192 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T14:49:11.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: Shutting down
+2025-06-07T14:49:15.321839+00:00 sick-motionless-roach[b'run-1m48mb8-sl5x6']: Attempting to run '/app/bin/nathan_for_us eval "NathanForUs.Release.migrate()"' in a new container.
+2025-06-07T14:49:15.418429+00:00 sick-motionless-roach[b'run-1m48mb8-sl5x6']: [Errno 2] No such file or directory: '/app/bin/nathan_for_us eval "NathanForUs.Release.migrate()"'
+2025-06-07T14:49:25.263690+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: Attempting to run '/app/bin/nathan_for_us eval NathanForUs.Release.migrate()' in a new container.
+2025-06-07T14:49:26.798329+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:26.795 [info] == Running 20250607143007 NathanForUs.Repo.Migrations.CreateUsersAuthTables.change/0 forward
+2025-06-07T14:49:26.800937+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:26.800 [info] execute "CREATE EXTENSION IF NOT EXISTS citext"
+2025-06-07T14:49:27.056552+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.056 [info] create table users
+2025-06-07T14:49:27.115196+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.114 [info] create index users_email_index
+2025-06-07T14:49:27.122580+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.122 [info] create table users_tokens
+2025-06-07T14:49:27.145794+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.145 [info] create index users_tokens_user_id_index
+2025-06-07T14:49:27.148896+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.148 [info] create index users_tokens_context_token_index
+2025-06-07T14:49:27.154121+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.153 [info] == Migrated 20250607143007 in 0.3s
+2025-06-07T14:49:39.864145+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:39.863 request_id=07c42862f0f65a86853a7f3d580c9b68 [info] GET /users/register
+2025-06-07T14:49:39.867374+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:39.866 request_id=07c42862f0f65a86853a7f3d580c9b68 [info] Sent 200 in 2ms
+2025-06-07T14:49:42.008368+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: Shutting down 'sick-motionless-roach'
+2025-06-07T14:49:49.456418+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:49.455 request_id=91a063fe2012b152633a34f6f6052772 [info] POST /users/register
+2025-06-07T14:49:50.251995+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:50.251 request_id=91a063fe2012b152633a34f6f6052772 [error] ** (exit) exited in: GenServer.call({:global, Swoosh.Adapters.Local.Storage.Memory}, {:push, %Swoosh.Email{subject: "Confirmation instructions", from: {"NathanForUs", "contact@example.com"}, to: [{"", "bobbbygrayson@gmail.com"}], cc: [], bcc: [], text_body: "\n==============================\n\nHi bobbbygrayson@gmail.com,\n\nYou can confirm your account by visiting the URL below:\n\nhttps://sick-motionless-roach.gigalixirapp.com/users/confirm/UJ_Ah0xFtU7HywTMcbclsWd7dRYyOvTFjTfU8zwmcBU\n\nIf you didn't create an account with us, please ignore this.\n\n==============================\n", html_body: nil, attachments: [], reply_to: nil, headers: %{}, private: %{}, assigns: %{}, provider_options: %{}}}, 5000)
+2025-06-07T14:49:50.252013+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    ** (EXIT) no process: the process is not alive or there's no process currently associated with the given name, possibly because its application isn't started
+2025-06-07T14:49:50.252014+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (elixir 1.18.1) lib/gen_server.ex:1121: GenServer.call/3
+2025-06-07T14:49:50.252034+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (swoosh 1.19.1) lib/swoosh/adapters/local.ex:26: Swoosh.Adapters.Local.deliver/2
+2025-06-07T14:49:50.252072+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us/mailer.ex:2: anonymous fn/2 in NathanForUs.Mailer.instrument/3
+2025-06-07T14:49:50.252147+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (telemetry 1.3.0) /tmp/build/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+2025-06-07T14:49:50.252154+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us/accounts/user_notifier.ex:15: NathanForUs.Accounts.UserNotifier.deliver/3
+2025-06-07T14:49:50.252294+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/controllers/user_registration_controller.ex:17: NathanForUsWeb.UserRegistrationController.create/2
+2025-06-07T14:49:50.252307+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/controllers/user_registration_controller.ex:1: NathanForUsWeb.UserRegistrationController.action/2
+2025-06-07T14:49:50.252333+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/controllers/user_registration_controller.ex:1: NathanForUsWeb.UserRegistrationController.phoenix_controller_pipeline/2
+2025-06-07T14:49:50.252357+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m
+2025-06-07T14:51:15.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:51:16.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:51:17.840139+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Starting 'sick-motionless-roach'
+2025-06-07T14:51:17.840147+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Attempting health checks on port 4000
+2025-06-07T14:51:18.149742+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T14:51:19.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:51:19.995321+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0m14:51:19.994 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T14:51:20.001736+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0m14:51:20.000 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T14:51:22.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Shutting down
+2025-06-07T14:51:35.642017+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0m14:51:35.641 request_id=4f46708a6661106e6aa8fd27f161d6bc [info] GET /
+2025-06-07T14:51:35.644032+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0m14:51:35.643 request_id=4f46708a6661106e6aa8fd27f161d6bc [info] Sent 200 in 2ms
+2025-06-07T14:51:52.877450+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Shutting down 'sick-motionless-roach'
+2025-06-07T14:52:09.053000+00:00 sick-motionless-roach[gigalixir]: bobbbygrayson@gmail.com scaled app to 0 replicas
+2025-06-07T14:52:09.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Shutting down
+2025-06-07T14:52:39.030336+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Shutting down 'sick-motionless-roach'
+2025-06-07T14:53:35.653000+00:00 sick-motionless-roach[gigalixir]: bobbbygrayson@gmail.com scaled app to 1 replica of size 0.5
+2025-06-07T14:53:37.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:53:39.061521+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Starting 'sick-motionless-roach'
+2025-06-07T14:53:39.061529+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Attempting health checks on port 4000
+2025-06-07T14:53:38.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:53:39.413006+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T14:53:39.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:53:41.445207+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:53:41.443 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T14:53:41.445903+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:53:41.445 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T14:55:43.323253+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:55:43.322 request_id=48e602c73bf146ebfcc58d3d929722a6 [info] GET /users/register
+2025-06-07T14:55:43.326294+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:55:43.325 request_id=48e602c73bf146ebfcc58d3d929722a6 [info] Sent 200 in 3ms
+2025-06-07T14:55:53.548438+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:55:53.547 request_id=364135526c8e74134aac5bafe7e6ecb1 [info] POST /users/register
+2025-06-07T14:55:53.580885+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:55:53.579 request_id=364135526c8e74134aac5bafe7e6ecb1 [info] Sent 200 in 32ms
+2025-06-07T14:56:03.808961+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:03.807 request_id=d567f47fdbfb04727e349f243a9f2f36 [info] POST /users/register
+2025-06-07T14:56:03.821444+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:03.820 request_id=d567f47fdbfb04727e349f243a9f2f36 [info] Sent 200 in 13ms
+2025-06-07T14:56:09.779901+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:09.777 request_id=e0c575fd18f3dae75ec8fd6d7d817d41 [info] GET /users/log_in
+2025-06-07T14:56:09.779914+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:09.778 request_id=e0c575fd18f3dae75ec8fd6d7d817d41 [info] Sent 200 in 1ms
+2025-06-07T14:56:11.870005+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:11.869 request_id=a638905f7d2ad26f0b6520a2455b3afd [info] POST /users/log_in
+2025-06-07T14:56:12.200175+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:12.199 request_id=a638905f7d2ad26f0b6520a2455b3afd [info] Sent 200 in 330ms
+2025-06-07T14:56:16.495726+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:16.495 request_id=3c13e24743a7f6583c0e3eb575497b59 [info] POST /users/log_in
+2025-06-07T14:56:16.834045+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:16.832 request_id=3c13e24743a7f6583c0e3eb575497b59 [info] Sent 200 in 337ms
+2025-06-07T14:56:25.950991+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:25.950 request_id=8e61b22a9f94f76975e51ea7b1eb8ea6 [info] POST /users/log_in
+2025-06-07T14:56:26.261991+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:26.260 request_id=8e61b22a9f94f76975e51ea7b1eb8ea6 [info] Sent 200 in 310ms
+2025-06-07T14:56:35.271046+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:35.270 request_id=64305c76bbbc26eda2b127991f146579 [info] GET /users/register
+2025-06-07T14:56:35.271846+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:35.271 request_id=64305c76bbbc26eda2b127991f146579 [info] Sent 200 in 979µs
+2025-06-07T14:56:46.694738+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:46.693 request_id=1ce5aa17537a518d6abf89396a78cad3 [info] POST /users/register
+2025-06-07T14:56:47.078286+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:47.077 request_id=1ce5aa17537a518d6abf89396a78cad3 [info] Sent 302 in 384ms
+2025-06-07T14:56:47.128285+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:47.126 request_id=158f8d777e5eb5882093098aca7e34f6 [info] GET /
+2025-06-07T14:56:47.151961+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:47.151 request_id=158f8d777e5eb5882093098aca7e34f6 [info] Sent 200 in 24ms
+Warning: A new version is available.
+  Current version:  1.13.1
+  Latest version:   1.14.0
+2025-06-07T14:46:11.000371+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:10.999 request_id=fd4b25ec593d26e75ea44c2d36403726 [error] ** (Postgrex.Error) ERROR 42P01 (undefined_table) relation "users" does not exist
+2025-06-07T14:46:11.000466+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    query: SELECT TRUE FROM "users" AS u0 WHERE (u0."email" = $1) LIMIT 1
+2025-06-07T14:46:11.000387+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m
+2025-06-07T14:46:11.000601+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto 3.12.5) lib/ecto/repo/queryable.ex:19: Ecto.Repo.Queryable.all/3
+2025-06-07T14:46:11.000587+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto_sql 3.12.1) lib/ecto/adapters/sql.ex:1096: Ecto.Adapters.SQL.raise_sql_call_error/1
+2025-06-07T14:46:11.000600+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto_sql 3.12.1) lib/ecto/adapters/sql.ex:994: Ecto.Adapters.SQL.execute/6
+2025-06-07T14:46:11.000601+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto 3.12.5) lib/ecto/repo/queryable.ex:232: Ecto.Repo.Queryable.execute/4
+2025-06-07T14:46:11.000629+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto 3.12.5) lib/ecto/repo/queryable.ex:136: Ecto.Repo.Queryable.exists?/3
+2025-06-07T14:46:11.000657+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (ecto 3.12.5) lib/ecto/changeset.ex:2701: Ecto.Changeset.unsafe_validate_unique/4
+2025-06-07T14:46:11.000851+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us/accounts/user.ex:84: NathanForUs.Accounts.User.maybe_validate_unique_email/2
+2025-06-07T14:46:11.000865+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us/accounts/user.ex:41: NathanForUs.Accounts.User.registration_changeset/3
+2025-06-07T14:46:11.000869+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m
+2025-06-07T14:46:11.398762+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:11.398 request_id=ced8c2bd9214280f8eabad5b398eaa5d [info] GET /apple-touch-icon-precomposed.png
+2025-06-07T14:46:11.398784+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:11.398 request_id=ced8c2bd9214280f8eabad5b398eaa5d [info] Sent 404 in 255µs
+2025-06-07T14:46:11.445970+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:11.445 request_id=81b1e9d0d18765d6cdf99f59ed37b1a9 [info] GET /apple-touch-icon.png
+2025-06-07T14:46:11.445979+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: [36mweb.1  | [0m14:46:11.445 request_id=81b1e9d0d18765d6cdf99f59ed37b1a9 [info] Sent 404 in 265µs
+2025-06-07T14:48:01.427677+00:00 sick-motionless-roach[b'run-1m48m8y-q7bsj']: Attempting to run '/app/bin/nathan_for_us eval "NathanForUs.Release.migrate()"' in a new container.
+2025-06-07T14:48:01.507512+00:00 sick-motionless-roach[b'run-1m48m8y-q7bsj']: [Errno 2] No such file or directory: '/app/bin/nathan_for_us eval "NathanForUs.Release.migrate()"'
+2025-06-07T14:49:07.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:49:09.066077+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Starting 'sick-motionless-roach'
+2025-06-07T14:49:09.066083+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Attempting health checks on port 4000
+2025-06-07T14:49:08.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:49:09.384841+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T14:49:11.192594+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:11.191 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T14:49:11.193092+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:11.192 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T14:49:11.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: Shutting down
+2025-06-07T14:49:15.321839+00:00 sick-motionless-roach[b'run-1m48mb8-sl5x6']: Attempting to run '/app/bin/nathan_for_us eval "NathanForUs.Release.migrate()"' in a new container.
+2025-06-07T14:49:15.418429+00:00 sick-motionless-roach[b'run-1m48mb8-sl5x6']: [Errno 2] No such file or directory: '/app/bin/nathan_for_us eval "NathanForUs.Release.migrate()"'
+2025-06-07T14:49:25.263690+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: Attempting to run '/app/bin/nathan_for_us eval NathanForUs.Release.migrate()' in a new container.
+2025-06-07T14:49:26.798329+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:26.795 [info] == Running 20250607143007 NathanForUs.Repo.Migrations.CreateUsersAuthTables.change/0 forward
+2025-06-07T14:49:26.800937+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:26.800 [info] execute "CREATE EXTENSION IF NOT EXISTS citext"
+2025-06-07T14:49:27.056552+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.056 [info] create table users
+2025-06-07T14:49:27.115196+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.114 [info] create index users_email_index
+2025-06-07T14:49:27.148896+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.148 [info] create index users_tokens_context_token_index
+2025-06-07T14:49:27.122580+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.122 [info] create table users_tokens
+2025-06-07T14:49:27.145794+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.145 [info] create index users_tokens_user_id_index
+2025-06-07T14:49:27.154121+00:00 sick-motionless-roach[b'run-1m48mbj-r2whh']: 14:49:27.153 [info] == Migrated 20250607143007 in 0.3s
+2025-06-07T14:49:39.864145+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:39.863 request_id=07c42862f0f65a86853a7f3d580c9b68 [info] GET /users/register
+2025-06-07T14:49:39.867374+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:39.866 request_id=07c42862f0f65a86853a7f3d580c9b68 [info] Sent 200 in 2ms
+2025-06-07T14:49:42.008368+00:00 sick-motionless-roach[b'sick-motionless-roach-5bc988d4-szq2n']: Shutting down 'sick-motionless-roach'
+2025-06-07T14:49:49.456418+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:49.455 request_id=91a063fe2012b152633a34f6f6052772 [info] POST /users/register
+2025-06-07T14:49:50.251995+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m14:49:50.251 request_id=91a063fe2012b152633a34f6f6052772 [error] ** (exit) exited in: GenServer.call({:global, Swoosh.Adapters.Local.Storage.Memory}, {:push, %Swoosh.Email{subject: "Confirmation instructions", from: {"NathanForUs", "contact@example.com"}, to: [{"", "bobbbygrayson@gmail.com"}], cc: [], bcc: [], text_body: "\n==============================\n\nHi bobbbygrayson@gmail.com,\n\nYou can confirm your account by visiting the URL below:\n\nhttps://sick-motionless-roach.gigalixirapp.com/users/confirm/UJ_Ah0xFtU7HywTMcbclsWd7dRYyOvTFjTfU8zwmcBU\n\nIf you didn't create an account with us, please ignore this.\n\n==============================\n", html_body: nil, attachments: [], reply_to: nil, headers: %{}, private: %{}, assigns: %{}, provider_options: %{}}}, 5000)
+2025-06-07T14:49:50.252013+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    ** (EXIT) no process: the process is not alive or there's no process currently associated with the given name, possibly because its application isn't started
+2025-06-07T14:49:50.252014+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (elixir 1.18.1) lib/gen_server.ex:1121: GenServer.call/3
+2025-06-07T14:49:50.252034+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (swoosh 1.19.1) lib/swoosh/adapters/local.ex:26: Swoosh.Adapters.Local.deliver/2
+2025-06-07T14:49:50.252072+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us/mailer.ex:2: anonymous fn/2 in NathanForUs.Mailer.instrument/3
+2025-06-07T14:49:50.252147+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (telemetry 1.3.0) /tmp/build/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+2025-06-07T14:49:50.252154+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us/accounts/user_notifier.ex:15: NathanForUs.Accounts.UserNotifier.deliver/3
+2025-06-07T14:49:50.252294+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/controllers/user_registration_controller.ex:17: NathanForUsWeb.UserRegistrationController.create/2
+2025-06-07T14:49:50.252307+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/controllers/user_registration_controller.ex:1: NathanForUsWeb.UserRegistrationController.action/2
+2025-06-07T14:49:50.252333+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/controllers/user_registration_controller.ex:1: NathanForUsWeb.UserRegistrationController.phoenix_controller_pipeline/2
+2025-06-07T14:49:50.252357+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: [36mweb.1  | [0m
+2025-06-07T14:51:15.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:51:16.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:51:17.840139+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Starting 'sick-motionless-roach'
+2025-06-07T14:51:17.840147+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Attempting health checks on port 4000
+2025-06-07T14:51:18.149742+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T14:51:19.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:51:19.995321+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0m14:51:19.994 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T14:51:20.001736+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0m14:51:20.000 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T14:51:22.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Shutting down
+2025-06-07T14:51:35.642017+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0m14:51:35.641 request_id=4f46708a6661106e6aa8fd27f161d6bc [info] GET /
+2025-06-07T14:51:35.644032+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: [36mweb.1  | [0m14:51:35.643 request_id=4f46708a6661106e6aa8fd27f161d6bc [info] Sent 200 in 2ms
+2025-06-07T14:51:52.877450+00:00 sick-motionless-roach[b'sick-motionless-roach-8fd5b5ddf-2t669']: Shutting down 'sick-motionless-roach'
+2025-06-07T14:52:09.053000+00:00 sick-motionless-roach[gigalixir]: bobbbygrayson@gmail.com scaled app to 0 replicas
+2025-06-07T14:52:09.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Shutting down
+2025-06-07T14:52:39.030336+00:00 sick-motionless-roach[b'sick-motionless-roach-5b7995b954-wsxmg']: Shutting down 'sick-motionless-roach'
+2025-06-07T14:53:35.653000+00:00 sick-motionless-roach[gigalixir]: bobbbygrayson@gmail.com scaled app to 1 replica of size 0.5
+2025-06-07T14:53:37.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:53:39.061521+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Starting 'sick-motionless-roach'
+2025-06-07T14:53:39.061529+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Attempting health checks on port 4000
+2025-06-07T14:53:38.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:53:39.413006+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T14:53:39.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T14:53:41.445207+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:53:41.443 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T14:53:41.445903+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:53:41.445 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T14:55:43.323253+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:55:43.322 request_id=48e602c73bf146ebfcc58d3d929722a6 [info] GET /users/register
+2025-06-07T14:55:43.326294+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:55:43.325 request_id=48e602c73bf146ebfcc58d3d929722a6 [info] Sent 200 in 3ms
+2025-06-07T14:55:53.580885+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:55:53.579 request_id=364135526c8e74134aac5bafe7e6ecb1 [info] Sent 200 in 32ms
+2025-06-07T14:55:53.548438+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:55:53.547 request_id=364135526c8e74134aac5bafe7e6ecb1 [info] POST /users/register
+2025-06-07T14:56:03.808961+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:03.807 request_id=d567f47fdbfb04727e349f243a9f2f36 [info] POST /users/register
+2025-06-07T14:56:03.821444+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:03.820 request_id=d567f47fdbfb04727e349f243a9f2f36 [info] Sent 200 in 13ms
+2025-06-07T14:56:09.779914+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:09.778 request_id=e0c575fd18f3dae75ec8fd6d7d817d41 [info] Sent 200 in 1ms
+2025-06-07T14:56:09.779901+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:09.777 request_id=e0c575fd18f3dae75ec8fd6d7d817d41 [info] GET /users/log_in
+2025-06-07T14:56:11.870005+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:11.869 request_id=a638905f7d2ad26f0b6520a2455b3afd [info] POST /users/log_in
+2025-06-07T14:56:12.200175+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:12.199 request_id=a638905f7d2ad26f0b6520a2455b3afd [info] Sent 200 in 330ms
+2025-06-07T14:56:16.495726+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:16.495 request_id=3c13e24743a7f6583c0e3eb575497b59 [info] POST /users/log_in
+2025-06-07T14:56:16.834045+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:16.832 request_id=3c13e24743a7f6583c0e3eb575497b59 [info] Sent 200 in 337ms
+2025-06-07T14:56:25.950991+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:25.950 request_id=8e61b22a9f94f76975e51ea7b1eb8ea6 [info] POST /users/log_in
+2025-06-07T14:56:26.261991+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:26.260 request_id=8e61b22a9f94f76975e51ea7b1eb8ea6 [info] Sent 200 in 310ms
+2025-06-07T14:56:35.271046+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:35.270 request_id=64305c76bbbc26eda2b127991f146579 [info] GET /users/register
+2025-06-07T14:56:35.271846+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:35.271 request_id=64305c76bbbc26eda2b127991f146579 [info] Sent 200 in 979µs
+2025-06-07T14:56:46.694738+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:46.693 request_id=1ce5aa17537a518d6abf89396a78cad3 [info] POST /users/register
+2025-06-07T14:56:47.078286+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:47.077 request_id=1ce5aa17537a518d6abf89396a78cad3 [info] Sent 302 in 384ms
+2025-06-07T14:56:47.128285+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:47.126 request_id=158f8d777e5eb5882093098aca7e34f6 [info] GET /
+2025-06-07T14:56:47.151961+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m14:56:47.151 request_id=158f8d777e5eb5882093098aca7e34f6 [info] Sent 200 in 24ms
+2025-06-07T15:08:32.137963+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m15:08:32.136 request_id=10d2d016b861c1f17007936333ab427f [info] GET /
+2025-06-07T15:08:32.154042+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m15:08:32.152 request_id=10d2d016b861c1f17007936333ab427f [info] Sent 200 in 16ms
+2025-06-07T15:08:36.543750+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m15:08:36.542 request_id=4c70a0256228c73b1e385a0f02d9f7bf [info] Sent 404 in 396µs
+2025-06-07T15:08:36.543695+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: [36mweb.1  | [0m15:08:36.542 request_id=4c70a0256228c73b1e385a0f02d9f7bf [info] GET /posts/new
+2025-06-07T15:09:50.283069+00:00 sick-motionless-roach[b'run-1m48nhv-vjcw2']: Attempting to run 'mix ecto.migrate' in a new container.
