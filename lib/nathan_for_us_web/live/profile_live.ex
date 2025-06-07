@@ -12,7 +12,7 @@ defmodule NathanForUsWeb.ProfileLive do
     follower_count = Social.get_follower_count(user_id)
     following_count = Social.get_following_count(user_id)
     
-    is_following = if socket.assigns.current_user && socket.assigns.current_user.id != user.id do
+    is_following = if Map.has_key?(socket.assigns, :current_user) && socket.assigns.current_user && socket.assigns.current_user.id != user.id do
       Social.following?(socket.assigns.current_user.id, user.id)
     else
       false
@@ -30,28 +30,36 @@ defmodule NathanForUsWeb.ProfileLive do
 
   @impl true
   def handle_event("follow", _params, socket) do
-    case Social.follow_user(socket.assigns.current_user.id, socket.assigns.user.id) do
-      {:ok, _follow} ->
-        {:noreply,
-         socket
-         |> assign(:is_following, true)
-         |> update(:follower_count, &(&1 + 1))
-         |> put_flash(:info, "You are now following this business professional!")}
+    if Map.has_key?(socket.assigns, :current_user) && socket.assigns.current_user do
+      case Social.follow_user(socket.assigns.current_user.id, socket.assigns.user.id) do
+        {:ok, _follow} ->
+          {:noreply,
+           socket
+           |> assign(:is_following, true)
+           |> update(:follower_count, &(&1 + 1))
+           |> put_flash(:info, "You are now following this business professional!")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Unable to follow at this time.")}
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, "Unable to follow at this time.")}
+      end
+    else
+      {:noreply, socket}
     end
   end
 
   @impl true
   def handle_event("unfollow", _params, socket) do
-    Social.unfollow_user(socket.assigns.current_user.id, socket.assigns.user.id)
+    if Map.has_key?(socket.assigns, :current_user) && socket.assigns.current_user do
+      Social.unfollow_user(socket.assigns.current_user.id, socket.assigns.user.id)
 
-    {:noreply,
-     socket
-     |> assign(:is_following, false)
-     |> update(:follower_count, &(&1 - 1))
-     |> put_flash(:info, "You have unfollowed this user.")}
+      {:noreply,
+       socket
+       |> assign(:is_following, false)
+       |> update(:follower_count, &(&1 - 1))
+       |> put_flash(:info, "You have unfollowed this user.")}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true

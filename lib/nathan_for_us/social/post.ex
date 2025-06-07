@@ -15,8 +15,16 @@ defmodule NathanForUs.Social.Post do
     post
     |> cast(attrs, [:content, :image_url, :user_id])
     |> validate_required([:user_id])
+    |> trim_content()
     |> validate_content_or_image()
     |> foreign_key_constraint(:user_id)
+  end
+
+  defp trim_content(changeset) do
+    case get_change(changeset, :content) do
+      nil -> changeset
+      content -> put_change(changeset, :content, String.trim(content))
+    end
   end
 
   defp validate_content_or_image(changeset) do

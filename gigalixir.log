@@ -260,3 +260,18 @@ Warning: A new version is available.
 2025-06-07T15:14:13.767240+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m    (nathan_for_us 0.1.0) lib/nathan_for_us_web/endpoint.ex:1: NathanForUsWeb.Endpoint.plug_builder_call/2
 2025-06-07T15:14:13.767314+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: [36mweb.1  | [0m
 2025-06-07T15:14:23.646380+00:00 sick-motionless-roach[b'sick-motionless-roach-9cddf444c-jbs6n']: Shutting down 'sick-motionless-roach'
+2025-06-07T15:20:50.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T15:20:51.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: Your app is failing health checks, which means it isn't listening on port 4000 yet.
+2025-06-07T15:20:51.855994+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: Starting 'sick-motionless-roach'
+2025-06-07T15:20:51.856002+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: Attempting health checks on port 4000
+2025-06-07T15:20:52.296794+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0mstarted with pid 43
+2025-06-07T15:20:54.103662+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0m15:20:54.103 [info] Running NathanForUsWeb.Endpoint with Bandit 1.7.0 at :::4000 (http)
+2025-06-07T15:20:54.104384+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0m15:20:54.103 [info] Access NathanForUsWeb.Endpoint at https://sick-motionless-roach.gigalixirapp.com
+2025-06-07T15:20:54.000000+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: Shutting down
+2025-06-07T15:21:24.546260+00:00 sick-motionless-roach[b'sick-motionless-roach-6ffbc94db4-vqs2g']: Shutting down 'sick-motionless-roach'
+2025-06-07T15:25:52.605121+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0m15:25:52.604 request_id=453bae28aabcaee8755f385c2dff213b [info] GET /
+2025-06-07T15:25:52.626697+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0m15:25:52.625 request_id=453bae28aabcaee8755f385c2dff213b [info] Sent 200 in 21ms
+2025-06-07T15:25:52.726510+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0m15:25:52.725 [info] CONNECTED TO Phoenix.LiveView.Socket in 42µs
+2025-06-07T15:25:52.726520+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0m  Transport: :websocket
+2025-06-07T15:25:52.726585+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0m  Serializer: Phoenix.Socket.V2.JSONSerializer
+2025-06-07T15:25:52.726666+00:00 sick-motionless-roach[b'sick-motionless-roach-54545cc65b-8cpvh']: [36mweb.1  | [0m  Parameters: %{"_csrf_token" => "QAlRLjtUL31LIjEGPXoxBmAWLCMxIgh5xZffLyc5sLIELWK15ZbdcuE1", "_live_referer" => "undefined", "_mount_attempts" => "0", "_mounts" => "0", "_track_static" => %{"0" => "https://sick-motionless-roach.gigalixirapp.com/assets/app-5d1c0955c23b71779d3819501cd4972e.css?vsn=d", "1" => "https://sick-motionless-roach.gigalixirapp.com/assets/app-71d70e2ecbd8f051f54e2086aa89efcd.js?vsn=d"}, "vsn" => "2.0.0"}
