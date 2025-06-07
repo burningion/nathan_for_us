@@ -83,24 +83,26 @@ defmodule NathanForUsWeb.FeedLive do
         <div style="
           height: 100vh;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           text-align: center;
           background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+          padding-top: 10vh;
         ">
-          <div style="max-width: 400px; padding: 0 2rem;">
+          <div style="max-width: 800px; padding: 0 2rem;">
             <h1 style="
-              font-size: 2.25rem;
+              font-size: clamp(2.5rem, 7vw, 5rem);
               font-weight: 400;
               color: #1a202c;
-              margin-bottom: 3rem;
+              margin-bottom: 4rem;
               letter-spacing: -0.025em;
+              line-height: 1.1;
             ">
-              Do you enjoy Nathan Fielder?
+              Do you enjoy<br>Nathan Fielder?
             </h1>
-            
-            <.link 
-              navigate={~p"/users/register"} 
+
+            <.link
+              navigate={~p"/users/register"}
               style="
                 display: inline-block;
                 background: #1a202c;
@@ -116,7 +118,7 @@ defmodule NathanForUsWeb.FeedLive do
               onmouseover="this.style.background='#2d3748'; this.style.transform='translateY(-2px)'"
               onmouseout="this.style.background='#1a202c'; this.style.transform='translateY(0)'"
             >
-              Yes
+              Yes? Join Us.
             </.link>
           </div>
         </div>
