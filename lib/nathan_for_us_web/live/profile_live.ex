@@ -12,7 +12,7 @@ defmodule NathanForUsWeb.ProfileLive do
     follower_count = Social.get_follower_count(user_id)
     following_count = Social.get_following_count(user_id)
     
-    is_following = if socket.assigns.current_user && socket.assigns.current_user.id != user.id do
+    is_following = if Map.has_key?(socket.assigns, :current_user) && socket.assigns.current_user && socket.assigns.current_user.id != user.id do
       Social.following?(socket.assigns.current_user.id, user.id)
     else
       false
@@ -30,28 +30,36 @@ defmodule NathanForUsWeb.ProfileLive do
 
   @impl true
   def handle_event("follow", _params, socket) do
-    case Social.follow_user(socket.assigns.current_user.id, socket.assigns.user.id) do
-      {:ok, _follow} ->
-        {:noreply,
-         socket
-         |> assign(:is_following, true)
-         |> update(:follower_count, &(&1 + 1))
-         |> put_flash(:info, "You are now following this business professional!")}
+    if Map.has_key?(socket.assigns, :current_user) && socket.assigns.current_user do
+      case Social.follow_user(socket.assigns.current_user.id, socket.assigns.user.id) do
+        {:ok, _follow} ->
+          {:noreply,
+           socket
+           |> assign(:is_following, true)
+           |> update(:follower_count, &(&1 + 1))
+           |> put_flash(:info, "You are now following this user.")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Unable to follow at this time.")}
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, "Unable to follow at this time.")}
+      end
+    else
+      {:noreply, socket}
     end
   end
 
   @impl true
   def handle_event("unfollow", _params, socket) do
-    Social.unfollow_user(socket.assigns.current_user.id, socket.assigns.user.id)
+    if Map.has_key?(socket.assigns, :current_user) && socket.assigns.current_user do
+      Social.unfollow_user(socket.assigns.current_user.id, socket.assigns.user.id)
 
-    {:noreply,
-     socket
-     |> assign(:is_following, false)
-     |> update(:follower_count, &(&1 - 1))
-     |> put_flash(:info, "You have unfollowed this user.")}
+      {:noreply,
+       socket
+       |> assign(:is_following, false)
+       |> update(:follower_count, &(&1 - 1))
+       |> put_flash(:info, "You have unfollowed this user.")}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -62,16 +70,13 @@ defmodule NathanForUsWeb.ProfileLive do
         <div class="business-profile-avatar">
           <%= String.upcase(String.first(@user.email)) %>
         </div>
-        <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--nathan-navy); margin-bottom: 0.5rem;">
+        <h1 style="font-size: 2rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 0.5rem;">
           @<%= String.split(@user.email, "@") |> hd %>
         </h1>
-        <p style="font-size: 1.3rem; color: var(--nathan-navy); margin-bottom: 1rem; font-weight: 600;">
-          🎯 Certified Business Understander
-        </p>
         <div class="business-stats">
-          <div class="business-stat"><strong><%= @following_count %></strong> Strategic Partnerships</div>
-          <div class="business-stat"><strong><%= @follower_count %></strong> Professional Followers</div>
-          <div class="business-stat"><strong><%= length(@posts) %></strong> Business Insights</div>
+          <div class="business-stat"><strong><%= @following_count %></strong> Following</div>
+          <div class="business-stat"><strong><%= @follower_count %></strong> Followers</div>
+          <div class="business-stat"><strong><%= length(@posts) %></strong> Posts</div>
         </div>
 
         <%= if assigns[:current_user] && @current_user.id != @user.id do %>
@@ -82,19 +87,19 @@ defmodule NathanForUsWeb.ProfileLive do
                 class="business-btn business-btn--secondary"
                 style="padding: 0.75rem 1.5rem;"
               >
-                ❌ End Partnership
+                Unfollow
               </button>
             <% else %>
               <button
                 phx-click="follow"
-                class="business-btn business-btn--success"
+                class="business-btn business-btn--primary"
                 style="padding: 0.75rem 1.5rem;"
               >
-                🤝 Form Strategic Partnership
+                Follow
               </button>
             <% end %>
-            <button class="business-btn business-btn--primary" style="padding: 0.75rem 1.5rem;">
-              💼 Professional Consultation
+            <button class="business-btn business-btn--secondary" style="padding: 0.75rem 1.5rem;">
+              Message
             </button>
           </div>
         <% end %>
@@ -102,7 +107,7 @@ defmodule NathanForUsWeb.ProfileLive do
 
       <div>
         <h2 class="business-section-title">
-          📊 Business Intelligence & Strategic Insights
+          Posts
         </h2>
 
         <%= for post <- @posts do %>
@@ -126,30 +131,28 @@ defmodule NathanForUsWeb.ProfileLive do
             <% end %>
 
             <%= if post.image_url do %>
-              <img src={post.image_url} alt="Business insight visualization" class="business-image" />
+              <img src={post.image_url} alt="Post attachment" class="business-image" />
             <% end %>
 
             <div class="business-actions">
-              <button class="business-action-btn">👍 Professional Endorsement</button>
-              <button class="business-action-btn">💼 Business Excellence</button>
-              <button class="business-action-btn">🤝 Strategic Value</button>
-              <button class="business-action-btn">📈 Revenue Opportunity</button>
+              <button class="business-action-btn">Like</button>
+              <button class="business-action-btn">Comment</button>
+              <button class="business-action-btn">Share</button>
             </div>
           </div>
         <% end %>
 
         <%= if @posts == [] do %>
           <div class="business-empty">
-            <div class="business-empty-icon">📊</div>
-            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--nathan-navy); margin-bottom: 1rem;">
-              No business insights published yet!
+            <h3 style="font-size: 1.5rem; font-weight: 600; color: var(--nathan-navy); margin-bottom: 1rem;">
+              No posts yet
             </h3>
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
-              This business professional is currently developing revolutionary strategies.
+            <p style="font-size: 1rem; margin-bottom: 2rem; color: var(--nathan-gray);">
+              When this user shares posts, they'll appear here.
             </p>
             <%= if assigns[:current_user] && @current_user.id == @user.id do %>
               <.link navigate={~p"/posts/new"} class="business-btn business-btn--primary">
-                🚀 Share Your First Business Insight
+                Create your first post
               </.link>
             <% end %>
           </div>
