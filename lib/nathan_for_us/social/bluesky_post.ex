@@ -111,8 +111,9 @@ defmodule NathanForUs.Social.BlueskyPost do
   defp extract_thumb_url(_), do: nil
 
   defp convert_blob_to_url(blob_cid) when is_binary(blob_cid) do
-    # Convert Bluesky blob CID to CDN URL
-    "https://cdn.bsky.app/img/feed_thumbnail/plain/#{blob_cid}@jpeg"
+    # Convert Bluesky blob CID to proper CDN URL  
+    # This is the format used by Bluesky web client for thumbnails
+    "https://av-cdn.bsky.app/img/feed_thumbnail/plain/#{blob_cid}@jpeg"
   end
   defp convert_blob_to_url(_), do: nil
 end
