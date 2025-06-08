@@ -13,6 +13,16 @@ defmodule NathanForUsWeb.Router do
     plug :fetch_current_user
   end
 
+  pipeline :clean_browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {NathanForUsWeb.Layouts, :clean}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+    plug :fetch_current_user
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -62,13 +72,16 @@ defmodule NathanForUsWeb.Router do
 
   scope "/", NathanForUsWeb do
     pipe_through [:browser, :require_authenticated_user]
-
-    live "/posts/new", PostLive
-    live "/users/:id", ProfileLive
     
     get "/users/settings", UserSettingsController, :edit
     put "/users/settings", UserSettingsController, :update
     get "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
+  end
+
+  scope "/", NathanForUsWeb do
+    pipe_through [:clean_browser, :require_authenticated_user]
+
+    live "/stay-tuned", StayTunedLive
   end
 
   scope "/", NathanForUsWeb do
