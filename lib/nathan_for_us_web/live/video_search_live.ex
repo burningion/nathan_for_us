@@ -132,8 +132,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
     <div class="mb-8 border-b border-zinc-300 pb-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 class="text-xl md:text-2xl font-bold text-blue-600 mb-1">VIDEO FRAME SEARCH</h1>
-          <p class="text-zinc-600 text-sm">Deep archive analysis system for Nathan Fielder content</p>
+          <h1 class="text-xl md:text-2xl font-bold text-blue-600 mb-1">Nathan Appearance Video Search</h1>
+          <p class="text-zinc-600 text-sm">search a quote and find the frame(s) in which nathan said it in an interview</p>
         </div>
         <div class="text-left md:text-right text-xs text-zinc-500 space-y-1">
           <div>STATUS: <%= if @search_term != "", do: "SEARCHING", else: "READY" %></div>
