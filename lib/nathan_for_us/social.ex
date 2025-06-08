@@ -218,7 +218,12 @@ defmodule NathanForUs.Social do
   def list_bluesky_posts_with_users(opts \\ []) do
     limit = Keyword.get(opts, :limit, 50)
     
+    # Handles to filter out (test accounts)
+    filtered_handles = ["bobbby.online", "yburyug.bsky.social"]
+    
     from(bp in BlueskyPost,
+      left_join: bu in BlueskyUser, on: bp.bluesky_user_id == bu.id,
+      where: is_nil(bu.handle) or bu.handle not in ^filtered_handles,
       order_by: [desc: bp.record_created_at],
       limit: ^limit,
       preload: [:bluesky_user]
