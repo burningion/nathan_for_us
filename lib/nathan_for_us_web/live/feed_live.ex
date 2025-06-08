@@ -28,6 +28,7 @@ defmodule NathanForUsWeb.FeedLive do
     ~H"""
     <div>
       <div class="business-hero">
+        <img src={~p"/images/fellow-pilot.png"} alt="Nathan Fielder" style="max-width: 100%; height: auto; margin: 0 auto 2rem auto; display: block;" />
         <h1 class="business-title">The Business Understander</h1>
         <p class="business-subtitle">"I graduated from one of Canada's top business schools with really good grades."</p>
         <p style="font-size: 1.2rem; color: var(--nathan-navy); margin-top: 1rem;">
