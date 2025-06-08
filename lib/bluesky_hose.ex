@@ -29,6 +29,13 @@ defmodule NathanForUs.BlueskyHose do
           # Extract DID from the top-level message
           repo_did = full_msg["did"]
           Logger.info("Found Nathan Fielder mention from DID: #{inspect(repo_did)}")
+          
+          # Check for embeds
+          embed_info = get_in(record, ["record", "embed"])
+          if embed_info do
+            Logger.info("Post contains embed: #{inspect(embed_info)}")
+          end
+          
           record_with_did = Map.put(record, "repo", repo_did)
           
           case Social.create_bluesky_post_from_record(record_with_did) do
@@ -50,34 +57,6 @@ defmodule NathanForUs.BlueskyHose do
     String.contains?(downcased, "nathan fielder")
   end
 
-  # defp derive_youtube_embed_link(skeet, record) when is_binary(skeet) do
-  #   uri =
-  #     case record do
-  #       %{
-  #         "record" => %{
-  #           "embed" => %{
-  #             "external" => %{
-  #               "uri" => uri
-  #             }
-  #           }
-  #         }
-  #       } ->
-  #         uri
-
-  #       _ ->
-  #         nil
-  #     end
-
-  #   if uri do
-  #     if String.contains?(uri, "youtube.com") || String.contains?(uri, "youtu.be") do
-  #       {:ok, uri}
-  #     end
-  #   end
-  # end
-
-  defp generate_id do
-    :crypto.strong_rand_bytes(10) |> Base.encode16(case: :lower)
-  end
 
   def handle_disconnect(%{reason: {:local, reason}}, state) do
     Logger.info("Local close with reason: #{inspect(reason)}")

@@ -78,6 +78,71 @@ defmodule NathanForUsWeb.SkeetsLive do
                 </div>
               <% end %>
 
+              <%= if post.embed_type do %>
+                <div class="mb-4">
+                  <%= case post.embed_type do %>
+                    <% "external" -> %>
+                      <div class="border border-zinc-200 rounded-xl overflow-hidden">
+                        <%= if post.embed_thumb do %>
+                          <img src={post.embed_thumb} alt={post.embed_title || "Embedded content"} class="w-full h-48 object-cover" />
+                        <% end %>
+                        <div class="p-4">
+                          <%= if post.embed_title do %>
+                            <h3 class="font-semibold text-zinc-900 mb-2">
+                              <%= if post.embed_uri do %>
+                                <a href={post.embed_uri} target="_blank" class="hover:text-blue-600">
+                                  <%= post.embed_title %>
+                                </a>
+                              <% else %>
+                                <%= post.embed_title %>
+                              <% end %>
+                            </h3>
+                          <% end %>
+                          <%= if post.embed_description do %>
+                            <p class="text-zinc-600 text-sm mb-2"><%= post.embed_description %></p>
+                          <% end %>
+                          <%= if post.embed_uri do %>
+                            <a href={post.embed_uri} target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
+                              <%= URI.parse(post.embed_uri).host || post.embed_uri %>
+                            </a>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% "images" -> %>
+                      <%= if post.embed_uri do %>
+                        <div class="border border-zinc-200 rounded-xl overflow-hidden">
+                          <img src={post.embed_uri} alt={post.embed_title || "Embedded image"} class="w-full h-auto" />
+                          <%= if post.embed_title do %>
+                            <div class="p-3 bg-zinc-50 text-sm text-zinc-600">
+                              <%= post.embed_title %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    <% "video" -> %>
+                      <div class="border border-zinc-200 rounded-xl overflow-hidden">
+                        <%= if post.embed_thumb do %>
+                          <div class="relative">
+                            <img src={post.embed_thumb} alt={post.embed_title || "Video thumbnail"} class="w-full h-48 object-cover" />
+                            <div class="absolute inset-0 flex items-center justify-center">
+                              <div class="bg-black bg-opacity-50 rounded-full p-3">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M8 5v10l8-5-8-5z"/>
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        <% end %>
+                        <%= if post.embed_title do %>
+                          <div class="p-3 bg-zinc-50 text-sm text-zinc-600">
+                            <%= post.embed_title %>
+                          </div>
+                        <% end %>
+                      </div>
+                  <% end %>
+                </div>
+              <% end %>
+
               <div class="flex items-center justify-between pt-4 border-t border-zinc-100">
                 <div class="flex items-center space-x-4 text-sm text-zinc-500">
                   <%= if post.record_langs do %>
