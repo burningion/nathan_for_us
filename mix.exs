@@ -60,6 +60,7 @@ defmodule NathanForUs.MixProject do
       {:bandit, "~> 1.5"},
       {:bcrypt_elixir, "~> 3.0"},
       {:websockex, "~> 0.4.3"},
+      {:gen_stage, "~> 1.2"},
     ]
   end
 

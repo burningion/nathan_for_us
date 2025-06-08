@@ -16,6 +16,8 @@ defmodule NathanForUs.Application do
       {Finch, name: NathanForUs.Finch},
       # Start the Bluesky firehose connection
       NathanForUs.BlueskyHose,
+      # Start the video processing pipeline
+      NathanForUs.VideoProcessing,
       # Start a worker by calling: NathanForUs.Worker.start_link(arg)
       # {NathanForUs.Worker, arg},
       # Start to serve requests, typically the last entry
