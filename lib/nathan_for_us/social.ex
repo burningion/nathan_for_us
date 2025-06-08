@@ -9,7 +9,9 @@ defmodule NathanForUs.Social do
   alias NathanForUs.Social.Post
   alias NathanForUs.Social.Follow
   alias NathanForUs.Social.BlueskyPost
+  alias NathanForUs.Social.BlueskyUser
   alias NathanForUs.Accounts.User
+  alias NathanForUs.BlueskyAPI
 
   @doc """
   Returns the list of posts for a user's feed (posts from followed users + own posts).
@@ -135,9 +137,27 @@ defmodule NathanForUs.Social do
   def create_bluesky_post_from_record(record_data) do
     attrs = BlueskyPost.from_firehose_record(record_data)
     
-    %BlueskyPost{}
-    |> BlueskyPost.changeset(attrs)
-    |> Repo.insert()
+    # Get or create the user if we have a repo (DID)
+    attrs_with_user = case record_data["repo"] do
+      nil -> attrs
+      repo_did ->
+        case get_or_create_bluesky_user_by_did(repo_did) do
+          {:ok, user} -> Map.put(attrs, :bluesky_user_id, user.id)
+          {:error, _reason} -> attrs  # Continue without user if API fails
+        end
+    end
+    
+    case %BlueskyPost{}
+         |> BlueskyPost.changeset(attrs_with_user)
+         |> Repo.insert() do
+      {:ok, post} ->
+        # Preload the user for the broadcast
+        post_with_user = Repo.preload(post, :bluesky_user)
+        Phoenix.PubSub.broadcast(NathanForUs.PubSub, "nathan_fielder_skeets", {:new_nathan_fielder_skeet, post_with_user})
+        {:ok, post_with_user}
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
@@ -157,4 +177,46 @@ defmodule NathanForUs.Social do
   Gets a single bluesky post.
   """
   def get_bluesky_post!(id), do: Repo.get!(BlueskyPost, id)
+
+  @doc """
+  Gets or creates a BlueskyUser by DID, fetching from API if needed
+  """
+  def get_or_create_bluesky_user_by_did(did) when is_binary(did) do
+    case Repo.get_by(BlueskyUser, did: did) do
+      %BlueskyUser{} = user ->
+        {:ok, user}
+      nil ->
+        fetch_and_store_bluesky_user(did)
+    end
+  end
+
+  @doc """
+  Fetches user profile from Bluesky API and stores in database
+  """
+  def fetch_and_store_bluesky_user(did) when is_binary(did) do
+    case BlueskyAPI.get_profile_by_did(did) do
+      {:ok, profile_data} ->
+        attrs = BlueskyUser.from_api_profile(profile_data)
+        
+        %BlueskyUser{}
+        |> BlueskyUser.changeset(attrs)
+        |> Repo.insert()
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Returns the list of bluesky posts with preloaded users.
+  """
+  def list_bluesky_posts_with_users(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+    
+    from(bp in BlueskyPost,
+      order_by: [desc: bp.record_created_at],
+      limit: ^limit,
+      preload: [:bluesky_user]
+    )
+    |> Repo.all()
+  end
 end

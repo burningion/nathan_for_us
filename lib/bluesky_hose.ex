@@ -24,9 +24,13 @@ defmodule NathanForUs.BlueskyHose do
     msg = Jason.decode!(msg)
 
     case msg do
-      %{"commit" => record = %{"record" => %{"text" => skeet}}} = _msg ->
+      %{"commit" => record = %{"record" => %{"text" => skeet}}} = full_msg ->
         if contains_nathan_fielder?(skeet) do
-          case Social.create_bluesky_post_from_record(record) do
+          # Extract repo (DID) from the commit
+          repo_did = full_msg["commit"]["repo"]
+          record_with_did = Map.put(record, "repo", repo_did)
+          
+          case Social.create_bluesky_post_from_record(record_with_did) do
             {:ok, _post} ->
               Logger.info("Saved Nathan Fielder mention: #{String.slice(skeet, 0, 100)}...")
             {:error, reason} ->

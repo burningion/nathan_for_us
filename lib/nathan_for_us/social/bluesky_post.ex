@@ -13,13 +13,15 @@ defmodule NathanForUs.Social.BlueskyPost do
     field :record_langs, {:array, :string}
     field :record_text, :string
 
+    belongs_to :bluesky_user, NathanForUs.Social.BlueskyUser
+
     timestamps(type: :utc_datetime)
   end
 
   @doc false
   def changeset(bluesky_post, attrs) do
     bluesky_post
-    |> cast(attrs, [:cid, :collection, :operation, :rkey, :rev, :record_type, :record_created_at, :record_langs, :record_text])
+    |> cast(attrs, [:cid, :collection, :operation, :rkey, :rev, :record_type, :record_created_at, :record_langs, :record_text, :bluesky_user_id])
     |> validate_required([:cid, :collection, :operation])
     |> unique_constraint(:cid)
   end
