@@ -106,7 +106,13 @@ defmodule NathanForUs.Social.BlueskyPost do
   end
 
   defp extract_thumb_url(thumb) when is_binary(thumb), do: thumb
-  defp extract_thumb_url(%{"$link" => link}) when is_binary(link), do: link
-  defp extract_thumb_url(%{"ref" => %{"$link" => link}}) when is_binary(link), do: link
+  defp extract_thumb_url(%{"$link" => link}) when is_binary(link), do: convert_blob_to_url(link)
+  defp extract_thumb_url(%{"ref" => %{"$link" => link}}) when is_binary(link), do: convert_blob_to_url(link)
   defp extract_thumb_url(_), do: nil
+
+  defp convert_blob_to_url(blob_cid) when is_binary(blob_cid) do
+    # Convert Bluesky blob CID to CDN URL
+    "https://cdn.bsky.app/img/feed_thumbnail/plain/#{blob_cid}@jpeg"
+  end
+  defp convert_blob_to_url(_), do: nil
 end
