@@ -8,6 +8,7 @@ defmodule NathanForUs.Social do
 
   alias NathanForUs.Social.Post
   alias NathanForUs.Social.Follow
+  alias NathanForUs.Social.BlueskyPost
   alias NathanForUs.Accounts.User
 
   @doc """
@@ -127,4 +128,33 @@ defmodule NathanForUs.Social do
     from(f in Follow, where: f.follower_id == ^user_id, select: count())
     |> Repo.one()
   end
+
+  @doc """
+  Creates a bluesky post from firehose record data.
+  """
+  def create_bluesky_post_from_record(record_data) do
+    attrs = BlueskyPost.from_firehose_record(record_data)
+    
+    %BlueskyPost{}
+    |> BlueskyPost.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Returns the list of bluesky posts.
+  """
+  def list_bluesky_posts(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+    
+    from(bp in BlueskyPost,
+      order_by: [desc: bp.record_created_at],
+      limit: ^limit
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single bluesky post.
+  """
+  def get_bluesky_post!(id), do: Repo.get!(BlueskyPost, id)
 end

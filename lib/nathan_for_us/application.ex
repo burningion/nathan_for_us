@@ -14,6 +14,8 @@ defmodule NathanForUs.Application do
       {Phoenix.PubSub, name: NathanForUs.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: NathanForUs.Finch},
+      # Start the Bluesky firehose connection
+      NathanForUs.BlueskyHose,
       # Start a worker by calling: NathanForUs.Worker.start_link(arg)
       # {NathanForUs.Worker, arg},
       # Start to serve requests, typically the last entry

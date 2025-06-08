@@ -4,9 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="NathanForUs" suffix=" · Phoenix Framework">
+    <.live_title default="Nathan For Us">
       {assigns[:page_title]}
     </.live_title>
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.nathanforus.com/" />
+    <meta property="og:title" content="Nathan For Us" />
+    <meta property="og:description" content="A place for fans of Nathan Fielder" />
+    <meta property="og:image" content={~p"/images/fellow-pilot.png"} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://www.nathanforus.com/" />
+    <meta property="twitter:title" content="Nathan For Us" />
+    <meta property="twitter:description" content="A place for fans of Nathan Fielder" />
+    <meta property="twitter:image" content={~p"/images/fellow-pilot.png"} />
+
+    <!-- General -->
+    <meta name="description" content="A place for fans of Nathan Fielder" />
+    
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
