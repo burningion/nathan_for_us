@@ -12,7 +12,10 @@ defmodule NathanForUsWeb.SkeetsLive do
 
     bluesky_posts = Social.list_bluesky_posts_with_users(limit: 50)
 
-    {:ok, assign(socket, bluesky_posts: bluesky_posts, page_title: "Nathan Fielder Skeets")}
+    {:ok, assign(socket, 
+      bluesky_posts: bluesky_posts, 
+      page_title: "Nathan Fielder: In Skeets",
+      page_description: "What is in the news about Nathan Fielder on Bluesky")}
   end
 
   def handle_info({:new_nathan_fielder_skeet, post}, socket) do
@@ -24,8 +27,8 @@ defmodule NathanForUsWeb.SkeetsLive do
     <div class="min-h-screen bg-zinc-50 p-6">
       <div class="max-w-4xl mx-auto">
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-zinc-900 mb-2">Nathan Fielder Skeets</h1>
-          <p class="text-zinc-600">Live feed of Nathan Fielder mentions from Bluesky</p>
+          <h1 class="text-3xl font-bold text-zinc-900 mb-2">Nathan Fielder: In Skeets</h1>
+          <p class="text-zinc-600">What is in the news about Nathan Fielder on Bluesky</p>
         </div>
 
         <div class="space-y-6">

@@ -1,31 +1,56 @@
-<div class="mx-auto max-w-sm">
-  <.header class="text-center">
-    Log in to account
-    <:subtitle>
-      Don't have an account?
-      <.link navigate={~p"/users/register"} class="font-semibold text-brand hover:underline">
-        Sign up
-      </.link>
-      for an account now.
-    </:subtitle>
-  </.header>
+<div class="min-h-screen bg-zinc-50 flex items-center justify-center px-4">
+  <div class="w-full max-w-md">
+    <div class="bg-white rounded-3xl shadow-xl p-8 border border-zinc-200">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-zinc-900 mb-2">Welcome Back</h1>
+        <p class="text-zinc-600">Great to see you again.</p>
+      </div>
 
-  <.simple_form :let={f} for={@conn.params["user"]} as={:user} action={~p"/users/log_in"}>
-    <.error :if={@error_message}>{@error_message}</.error>
+      <.simple_form :let={f} for={@conn.params["user"]} as={:user} action={~p"/users/log_in"} class="space-y-6">
+        <.error :if={@error_message}>{@error_message}</.error>
 
-    <.input field={f[:email]} type="email" label="Email" required />
-    <.input field={f[:password]} type="password" label="Password" required />
+        <div>
+          <.input
+            field={f[:email]}
+            type="email"
+            placeholder="Email address"
+            class="w-full px-4 py-4 text-lg border-2 border-zinc-300 rounded-xl focus:border-zinc-900 focus:outline-none transition-all duration-200 bg-zinc-50 focus:bg-white hover:bg-white"
+            required
+          />
+        </div>
 
-    <:actions :let={f}>
-      <.input field={f[:remember_me]} type="checkbox" label="Keep me logged in" />
-      <.link href={~p"/users/reset_password"} class="text-sm font-semibold">
-        Forgot your password?
-      </.link>
-    </:actions>
-    <:actions>
-      <.button phx-disable-with="Logging in..." class="w-full">
-        Log in <span aria-hidden="true">→</span>
-      </.button>
-    </:actions>
-  </.simple_form>
+        <div>
+          <.input
+            field={f[:password]}
+            type="password"
+            placeholder="Password"
+            class="w-full px-4 py-4 text-lg border-2 border-zinc-300 rounded-xl focus:border-zinc-900 focus:outline-none transition-all duration-200 bg-zinc-50 focus:bg-white hover:bg-white"
+            required
+          />
+        </div>
+
+        <div class="flex items-center justify-between">
+          <.input field={f[:remember_me]} type="checkbox" label="Keep me logged in" />
+          <.link href={~p"/users/reset_password"} class="text-zinc-600 hover:text-zinc-900 text-sm">
+            Forgot password?
+          </.link>
+        </div>
+
+        <:actions>
+          <.button phx-disable-with="Logging in..." class="w-full bg-zinc-900 text-white py-4 text-lg font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
+            Log in
+          </.button>
+        </:actions>
+      </.simple_form>
+
+      <div class="text-center mt-6">
+        <p class="text-zinc-600">
+          Don't have an account?
+          <.link navigate={~p"/users/register"} class="text-zinc-900 font-semibold hover:underline">
+            Join us
+          </.link>
+        </p>
+      </div>
+    </div>
+  </div>
 </div>
