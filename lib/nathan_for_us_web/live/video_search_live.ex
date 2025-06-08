@@ -170,7 +170,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
                       <div class="mb-2">
                         <%= if File.exists?(frame.file_path) do %>
                           <img
-                            src={"/frames/" <> Path.basename(frame.file_path)}
+                            src={String.replace(frame.file_path, "priv/static", "")}
                             alt={"Frame at " <> format_timestamp(frame.timestamp_ms)}
                             class="w-full h-48 object-cover rounded border border-gray-600"
                           />
@@ -191,6 +191,13 @@ defmodule NathanForUsWeb.VideoSearchLive do
                         <%= if frame.file_size do %>
                           <div class="text-green-600">
                             Size: <%= format_file_size(frame.file_size) %>
+                          </div>
+                        <% end %>
+                        
+                        <%= if Map.get(frame, :caption_texts) do %>
+                          <div class="text-gray-300 text-sm bg-gray-900 p-2 rounded border border-gray-600 mt-2">
+                            <strong class="text-green-400">Caption:</strong><br/>
+                            "<%= frame.caption_texts %>"
                           </div>
                         <% end %>
                       </div>

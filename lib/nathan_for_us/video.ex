@@ -92,16 +92,18 @@ defmodule NathanForUs.Video do
   """
   def search_frames_by_text(search_term) when is_binary(search_term) do
     query = """
-    SELECT DISTINCT f.* 
+    SELECT DISTINCT f.*, 
+           string_agg(DISTINCT c.text, ' | ') as caption_texts
     FROM video_frames f
     JOIN frame_captions fc ON fc.frame_id = f.id
     JOIN video_captions c ON c.id = fc.caption_id
     WHERE to_tsvector('english', c.text) @@ plainto_tsquery('english', $1)
+    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.inserted_at, f.updated_at
     ORDER BY f.timestamp_ms
     """
     
     Ecto.Adapters.SQL.query!(Repo, query, [search_term])
-    |> map_frame_results()
+    |> map_frame_results_with_captions()
   end
 
   @doc """
@@ -111,13 +113,19 @@ defmodule NathanForUs.Video do
   def search_frames_by_text_simple(search_term) when is_binary(search_term) do
     search_pattern = "%#{search_term}%"
 
-    VideoFrame
-    |> join(:inner, [f], fc in FrameCaption, on: fc.frame_id == f.id)
-    |> join(:inner, [f, fc], c in VideoCaption, on: c.id == fc.caption_id)
-    |> where([f, fc, c], ilike(c.text, ^search_pattern))
-    |> distinct([f], f.id)
-    |> order_by([f], f.timestamp_ms)
-    |> Repo.all()
+    query = """
+    SELECT DISTINCT f.*, 
+           string_agg(DISTINCT c.text, ' | ') as caption_texts
+    FROM video_frames f
+    JOIN frame_captions fc ON fc.frame_id = f.id
+    JOIN video_captions c ON c.id = fc.caption_id
+    WHERE c.text ILIKE $1
+    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.inserted_at, f.updated_at
+    ORDER BY f.timestamp_ms
+    """
+    
+    Ecto.Adapters.SQL.query!(Repo, query, [search_pattern])
+    |> map_frame_results_with_captions()
   end
 
   @doc """
@@ -209,6 +217,19 @@ defmodule NathanForUs.Video do
       |> Enum.zip(row)
       |> Enum.into(%{})
       |> atomize_keys()
+    end)
+  end
+
+  defp map_frame_results_with_captions(%{rows: rows, columns: columns}) do
+    Enum.map(rows, fn row ->
+      frame_data = columns
+      |> Enum.zip(row)
+      |> Enum.into(%{})
+      |> atomize_keys()
+      
+      # Extract caption_texts and add it as a separate field
+      caption_texts = Map.get(frame_data, :caption_texts, "")
+      Map.put(frame_data, :caption_texts, caption_texts)
     end)
   end
 
