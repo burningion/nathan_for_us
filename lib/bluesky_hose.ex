@@ -26,10 +26,9 @@ defmodule NathanForUs.BlueskyHose do
     case msg do
       %{"commit" => record = %{"record" => %{"text" => skeet}}} = full_msg ->
         if contains_nathan_fielder?(skeet) do
-          # Extract repo (DID) from the commit
-          repo_did = full_msg["commit"]["repo"]
+          # Extract DID from the top-level message
+          repo_did = full_msg["did"]
           Logger.info("Found Nathan Fielder mention from DID: #{inspect(repo_did)}")
-          Logger.info("Full message structure: #{inspect(full_msg)}")
           record_with_did = Map.put(record, "repo", repo_did)
           
           case Social.create_bluesky_post_from_record(record_with_did) do
