@@ -10,10 +10,10 @@
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.nathanforus.com/" />
+    <meta property="og:url" content={"https://#{@conn.host}/"} />
     <meta property="og:title" content={assigns[:page_title] || "Nathan For Us"} />
     <meta property="og:description" content={assigns[:page_description] || "Join a group of like minded people"} />
-    <meta property="og:image" content="https://www.nathanforus.com/images/fellow-pilot.png" />
+    <meta property="og:image" content={"https://#{@conn.host}/images/fellow-pilot.png"} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Nathan For Us - Join a group of like minded people" />
@@ -21,10 +21,10 @@
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://www.nathanforus.com/" />
+    <meta property="twitter:url" content={"https://#{@conn.host}/"} />
     <meta property="twitter:title" content={assigns[:page_title] || "Nathan For Us"} />
     <meta property="twitter:description" content={assigns[:page_description] || "Join a group of like minded people"} />
-    <meta property="twitter:image" content="https://www.nathanforus.com/images/fellow-pilot.png" />
+    <meta property="twitter:image" content={"https://#{@conn.host}/images/fellow-pilot.png"} />
 
     <!-- Apple / iMessage -->
     <meta name="apple-mobile-web-app-title" content="Nathan For Us" />
