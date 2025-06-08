@@ -14,6 +14,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
   def mount(_params, _session, socket) do
     socket =
       socket
+      |> assign(:page_title, "Nathan Appearance Video Search")
+      |> assign(:page_description, "search a quote and find the frame(s) in which nathan said it in an interview")
       |> assign(:search_term, "")
       |> assign(:search_results, [])
       |> assign(:loading, false)
@@ -116,8 +118,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
           />
           
           <.loading_state :if={@loading} search_term={@search_term} />
-          
-          <.video_status_panel videos={@videos} />
         </div>
       </div>
     </div>
@@ -347,45 +347,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
     """
   end
 
-  # Video status panel component
-  defp video_status_panel(assigns) do
-    ~H"""
-    <details class="bg-white border border-zinc-300 rounded-lg shadow-sm">
-      <summary class="px-6 py-4 cursor-pointer text-zinc-700 hover:text-blue-600 font-mono text-sm border-b border-zinc-200">
-        SYSTEM STATUS: VIDEO PROCESSING
-      </summary>
-      <div class="p-6">
-        <div class="space-y-3">
-          <%= for video <- @videos do %>
-            <.video_status_item video={video} />
-          <% end %>
-        </div>
-      </div>
-    </details>
-    """
-  end
-
-  # Individual video status item
-  defp video_status_item(assigns) do
-    ~H"""
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-zinc-100 last:border-b-0 gap-2">
-      <div class="flex-1 min-w-0">
-        <div class="text-zinc-900 text-sm font-mono truncate"><%= @video.title %></div>
-        <div class="flex flex-wrap items-center gap-3 mt-1">
-          <span class={[
-            "px-2 py-1 text-xs rounded font-mono",
-            video_status_class(@video.status)
-          ]}>
-            <%= String.upcase(@video.status) %>
-          </span>
-          <%= if @video.frame_count do %>
-            <span class="text-zinc-500 text-xs font-mono"><%= @video.frame_count %> frames</span>
-          <% end %>
-        </div>
-      </div>
-    </div>
-    """
-  end
 
   # Frame tile image component for mosaic view
   defp frame_tile_image(assigns) do
