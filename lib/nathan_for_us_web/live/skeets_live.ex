@@ -138,13 +138,17 @@ defmodule NathanForUsWeb.SkeetsLive do
                     <span>LANG: <%= Enum.join(post.record_langs, ",") %></span>
                   <% end %>
                 </div>
-                <a 
-                  href={"https://bsky.app/profile/#{post.rkey}"} 
-                  target="_blank" 
-                  class="text-blue-600 hover:text-blue-500 text-xs font-medium"
-                >
-                  VIEW SOURCE →
-                </a>
+                <%= if post.bluesky_user && post.bluesky_user.handle && post.rkey do %>
+                  <a 
+                    href={"https://bsky.app/profile/#{post.bluesky_user.handle}/post/#{post.rkey}"} 
+                    target="_blank" 
+                    class="text-blue-600 hover:text-blue-500 text-xs font-medium"
+                  >
+                    VIEW SOURCE →
+                  </a>
+                <% else %>
+                  <span class="text-zinc-400 text-xs">No source available</span>
+                <% end %>
               </div>
             </div>
           <% end %>

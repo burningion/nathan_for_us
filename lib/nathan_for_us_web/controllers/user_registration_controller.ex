@@ -7,7 +7,11 @@ defmodule NathanForUsWeb.UserRegistrationController do
 
   def new(conn, _params) do
     changeset = Accounts.change_user_registration(%User{})
-    render(conn, :new, changeset: changeset)
+    
+    conn
+    |> assign(:page_title, "Join Nathan For Us")
+    |> assign(:page_description, "Sign up to join a group of like minded people and stay tuned for Nathan Fielder updates")
+    |> render(:new, changeset: changeset)
   end
 
   def create(conn, %{"user" => user_params}) do
@@ -25,7 +29,10 @@ defmodule NathanForUsWeb.UserRegistrationController do
         |> redirect(to: ~p"/stay-tuned")
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        render(conn, :new, changeset: changeset)
+        conn
+        |> assign(:page_title, "Join Nathan For Us")
+        |> assign(:page_description, "Sign up to join a group of like minded people and stay tuned for Nathan Fielder updates")
+        |> render(:new, changeset: changeset)
     end
   end
 end

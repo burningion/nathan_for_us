@@ -65,7 +65,7 @@ defmodule NathanForUs.Social.BlueskyPost do
           uri: external["uri"],
           title: external["title"],
           description: external["description"],
-          thumb: external["thumb"]
+          thumb: extract_thumb_url(external["thumb"])
         }
       %{"$type" => "app.bsky.embed.external", "external" => external} ->
         %{
@@ -73,7 +73,7 @@ defmodule NathanForUs.Social.BlueskyPost do
           uri: external["uri"],
           title: external["title"],
           description: external["description"],
-          thumb: external["thumb"]
+          thumb: extract_thumb_url(external["thumb"])
         }
       %{"$type" => "app.bsky.embed.images", "images" => images} when is_list(images) ->
         first_image = List.first(images)
@@ -104,4 +104,9 @@ defmodule NathanForUs.Social.BlueskyPost do
       {:error, _} -> nil
     end
   end
+
+  defp extract_thumb_url(thumb) when is_binary(thumb), do: thumb
+  defp extract_thumb_url(%{"$link" => link}) when is_binary(link), do: link
+  defp extract_thumb_url(%{"ref" => %{"$link" => link}}) when is_binary(link), do: link
+  defp extract_thumb_url(_), do: nil
 end
