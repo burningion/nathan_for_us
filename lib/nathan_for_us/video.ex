@@ -98,7 +98,7 @@ defmodule NathanForUs.Video do
     JOIN frame_captions fc ON fc.frame_id = f.id
     JOIN video_captions c ON c.id = fc.caption_id
     WHERE to_tsvector('english', c.text) @@ plainto_tsquery('english', $1)
-    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.inserted_at, f.updated_at
+    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at
     ORDER BY f.timestamp_ms
     """
     
@@ -120,7 +120,7 @@ defmodule NathanForUs.Video do
     JOIN frame_captions fc ON fc.frame_id = f.id
     JOIN video_captions c ON c.id = fc.caption_id
     WHERE c.text ILIKE $1
-    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.inserted_at, f.updated_at
+    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at
     ORDER BY f.timestamp_ms
     """
     

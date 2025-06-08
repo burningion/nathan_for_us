@@ -3,7 +3,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
   LiveView for searching video frames by text content in captions.
   
   Allows users to search for text across all video captions and displays
-  matching frames as images.
+  matching frames as images loaded directly from the database.
   """
   
   use NathanForUsWeb, :live_view
@@ -45,6 +45,28 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("search", %{"search[term]" => term}, socket) when term != "" do
+    send(self(), {:perform_search, term})
+    
+    socket =
+      socket
+      |> assign(:search_term, term)
+      |> assign(:loading, true)
+      |> assign(:search_results, [])
+
+    {:noreply, socket}
+  end
+
+  def handle_event("search", %{"search[term]" => ""}, socket) do
+    socket =
+      socket
+      |> assign(:search_term, "")
+      |> assign(:search_results, [])
+      |> assign(:loading, false)
+
+    {:noreply, socket}
+  end
+
   def handle_event("process_video", %{"video_path" => video_path}, socket) do
     case NathanForUs.VideoProcessing.process_video(video_path) do
       {:ok, video} ->
@@ -61,6 +83,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
     end
   end
 
+
   @impl true
   def handle_info({:perform_search, term}, socket) do
     results = Video.search_frames_by_text_simple(term)
@@ -76,178 +99,202 @@ defmodule NathanForUsWeb.VideoSearchLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-900 text-green-400 font-mono">
-      <div class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold text-green-300 mb-2">
-            NATHAN FOR US - VIDEO SEARCH
-          </h1>
-          <p class="text-green-500">
-            Search through video frames using caption text
-          </p>
-        </div>
-
-        <!-- Video Processing Status -->
-        <div class="mb-8 bg-gray-800 border border-green-600 rounded p-4">
-          <h2 class="text-xl font-semibold text-green-300 mb-4">Video Processing Status</h2>
-          
-          <div class="space-y-2">
-            <%= for video <- @videos do %>
-              <div class="flex items-center justify-between py-2 border-b border-gray-700">
-                <div class="flex-1">
-                  <span class="text-green-400"><%= video.title %></span>
-                  <span class={[
-                    "ml-2 px-2 py-1 text-xs rounded",
-                    status_class(video.status)
-                  ]}>
-                    <%= String.upcase(video.status) %>
-                  </span>
-                </div>
-                <%= if video.status == "completed" and video.frame_count do %>
-                  <span class="text-green-500 text-sm">
-                    <%= video.frame_count %> frames
-                  </span>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-
-          <!-- Process Sample Video Button -->
-          <div class="mt-4 pt-4 border-t border-gray-700">
-            <button
-              phx-click="process_video"
-              phx-value-video_path="vid/The Obscure World of Model Train Synthesizers [wfu6wGAp83o].mp4"
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold"
-            >
-              Process Sample Video
-            </button>
+    <div class="min-h-screen bg-slate-900 text-slate-100">
+      <!-- Hero Section -->
+      <div class="bg-gradient-to-r from-slate-800 to-slate-900 border-b border-slate-700">
+        <div class="max-w-6xl mx-auto px-6 py-8">
+          <div class="text-center">
+            <h1 class="text-4xl font-bold text-white mb-3">
+              Video Frame Search
+            </h1>
+            <p class="text-slate-400 text-lg">
+              Search through video content using spoken dialogue and captions
+            </p>
           </div>
         </div>
+      </div>
 
-        <!-- Search Form -->
+      <!-- Main Content -->
+      <div class="max-w-6xl mx-auto px-6 py-8">
+        
+        <!-- Search Section -->
         <div class="mb-8">
           <.form for={%{}} as={:search} phx-submit="search" class="max-w-2xl mx-auto">
-            <div class="flex gap-4">
+            <div class="relative">
               <input
                 type="text"
                 name="search[term]"
                 value={@search_term}
-                placeholder="Search for text in video captions (e.g., 'choo choo')"
-                class="flex-1 bg-gray-800 border border-green-600 text-green-400 px-4 py-3 rounded focus:outline-none focus:border-green-400"
+                placeholder="Search for spoken words or phrases..."
+                class="w-full bg-slate-800 border border-slate-600 text-slate-100 px-6 py-4 pr-24 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-lg"
               />
               <button
                 type="submit"
                 disabled={@loading}
-                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-6 py-3 rounded font-semibold"
+                class="absolute right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 rounded-md font-medium transition-colors"
               >
-                <%= if @loading, do: "SEARCHING...", else: "SEARCH" %>
+                <%= if @loading, do: "Searching...", else: "Search" %>
               </button>
             </div>
           </.form>
+          
+          <!-- Search suggestions -->
+          <div class="max-w-2xl mx-auto mt-4 text-center">
+            <p class="text-slate-500 text-sm mb-2">Try searching for:</p>
+            <div class="flex flex-wrap justify-center gap-2">
+              <button
+                phx-click="search"
+                phx-value-search[term]="train"
+                class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-sm transition-colors"
+              >
+                "train"
+              </button>
+              <button
+                phx-click="search"
+                phx-value-search[term]="choo choo"
+                class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-sm transition-colors"
+              >
+                "choo choo"
+              </button>
+              <button
+                phx-click="search"
+                phx-value-search[term]="sound"
+                class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full text-sm transition-colors"
+              >
+                "sound"
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Search Results -->
-        <%= if @search_term != "" do %>
-          <div class="mb-8">
-            <h2 class="text-2xl font-semibold text-green-300 mb-4">
-              Search Results for "<%= @search_term %>"
-            </h2>
+        <!-- Results Section -->
+        <%= if @loading do %>
+          <div class="text-center py-16">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <div class="text-slate-400 text-lg">Searching video captions...</div>
+            <div class="text-slate-500 text-sm mt-2">Looking for "<%= @search_term %>"</div>
+          </div>
+        <% else %>
+          <%= if length(@search_results) > 0 do %>
+            <!-- Results header -->
+            <div class="mb-6">
+              <h2 class="text-2xl font-semibold text-white mb-2">
+                Search Results
+              </h2>
+              <p class="text-slate-400">
+                Found <%= length(@search_results) %> frames matching "<%= @search_term %>"
+              </p>
+            </div>
             
-            <%= if @loading do %>
-              <div class="text-center py-8">
-                <div class="text-green-500">Searching through video frames...</div>
-              </div>
-            <% else %>
-              <%= if length(@search_results) > 0 do %>
-                <div class="text-green-500 mb-4">
-                  Found <%= length(@search_results) %> matching frames
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <%= for frame <- @search_results do %>
-                    <div class="bg-gray-800 border border-green-600 rounded p-4">
-                      <div class="mb-2">
-                        <%= if Map.get(frame, :image_data) || (Map.get(frame, :file_path) && File.exists?(frame.file_path)) do %>
-                          <img
-                            src={if Map.get(frame, :image_data), do: "/frame-image/#{frame.id}", else: String.replace(frame.file_path, "priv/static", "")}
-                            alt={"Frame at " <> format_timestamp(frame.timestamp_ms)}
-                            class="w-full h-48 object-cover rounded border border-gray-600"
-                          />
-                        <% else %>
-                          <div class="w-full h-48 bg-gray-700 flex items-center justify-center rounded border border-gray-600">
-                            <span class="text-gray-500">Frame not found</span>
-                          </div>
-                        <% end %>
+            <!-- Results grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <%= for frame <- @search_results do %>
+                <div class="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-slate-600 transition-colors">
+                  <!-- Frame image -->
+                  <div class="aspect-video bg-slate-900 relative group">
+                    <%= if Map.get(frame, :image_data) do %>
+                      <img
+                        id={"frame-#{frame.id}"}
+                        src={"data:image/jpeg;base64,#{Base.encode64(frame.image_data)}"}
+                        alt={"Frame at " <> format_timestamp(frame.timestamp_ms)}
+                        class="w-full h-full object-cover"
+                      />
+                    <% else %>
+                      <div class="w-full h-full flex items-center justify-center text-slate-500">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                       </div>
-                      
-                      <div class="text-sm">
-                        <div class="text-green-400 font-semibold">
-                          Frame #<%= frame.frame_number %>
-                        </div>
-                        <div class="text-green-500">
-                          Time: <%= format_timestamp(frame.timestamp_ms) %>
-                        </div>
-                        <%= if frame.file_size do %>
-                          <div class="text-green-600">
-                            Size: <%= format_file_size(frame.file_size) %>
-                          </div>
-                        <% end %>
-                        
-                        <%= if Map.get(frame, :caption_texts) do %>
-                          <div class="text-gray-300 text-sm bg-gray-900 p-2 rounded border border-gray-600 mt-2">
-                            <strong class="text-green-400">Caption:</strong><br/>
-                            "<%= frame.caption_texts %>"
-                          </div>
-                        <% end %>
-                      </div>
+                    <% end %>
+                    
+                    <!-- Timestamp overlay -->
+                    <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
+                      <%= format_timestamp(frame.timestamp_ms) %>
                     </div>
-                  <% end %>
-                </div>
-              <% else %>
-                <div class="text-center py-8">
-                  <div class="text-green-500">No frames found matching "<%= @search_term %>"</div>
-                  <div class="text-green-600 text-sm mt-2">
-                    Try searching for terms like "train", "choo", or "sound"
+                  </div>
+                  
+                  <!-- Frame details -->
+                  <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                      <span class="text-slate-400 text-sm">Frame #<%= frame.frame_number %></span>
+                      <%= if frame.file_size do %>
+                        <span class="text-slate-500 text-xs"><%= format_file_size(frame.file_size) %></span>
+                      <% end %>
+                    </div>
+                    
+                    <%= if Map.get(frame, :caption_texts) do %>
+                      <div class="bg-slate-900 border border-slate-700 rounded-lg p-3">
+                        <div class="text-slate-400 text-xs uppercase tracking-wide mb-1">Spoken dialogue</div>
+                        <p class="text-slate-200 text-sm leading-relaxed">
+                          "<%= frame.caption_texts %>"
+                        </p>
+                      </div>
+                    <% end %>
                   </div>
                 </div>
               <% end %>
+            </div>
+          <% else %>
+            <%= if @search_term != "" do %>
+              <div class="text-center py-16">
+                <div class="w-16 h-16 mx-auto mb-4 text-slate-600">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 class="text-xl font-medium text-slate-300 mb-2">No results found</h3>
+                <p class="text-slate-500 mb-4">
+                  No video frames found containing "<%= @search_term %>"
+                </p>
+                <p class="text-slate-600 text-sm">
+                  Try different keywords or check the suggested searches above
+                </p>
+              </div>
             <% end %>
-          </div>
+          <% end %>
         <% end %>
 
-        <!-- Instructions -->
-        <div class="bg-gray-800 border border-green-600 rounded p-6">
-          <h3 class="text-lg font-semibold text-green-300 mb-3">How to Use</h3>
-          <ol class="list-decimal list-inside space-y-2 text-green-500">
-            <li>First, process a video using the "Process Sample Video" button above</li>
-            <li>Wait for the video status to change to "COMPLETED" (this may take a few minutes)</li>
-            <li>Enter search terms in the search box to find frames with matching captions</li>
-            <li>View the extracted frames that match your search query</li>
-          </ol>
-          
-          <div class="mt-4 pt-4 border-t border-gray-700">
-            <h4 class="font-semibold text-green-300 mb-2">Example searches:</h4>
-            <ul class="list-disc list-inside space-y-1 text-green-600 text-sm">
-              <li>"train" - Find frames mentioning trains</li>
-              <li>"choo choo" - Find frames with train sounds</li>
-              <li>"sound" - Find frames discussing audio</li>
-              <li>"synthesizer" - Find frames about synthesizers</li>
-            </ul>
+        <!-- Video status (collapsed by default) -->
+        <details class="mt-12 bg-slate-800 border border-slate-700 rounded-lg">
+          <summary class="px-6 py-4 cursor-pointer text-slate-300 hover:text-white font-medium">
+            Video Processing Status
+          </summary>
+          <div class="px-6 pb-6 border-t border-slate-700">
+            <div class="space-y-3 mt-4">
+              <%= for video <- @videos do %>
+                <div class="flex items-center justify-between py-2">
+                  <div class="flex-1">
+                    <div class="text-slate-200 text-sm truncate"><%= video.title %></div>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span class={[
+                        "px-2 py-1 text-xs rounded-full font-medium",
+                        status_class(video.status)
+                      ]}>
+                        <%= String.upcase(video.status) %>
+                      </span>
+                      <%= if video.frame_count do %>
+                        <span class="text-slate-500 text-xs"><%= video.frame_count %> frames</span>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
           </div>
-        </div>
+        </details>
       </div>
     </div>
+
     """
   end
 
   # Helper functions
 
-  defp status_class("pending"), do: "bg-yellow-600 text-yellow-100"
-  defp status_class("processing"), do: "bg-blue-600 text-blue-100"
-  defp status_class("completed"), do: "bg-green-600 text-green-100"
-  defp status_class("failed"), do: "bg-red-600 text-red-100"
-  defp status_class(_), do: "bg-gray-600 text-gray-100"
+  defp status_class("pending"), do: "bg-yellow-500 text-yellow-900"
+  defp status_class("processing"), do: "bg-blue-500 text-blue-900" 
+  defp status_class("completed"), do: "bg-green-500 text-green-900"
+  defp status_class("failed"), do: "bg-red-500 text-red-900"
+  defp status_class(_), do: "bg-slate-500 text-slate-900"
 
   defp format_timestamp(ms) when is_integer(ms) do
     total_seconds = div(ms, 1000)
