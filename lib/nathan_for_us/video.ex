@@ -238,4 +238,56 @@ defmodule NathanForUs.Video do
       {String.to_atom(key), value}
     end
   end
+
+  @doc """
+  Gets the binary image data for a specific frame.
+  """
+  def get_frame_image_data(frame_id) do
+    case Repo.get(VideoFrame, frame_id) do
+      %VideoFrame{image_data: image_data} when not is_nil(image_data) ->
+        {:ok, image_data}
+      
+      %VideoFrame{image_data: nil} ->
+        {:error, :no_image_data}
+      
+      nil ->
+        {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Migrates existing frames from file paths to binary storage with compression.
+  """
+  def migrate_frames_to_binary(video_id, jpeg_quality \\ 75) do
+    frames = VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> where([f], is_nil(f.image_data))  # Only migrate frames without binary data
+    |> where([f], not is_nil(f.file_path))  # Only frames with file paths
+    |> Repo.all()
+
+    migrated_count = 
+      frames
+      |> Enum.map(fn frame ->
+        case NathanForUs.VideoProcessor.compress_jpeg_file(frame.file_path, jpeg_quality) do
+          {:ok, compressed_data, compression_ratio} ->
+            frame
+            |> Ecto.Changeset.change(%{
+              image_data: compressed_data,
+              compression_ratio: compression_ratio,
+              file_size: byte_size(compressed_data)
+            })
+            |> Repo.update()
+            
+            1  # Count successful migration
+          
+          {:error, reason} ->
+            require Logger
+            Logger.warning("Failed to compress frame #{frame.id}: #{inspect(reason)}")
+            0  # Count failed migration
+        end
+      end)
+      |> Enum.sum()
+
+    {:ok, migrated_count}
+  end
 end

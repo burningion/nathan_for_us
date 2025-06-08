@@ -168,9 +168,9 @@ defmodule NathanForUsWeb.VideoSearchLive do
                   <%= for frame <- @search_results do %>
                     <div class="bg-gray-800 border border-green-600 rounded p-4">
                       <div class="mb-2">
-                        <%= if File.exists?(frame.file_path) do %>
+                        <%= if Map.get(frame, :image_data) || (Map.get(frame, :file_path) && File.exists?(frame.file_path)) do %>
                           <img
-                            src={String.replace(frame.file_path, "priv/static", "")}
+                            src={if Map.get(frame, :image_data), do: "/frame-image/#{frame.id}", else: String.replace(frame.file_path, "priv/static", "")}
                             alt={"Frame at " <> format_timestamp(frame.timestamp_ms)}
                             class="w-full h-48 object-cover rounded border border-gray-600"
                           />

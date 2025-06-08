@@ -16,7 +16,9 @@ defmodule NathanForUs.VideoProcessor do
     :fps,
     :quality,
     :use_hardware_accel,
-    :scene_detection
+    :scene_detection,
+    jpeg_quality: 75,  # JPEG compression quality (0-100)
+    store_binary: false  # Whether to return binary data instead of file paths
   ]
 
   @type t :: %__MODULE__{
@@ -192,5 +194,94 @@ defmodule NathanForUs.VideoProcessor do
   end
   defp extract_duration(_metadata) do
     {:error, "Duration not found in metadata"}
+  end
+
+  @doc """
+  Compresses an existing JPEG file and returns binary data.
+  """
+  def compress_jpeg_file(file_path, quality \\ 75) do
+    with true <- File.exists?(file_path),
+         {:ok, original_data} <- File.read(file_path) do
+      compress_jpeg_binary(original_data, quality)
+    else
+      false -> {:error, "File not found: #{file_path}"}
+      error -> error
+    end
+  end
+
+  @doc """
+  Compresses JPEG binary data using ImageMagick convert.
+  """
+  def compress_jpeg_binary(binary_data, quality \\ 75) when is_binary(binary_data) do
+    # Create temporary files for input and output
+    temp_input = "/tmp/temp_input_#{:rand.uniform(10000)}.jpg"
+    temp_output = "/tmp/temp_output_#{:rand.uniform(10000)}.jpg"
+    
+    try do
+      # Write binary data to temp file
+      :ok = File.write!(temp_input, binary_data)
+      
+      # Use ImageMagick to compress (use 'magick' instead of deprecated 'convert')
+      {_output, 0} = System.cmd("magick", [
+        temp_input,
+        "-quality", "#{quality}",
+        "-strip",  # Remove metadata
+        temp_output
+      ])
+      
+      # Read compressed data
+      {:ok, compressed_data} = File.read(temp_output)
+      
+      # Calculate compression ratio
+      original_size = byte_size(binary_data)
+      compressed_size = byte_size(compressed_data)
+      compression_ratio = compressed_size / original_size
+      
+      {:ok, compressed_data, compression_ratio}
+    rescue
+      error -> {:error, "Compression failed: #{inspect(error)}"}
+    after
+      # Clean up temp files
+      File.rm(temp_input)
+      File.rm(temp_output)
+    end
+  end
+
+  @doc """
+  Extracts frames and returns them as compressed binary data instead of files.
+  """
+  def extract_frames_as_binary(%__MODULE__{store_binary: true} = config) do
+    # First extract frames normally
+    case extract_frames(config) do
+      {:ok, frame_paths} ->
+        # Compress each frame and collect binary data
+        frames_with_binary = 
+          frame_paths
+          |> Enum.with_index()
+          |> Enum.map(fn {path, index} ->
+            {:ok, compressed_data, compression_ratio} = compress_jpeg_file(path, config.jpeg_quality)
+            
+            %{
+              frame_number: index,
+              timestamp_ms: index * 1000,  # Assuming 1 fps
+              image_data: compressed_data,
+              compression_ratio: compression_ratio,
+              file_size: byte_size(compressed_data)
+            }
+          end)
+        
+        # Clean up temporary files
+        Enum.each(frame_paths, &File.rm/1)
+        File.rmdir(config.output_dir)
+        
+        {:ok, frames_with_binary}
+      
+      error -> error
+    end
+  end
+  
+  def extract_frames_as_binary(config) do
+    # If store_binary is false, use normal extraction
+    extract_frames(config)
   end
 end

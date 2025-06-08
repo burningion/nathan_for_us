@@ -16,6 +16,8 @@ defmodule NathanForUs.Video.VideoFrame do
     field :file_size, :integer
     field :width, :integer
     field :height, :integer
+    field :image_data, :binary
+    field :compression_ratio, :float
 
     belongs_to :video, Video
     many_to_many :captions, VideoCaption, join_through: FrameCaption
@@ -23,8 +25,8 @@ defmodule NathanForUs.Video.VideoFrame do
     timestamps()
   end
 
-  @required_fields [:video_id, :frame_number, :timestamp_ms, :file_path]
-  @optional_fields [:file_size, :width, :height]
+  @required_fields [:video_id, :frame_number, :timestamp_ms]
+  @optional_fields [:file_path, :file_size, :width, :height, :image_data, :compression_ratio]
 
   def changeset(frame, attrs) do
     frame
