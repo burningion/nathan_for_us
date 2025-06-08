@@ -194,14 +194,20 @@ defmodule NathanForUs.Social do
   Fetches user profile from Bluesky API and stores in database
   """
   def fetch_and_store_bluesky_user(did) when is_binary(did) do
+    require Logger
+    Logger.info("Fetching Bluesky user profile for DID: #{did}")
+    
     case BlueskyAPI.get_profile_by_did(did) do
       {:ok, profile_data} ->
+        Logger.info("Successfully fetched profile data for DID #{did}: #{inspect(profile_data)}")
         attrs = BlueskyUser.from_api_profile(profile_data)
+        Logger.info("Mapped profile attributes: #{inspect(attrs)}")
         
         %BlueskyUser{}
         |> BlueskyUser.changeset(attrs)
         |> Repo.insert()
       {:error, reason} ->
+        Logger.error("Failed to fetch profile for DID #{did}: #{inspect(reason)}")
         {:error, reason}
     end
   end

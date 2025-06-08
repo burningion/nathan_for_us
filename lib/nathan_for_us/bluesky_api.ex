@@ -7,13 +7,26 @@ defmodule NathanForUs.BlueskyAPI do
 
   @base_url "https://bsky.social/xrpc"
 
+  defp get_auth_headers do
+    username = System.get_env("BLUESKY_USERNAME")
+    password = System.get_env("BLUESKY_APP_PASSWORD")
+    
+    if username && password do
+      auth_string = Base.encode64("#{username}:#{password}")
+      [{"Authorization", "Basic #{auth_string}"}]
+    else
+      []
+    end
+  end
+
   @doc """
   Fetch a user profile by their DID (Decentralized Identifier)
   """
   def get_profile_by_did(did) when is_binary(did) do
-    url = "#{@base_url}/com.atproto.repo.describeRepo?repo=#{URI.encode(did)}"
+    url = "#{@base_url}/app.bsky.actor.getProfile?actor=#{URI.encode(did)}"
+    headers = get_auth_headers()
     
-    case Finch.build(:get, url) |> Finch.request(NathanForUs.Finch) do
+    case Finch.build(:get, url, headers) |> Finch.request(NathanForUs.Finch) do
       {:ok, %{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, profile_data} ->
@@ -36,8 +49,9 @@ defmodule NathanForUs.BlueskyAPI do
   """
   def get_profile_by_handle(handle) when is_binary(handle) do
     url = "#{@base_url}/com.atproto.identity.resolveHandle?handle=#{URI.encode(handle)}"
+    headers = get_auth_headers()
     
-    case Finch.build(:get, url) |> Finch.request(NathanForUs.Finch) do
+    case Finch.build(:get, url, headers) |> Finch.request(NathanForUs.Finch) do
       {:ok, %{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"did" => did}} ->
