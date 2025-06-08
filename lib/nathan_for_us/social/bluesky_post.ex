@@ -17,6 +17,7 @@ defmodule NathanForUs.Social.BlueskyPost do
     field :embed_title, :string
     field :embed_description, :string
     field :embed_thumb, :string
+    field :did, :string
 
     belongs_to :bluesky_user, NathanForUs.Social.BlueskyUser
 
@@ -26,7 +27,7 @@ defmodule NathanForUs.Social.BlueskyPost do
   @doc false
   def changeset(bluesky_post, attrs) do
     bluesky_post
-    |> cast(attrs, [:cid, :collection, :operation, :rkey, :rev, :record_type, :record_created_at, :record_langs, :record_text, :embed_type, :embed_uri, :embed_title, :embed_description, :embed_thumb, :bluesky_user_id])
+    |> cast(attrs, [:cid, :collection, :operation, :rkey, :rev, :record_type, :record_created_at, :record_langs, :record_text, :embed_type, :embed_uri, :embed_title, :embed_description, :embed_thumb, :did, :bluesky_user_id])
     |> validate_required([:cid, :collection, :operation])
     |> unique_constraint(:cid)
   end
@@ -51,7 +52,8 @@ defmodule NathanForUs.Social.BlueskyPost do
       embed_uri: embed_data[:uri],
       embed_title: embed_data[:title],
       embed_description: embed_data[:description],
-      embed_thumb: embed_data[:thumb]
+      embed_thumb: embed_data[:thumb],
+      did: record_data["repo"]
     }
   end
 
