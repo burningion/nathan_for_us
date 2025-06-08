@@ -277,7 +277,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       <%= if Map.get(@frame, :image_data) do %>
         <img
           id={"frame-#{@frame.id}"}
-          src={"data:image/jpeg;base64,#{Base.encode64(@frame.image_data)}"}
+          src={"data:image/jpeg;base64,#{encode_image_data(@frame.image_data)}"}
           alt={"Frame at " <> format_timestamp(@frame.timestamp_ms)}
           class="w-full h-full object-cover rounded border border-zinc-300"
         />
@@ -394,7 +394,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       <%= if Map.get(@frame, :image_data) do %>
         <img
           id={"tile-frame-#{@frame.id}"}
-          src={"data:image/jpeg;base64,#{Base.encode64(@frame.image_data)}"}
+          src={"data:image/jpeg;base64,#{encode_image_data(@frame.image_data)}"}
           alt={"Frame at " <> format_timestamp(@frame.timestamp_ms)}
           class="w-full h-full object-cover"
         />
@@ -460,4 +460,22 @@ defmodule NathanForUsWeb.VideoSearchLive do
     end
   end
   defp format_file_size(_), do: "Unknown"
+
+  defp encode_image_data(nil), do: ""
+  defp encode_image_data(hex_data) when is_binary(hex_data) do
+    # The image data is stored as hex-encoded string starting with \x
+    # We need to decode it from hex, then encode to base64
+    case String.starts_with?(hex_data, "\\x") do
+      true ->
+        # Remove the \x prefix and decode from hex
+        hex_string = String.slice(hex_data, 2..-1)
+        case Base.decode16(hex_string, case: :lower) do
+          {:ok, binary_data} -> Base.encode64(binary_data)
+          :error -> ""
+        end
+      false ->
+        # Already binary data, encode directly
+        Base.encode64(hex_data)
+    end
+  end
 end
