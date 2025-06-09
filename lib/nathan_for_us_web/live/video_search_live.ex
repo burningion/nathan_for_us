@@ -10,6 +10,17 @@ defmodule NathanForUsWeb.VideoSearchLive do
   
   alias NathanForUs.Video
 
+  on_mount {__MODULE__, :assign_meta_tags}
+
+  def on_mount(:assign_meta_tags, _params, _session, socket) do
+    socket =
+      socket
+      |> assign(:page_title, "Nathan Appearance Video Search")
+      |> assign(:page_description, "search a quote and find the frame(s) in which nathan said it in an interview")
+    
+    {:cont, socket}
+  end
+
   @impl true
   def mount(_params, _session, socket) do
     videos = Video.list_videos()
@@ -20,8 +31,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
     socket =
       socket
-      |> assign(:page_title, "Nathan Appearance Video Search")
-      |> assign(:page_description, "search a quote and find the frame(s) in which nathan said it in an interview")
       |> assign(:search_term, "")
       |> assign(:search_results, [])
       |> assign(:loading, false)
