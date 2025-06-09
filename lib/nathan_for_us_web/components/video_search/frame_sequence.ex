@@ -159,12 +159,35 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   attr :selected_frame_indices, :list, required: true
   
   def animation_container(assigns) do
+    first_frame = List.first(assigns.frame_sequence.sequence_frames)
+    
+    # Get frame dimensions with fallbacks for nil values
+    frame_width = case Map.get(first_frame, :width) do
+      nil -> 1920  # Default to 1920 if nil
+      width when is_integer(width) and width > 0 -> width
+      _ -> 1920
+    end
+    
+    frame_height = case Map.get(first_frame, :height) do
+      nil -> 1080  # Default to 1080 if nil
+      height when is_integer(height) and height > 0 -> height
+      _ -> 1080
+    end
+    
+    # Calculate aspect ratio and set max size constraints
+    aspect_ratio = frame_width / frame_height
+    max_width = min(1200, frame_width)  # Max 1200px wide or original width
+    calculated_height = round(max_width / aspect_ratio)
+    
+    assigns = assign(assigns, :container_style, "width: #{max_width}px; height: #{calculated_height}px")
+    
     ~H"""
     <div class="flex justify-center">
       <div class="relative bg-black rounded-lg overflow-hidden">
         <div 
           id={"animation-container-#{@frame_sequence.target_frame.id}"}
-          class="w-80 h-48 relative"
+          class="relative"
+          style={@container_style}
           phx-hook="FrameAnimator"
           data-frames={Jason.encode!(Enum.map(@frame_sequence.sequence_frames, fn frame -> 
             if Map.get(frame, :image_data) do
@@ -174,6 +197,9 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
             end
           end))}
           data-selected-indices={Jason.encode!(@selected_frame_indices)}
+          data-frame-timestamps={Jason.encode!(Enum.map(@frame_sequence.sequence_frames, fn frame -> 
+            Map.get(frame, :timestamp_ms, 0)
+          end))}
         >
           <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
             <%= if Map.get(frame, :image_data) do %>
@@ -192,7 +218,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           
           <!-- Animation overlay info -->
           <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
-            LOOP: 200ms/frame
+            FULL RES • LIFELIKE SPEED
           </div>
           
           <!-- Frame counter -->
@@ -404,7 +430,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   def animation_status(assigns) do
     ~H"""
     <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded text-green-800 text-sm font-mono">
-      ✅ Animation active - <%= length(@selected_frame_indices) %> of <%= @frame_sequence.sequence_info.total_frames %> frames cycling at 200ms intervals (5fps simulation)
+      ✅ Animation active - <%= length(@selected_frame_indices) %> of <%= @frame_sequence.sequence_info.total_frames %> frames cycling at lifelike speed (~150ms intervals) for smooth preview
     </div>
     """
   end
