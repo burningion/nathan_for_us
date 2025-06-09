@@ -1,10 +1,8 @@
-defmodule NathanForUs.VideoSearchService do
+defmodule NathanForUs.Video.Search do
   @moduledoc """
-  Service module providing business logic for video search functionality.
+  Search functionality for video frames and sequences within the Video context.
   
-  This module separates video search business logic from LiveView presentation concerns,
-  offering clean APIs for:
-  
+  This module provides business logic for:
   - Frame-based text search across video captions
   - Video filtering and selection management
   - Frame sequence operations for animation
@@ -13,15 +11,15 @@ defmodule NathanForUs.VideoSearchService do
   ## Examples
   
       # Perform a global search
-      {:ok, results} = VideoSearchService.search_frames("hello", :global, [])
+      {:ok, results} = Video.Search.search_frames("hello", :global, [])
       
       # Filter videos and search within selection
-      new_selection = VideoSearchService.update_video_filter([1, 2], 3)
-      {:ok, filtered_results} = VideoSearchService.search_frames("hello", :filtered, new_selection)
+      new_selection = Video.Search.update_video_filter([1, 2], 3)
+      {:ok, filtered_results} = Video.Search.search_frames("hello", :filtered, new_selection)
       
       # Get frame sequence for animation
-      {:ok, sequence} = VideoSearchService.get_frame_sequence(frame_id)
-      all_indices = VideoSearchService.get_all_frame_indices(sequence)
+      {:ok, sequence} = Video.Search.get_frame_sequence(frame_id)
+      all_indices = Video.Search.get_all_frame_indices(sequence)
   """
   
   alias NathanForUs.Video
@@ -35,7 +33,7 @@ defmodule NathanForUs.VideoSearchService do
     target_captions: String.t(),
     sequence_info: map()
   }
-  
+
   @doc """
   Performs a search across video frames based on the search mode and parameters.
   
@@ -63,11 +61,11 @@ defmodule NathanForUs.VideoSearchService do
   """
   @spec search_frames(String.t(), search_mode(), list(integer())) :: {:ok, list()} | {:error, String.t()}
   def search_frames(term, search_mode, selected_video_ids \\ [])
-  
+
   def search_frames("", _search_mode, _selected_video_ids) do
     {:ok, []}
   end
-  
+
   def search_frames(term, :global, _selected_video_ids) do
     try do
       results = Video.search_frames_by_text_simple(term)
@@ -77,7 +75,7 @@ defmodule NathanForUs.VideoSearchService do
         {:error, "Search failed: #{Exception.message(error)}"}
     end
   end
-  
+
   def search_frames(term, :filtered, selected_video_ids) when length(selected_video_ids) > 0 do
     try do
       results = Video.search_frames_by_text_simple_filtered(term, selected_video_ids)
@@ -87,43 +85,11 @@ defmodule NathanForUs.VideoSearchService do
         {:error, "Filtered search failed: #{Exception.message(error)}"}
     end
   end
-  
+
   def search_frames(_term, :filtered, []) do
     {:ok, []}
   end
-  
-  @doc """
-  Validates and processes video for the processing pipeline.
-  
-  Performs validation on the video path before queueing it for processing.
-  This ensures only valid, existing video files enter the processing pipeline.
-  
-  ## Parameters
-  
-  - `video_path`: Absolute path to the video file
-  
-  ## Returns
-  
-  - `{:ok, video}`: Video record if successfully queued for processing
-  - `{:error, reason}`: Error message for validation failures or processing errors
-  
-  ## Examples
-  
-      {:ok, video} = process_video("/path/to/video.mp4")
-      {:error, "Video path cannot be empty"} = process_video("")
-      {:error, "Video file does not exist: /missing.mp4"} = process_video("/missing.mp4")
-  """
-  @spec process_video(String.t()) :: {:ok, Video.Video.t()} | {:error, String.t()}
-  def process_video(video_path) do
-    case validate_video_path(video_path) do
-      :ok ->
-        NathanForUs.VideoProcessing.process_video(video_path)
-      
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-  
+
   @doc """
   Gets frame sequence data for animation display.
   """
@@ -138,7 +104,7 @@ defmodule NathanForUs.VideoSearchService do
         {:error, reason}
     end
   end
-  
+
   @doc """
   Updates video filter selection based on current state.
   """
@@ -150,14 +116,14 @@ defmodule NathanForUs.VideoSearchService do
       [video_id | current_selected_ids]
     end
   end
-  
+
   @doc """
   Determines search mode based on selected videos.
   """
   @spec determine_search_mode(list()) :: search_mode()
   def determine_search_mode([]), do: :global
   def determine_search_mode(_selected_video_ids), do: :filtered
-  
+
   @doc """
   Gets search status information for display.
   """
@@ -181,7 +147,7 @@ defmodule NathanForUs.VideoSearchService do
         }
     end
   end
-  
+
   @doc """
   Toggles frame selection for animation sequences.
   """
@@ -193,7 +159,7 @@ defmodule NathanForUs.VideoSearchService do
       [frame_index | current_selected] |> Enum.sort()
     end
   end
-  
+
   @doc """
   Gets all frame indices for selection operations.
   """
@@ -202,7 +168,7 @@ defmodule NathanForUs.VideoSearchService do
     0..(length(frames) - 1) |> Enum.to_list()
   end
   def get_all_frame_indices(%{sequence_frames: []}), do: []
-  
+
   @doc """
   Gets concatenated captions for selected frames.
   """
@@ -227,28 +193,15 @@ defmodule NathanForUs.VideoSearchService do
       "Loading captions..."
     end
   end
-  
+
   # Private functions
-  
-  defp validate_video_path(video_path) do
-    cond do
-      is_nil(video_path) or video_path == "" ->
-        {:error, "Video path cannot be empty"}
-      
-      not File.exists?(video_path) ->
-        {:error, "Video file does not exist: #{video_path}"}
-      
-      true ->
-        :ok
-    end
-  end
-  
+
   defp enrich_frame_sequence(frame_sequence) do
     # Add any additional processing or enrichment of frame sequence data
     # This could include caching, preprocessing, or additional metadata
     frame_sequence
   end
-  
+
   defp get_selected_frames(frame_sequence, selected_frame_indices) do
     selected_frame_indices
     |> Enum.map(fn index -> 

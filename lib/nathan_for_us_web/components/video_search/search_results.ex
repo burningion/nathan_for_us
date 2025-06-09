@@ -1,0 +1,188 @@
+defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
+  @moduledoc """
+  Search results components for video search functionality.
+  
+  Handles displaying search results in a mosaic grid layout.
+  """
+  
+  use NathanForUsWeb, :html
+  
+  @doc """
+  Renders search results or empty state.
+  """
+  attr :search_results, :list, required: true
+  attr :search_term, :string, required: true
+  
+  def search_results(assigns) do
+    ~H"""
+    <%= if length(@search_results) > 0 do %>
+      <div class="bg-white border border-zinc-300 rounded-lg p-4 md:p-6 shadow-sm">
+        <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">SEARCH RESULTS - MOSAIC VIEW</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <%= for frame <- @search_results do %>
+            <.frame_tile frame={frame} />
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <.empty_state :if={@search_term != ""} search_term={@search_term} />
+    <% end %>
+    """
+  end
+  
+  @doc """
+  Renders an individual frame tile for mosaic view.
+  """
+  attr :frame, :map, required: true
+  
+  def frame_tile(assigns) do
+    ~H"""
+    <div 
+      class="border border-zinc-300 rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white cursor-pointer hover:border-blue-500"
+      phx-click="show_frame_sequence"
+      phx-value-frame_id={@frame.id}
+    >
+      <.frame_tile_image frame={@frame} />
+      <.frame_tile_info frame={@frame} />
+    </div>
+    """
+  end
+  
+  @doc """
+  Renders the frame image within a tile.
+  """
+  attr :frame, :map, required: true
+  
+  def frame_tile_image(assigns) do
+    ~H"""
+    <div class="aspect-video bg-zinc-100 relative">
+      <%= if Map.get(@frame, :image_data) do %>
+        <img
+          id={"tile-frame-#{@frame.id}"}
+          src={"data:image/jpeg;base64,#{encode_image_data(@frame.image_data)}"}
+          alt={"Frame at " <> format_timestamp(@frame.timestamp_ms)}
+          class="w-full h-full object-cover"
+        />
+      <% else %>
+        <div class="w-full h-full flex items-center justify-center text-zinc-400">
+          <.icon name="hero-photo" class="w-8 h-8" />
+        </div>
+      <% end %>
+      
+      <!-- Timestamp overlay -->
+      <div class="absolute bottom-1 right-1 bg-black/70 text-white px-1 py-0.5 rounded text-xs font-mono">
+        <%= format_timestamp(@frame.timestamp_ms) %>
+      </div>
+    </div>
+    """
+  end
+  
+  @doc """
+  Renders frame information within a tile.
+  """
+  attr :frame, :map, required: true
+  
+  def frame_tile_info(assigns) do
+    ~H"""
+    <div class="p-2">
+      <%= if Map.get(@frame, :video_title) do %>
+        <div class="text-blue-600 text-xs font-mono font-bold mb-1 truncate">
+          <%= String.slice(@frame.video_title, 0..40) %><%= if String.length(@frame.video_title) > 40, do: "..." %>
+        </div>
+      <% end %>
+      
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-zinc-500 text-xs font-mono">FRAME #<%= @frame.frame_number %></span>
+        <%= if @frame.file_size do %>
+          <span class="text-zinc-400 text-xs font-mono"><%= format_file_size(@frame.file_size) %></span>
+        <% end %>
+      </div>
+      
+      <%= if Map.get(@frame, :caption_texts) do %>
+        <div class="border-l-2 border-blue-600 pl-2">
+          <div class="text-zinc-800 text-xs leading-relaxed line-clamp-3">
+            "<%= @frame.caption_texts %>"
+          </div>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+  
+  @doc """
+  Renders empty state when no results found.
+  """
+  attr :search_term, :string, required: true
+  
+  def empty_state(assigns) do
+    ~H"""
+    <div class="bg-white border border-zinc-300 rounded-lg p-8 text-center shadow-sm">
+      <div class="text-blue-600 text-lg mb-2 font-mono">
+        NO MATCHES FOUND
+      </div>
+      <p class="text-zinc-600 text-sm mb-4">
+        No video frames found containing "<%= @search_term %>"
+      </p>
+      <p class="text-zinc-500 text-xs font-mono">
+        Try different keywords or check the quick queries above
+      </p>
+    </div>
+    """
+  end
+  
+  @doc """
+  Renders loading state.
+  """
+  attr :search_term, :string, required: true
+  
+  def loading_state(assigns) do
+    ~H"""
+    <div class="bg-white border border-zinc-300 rounded-lg p-8 text-center shadow-sm">
+      <div class="text-blue-600 text-lg mb-2 font-mono">
+        PROCESSING QUERY
+      </div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p class="text-zinc-600 text-sm font-mono">
+        Scanning video database for: "<%= @search_term %>"
+      </p>
+    </div>
+    """
+  end
+  
+  # Helper functions
+  
+  defp format_timestamp(ms) when is_integer(ms) do
+    total_seconds = div(ms, 1000)
+    minutes = div(total_seconds, 60)
+    seconds = rem(total_seconds, 60)
+    "#{minutes}:#{String.pad_leading(to_string(seconds), 2, "0")}"
+  end
+  defp format_timestamp(_), do: "0:00"
+
+  defp format_file_size(bytes) when is_integer(bytes) do
+    cond do
+      bytes >= 1_048_576 -> "#{Float.round(bytes / 1_048_576, 1)} MB"
+      bytes >= 1_024 -> "#{Float.round(bytes / 1_024, 1)} KB"
+      true -> "#{bytes} B"
+    end
+  end
+  defp format_file_size(_), do: "Unknown"
+
+  defp encode_image_data(nil), do: ""
+  defp encode_image_data(hex_data) when is_binary(hex_data) do
+    # The image data is stored as hex-encoded string starting with \x
+    # We need to decode it from hex, then encode to base64
+    case String.starts_with?(hex_data, "\\x") do
+      true ->
+        # Remove the \x prefix and decode from hex
+        hex_string = String.slice(hex_data, 2..-1//1)
+        case Base.decode16(hex_string, case: :lower) do
+          {:ok, binary_data} -> Base.encode64(binary_data)
+          :error -> ""
+        end
+      false ->
+        # Already binary data, encode directly
+        Base.encode64(hex_data)
+    end
+  end
+end

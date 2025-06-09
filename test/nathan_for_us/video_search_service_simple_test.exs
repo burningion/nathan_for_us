@@ -1,64 +1,50 @@
-defmodule NathanForUs.VideoSearchServiceSimpleTest do
+defmodule NathanForUs.SearchSimpleTest do
   use ExUnit.Case, async: true
   
-  alias NathanForUs.VideoSearchService
+  alias NathanForUs.Video.Search
   
   describe "search_frames/3" do
     test "returns empty results for empty search term" do
-      assert {:ok, []} = VideoSearchService.search_frames("", :global, [])
-      assert {:ok, []} = VideoSearchService.search_frames("", :filtered, [1, 2])
+      assert {:ok, []} = Search.search_frames("", :global, [])
+      assert {:ok, []} = Search.search_frames("", :filtered, [1, 2])
     end
     
     test "returns empty results for filtered search with no selected videos" do
-      assert {:ok, []} = VideoSearchService.search_frames("test", :filtered, [])
+      assert {:ok, []} = Search.search_frames("test", :filtered, [])
     end
   end
   
-  describe "process_video/1" do
-    test "rejects empty video path" do
-      assert {:error, "Video path cannot be empty"} = 
-        VideoSearchService.process_video("")
-      
-      assert {:error, "Video path cannot be empty"} = 
-        VideoSearchService.process_video(nil)
-    end
-    
-    test "rejects non-existent video file" do
-      assert {:error, "Video file does not exist: /nonexistent/video.mp4"} = 
-        VideoSearchService.process_video("/nonexistent/video.mp4")
-    end
-  end
   
   describe "update_video_filter/2" do
     test "adds video to empty selection" do
-      result = VideoSearchService.update_video_filter([], 1)
+      result = Search.update_video_filter([], 1)
       assert result == [1]
     end
     
     test "adds video to existing selection" do
-      result = VideoSearchService.update_video_filter([1, 2], 3)
+      result = Search.update_video_filter([1, 2], 3)
       assert result == [3, 1, 2]
     end
     
     test "removes video from selection" do
-      result = VideoSearchService.update_video_filter([1, 2, 3], 2)
+      result = Search.update_video_filter([1, 2, 3], 2)
       assert result == [1, 3]
     end
     
     test "handles removing non-existent video" do
-      result = VideoSearchService.update_video_filter([1, 2], 3)
+      result = Search.update_video_filter([1, 2], 3)
       assert result == [3, 1, 2]
     end
   end
   
   describe "determine_search_mode/1" do
     test "returns global for empty selection" do
-      assert :global = VideoSearchService.determine_search_mode([])
+      assert :global = Search.determine_search_mode([])
     end
     
     test "returns filtered for non-empty selection" do
-      assert :filtered = VideoSearchService.determine_search_mode([1])
-      assert :filtered = VideoSearchService.determine_search_mode([1, 2, 3])
+      assert :filtered = Search.determine_search_mode([1])
+      assert :filtered = Search.determine_search_mode([1, 2, 3])
     end
   end
   
@@ -66,7 +52,7 @@ defmodule NathanForUs.VideoSearchServiceSimpleTest do
     test "returns global search status" do
       all_videos = [%{id: 1}, %{id: 2}, %{id: 3}]
       
-      result = VideoSearchService.get_search_status(:global, [], all_videos)
+      result = Search.get_search_status(:global, [], all_videos)
       
       assert result == %{
         mode: :global,
@@ -80,7 +66,7 @@ defmodule NathanForUs.VideoSearchServiceSimpleTest do
       all_videos = [%{id: 1}, %{id: 2}, %{id: 3}]
       selected_ids = [1, 3]
       
-      result = VideoSearchService.get_search_status(:filtered, selected_ids, all_videos)
+      result = Search.get_search_status(:filtered, selected_ids, all_videos)
       
       assert result == %{
         mode: :filtered,
@@ -93,17 +79,17 @@ defmodule NathanForUs.VideoSearchServiceSimpleTest do
   
   describe "toggle_frame_selection/2" do
     test "adds frame to empty selection" do
-      result = VideoSearchService.toggle_frame_selection([], 1)
+      result = Search.toggle_frame_selection([], 1)
       assert result == [1]
     end
     
     test "adds frame to existing selection and sorts" do
-      result = VideoSearchService.toggle_frame_selection([1, 3], 2)
+      result = Search.toggle_frame_selection([1, 3], 2)
       assert result == [1, 2, 3]
     end
     
     test "removes frame from selection" do
-      result = VideoSearchService.toggle_frame_selection([1, 2, 3], 2)
+      result = Search.toggle_frame_selection([1, 2, 3], 2)
       assert result == [1, 3]
     end
   end
@@ -114,14 +100,14 @@ defmodule NathanForUs.VideoSearchServiceSimpleTest do
         sequence_frames: [%{id: 1}, %{id: 2}, %{id: 3}, %{id: 4}]
       }
       
-      result = VideoSearchService.get_all_frame_indices(frame_sequence)
+      result = Search.get_all_frame_indices(frame_sequence)
       assert result == [0, 1, 2, 3]
     end
     
     test "returns empty list for empty sequence" do
       frame_sequence = %{sequence_frames: []}
       
-      result = VideoSearchService.get_all_frame_indices(frame_sequence)
+      result = Search.get_all_frame_indices(frame_sequence)
       assert result == []
     end
   end
@@ -141,7 +127,7 @@ defmodule NathanForUs.VideoSearchServiceSimpleTest do
       
       selected_indices = [0, 2]  # frames 1 and 3
       
-      result = VideoSearchService.get_selected_frames_captions(frame_sequence, selected_indices)
+      result = Search.get_selected_frames_captions(frame_sequence, selected_indices)
       assert result == "Hello there !"
     end
     
@@ -153,7 +139,7 @@ defmodule NathanForUs.VideoSearchServiceSimpleTest do
       
       selected_indices = [1]  # frame 2 has no captions
       
-      result = VideoSearchService.get_selected_frames_captions(frame_sequence, selected_indices)
+      result = Search.get_selected_frames_captions(frame_sequence, selected_indices)
       assert result == "No dialogue found for selected frames"
     end
     
@@ -162,12 +148,12 @@ defmodule NathanForUs.VideoSearchServiceSimpleTest do
         sequence_frames: [%{id: 1}, %{id: 2}]
       }
       
-      result = VideoSearchService.get_selected_frames_captions(frame_sequence, [0, 1])
+      result = Search.get_selected_frames_captions(frame_sequence, [0, 1])
       assert result == "Loading captions..."
     end
     
     test "handles nil frame sequence" do
-      result = VideoSearchService.get_selected_frames_captions(nil, [0, 1])
+      result = Search.get_selected_frames_captions(nil, [0, 1])
       assert result == "Loading captions..."
     end
     
@@ -183,7 +169,7 @@ defmodule NathanForUs.VideoSearchServiceSimpleTest do
       
       selected_indices = [0, 1, 2]
       
-      result = VideoSearchService.get_selected_frames_captions(frame_sequence, selected_indices)
+      result = Search.get_selected_frames_captions(frame_sequence, selected_indices)
       assert result == "Hello World !"
     end
   end
