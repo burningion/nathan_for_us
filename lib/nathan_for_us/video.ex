@@ -115,13 +115,15 @@ defmodule NathanForUs.Video do
 
     query = """
     SELECT DISTINCT f.*, 
+           v.title as video_title,
            string_agg(DISTINCT c.text, ' | ') as caption_texts
     FROM video_frames f
+    JOIN videos v ON v.id = f.video_id
     JOIN frame_captions fc ON fc.frame_id = f.id
     JOIN video_captions c ON c.id = fc.caption_id
     WHERE c.text ILIKE $1
-    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at
-    ORDER BY f.timestamp_ms
+    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at, v.title
+    ORDER BY v.title, f.timestamp_ms
     """
     
     Ecto.Adapters.SQL.query!(Repo, query, [search_pattern])

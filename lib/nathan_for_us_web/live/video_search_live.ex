@@ -24,10 +24,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
   @impl true
   def mount(_params, _session, socket) do
     videos = Video.list_videos()
-    selected_video_id = case videos do
-      [first_video | _] -> first_video.id
-      [] -> nil
-    end
 
     socket =
       socket
@@ -35,20 +31,17 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:search_results, [])
       |> assign(:loading, false)
       |> assign(:videos, videos)
-      |> assign(:selected_video_id, selected_video_id)
 
     {:ok, socket}
   end
 
   @impl true
-  def handle_event("search", %{"search" => %{"term" => term, "video_id" => video_id}}, socket) when term != "" do
-    video_id = if video_id == "", do: socket.assigns.selected_video_id, else: String.to_integer(video_id)
-    send(self(), {:perform_search, term, video_id})
+  def handle_event("search", %{"search" => %{"term" => term}}, socket) when term != "" do
+    send(self(), {:perform_search, term})
     
     socket =
       socket
       |> assign(:search_term, term)
-      |> assign(:selected_video_id, video_id)
       |> assign(:loading, true)
       |> assign(:search_results, [])
 
@@ -66,7 +59,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   def handle_event("search", %{"search[term]" => term}, socket) when term != "" do
-    send(self(), {:perform_search, term, socket.assigns.selected_video_id})
+    send(self(), {:perform_search, term})
     
     socket =
       socket
@@ -77,17 +70,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
-  def handle_event("video_select", %{"video_id" => video_id}, socket) do
-    video_id = String.to_integer(video_id)
-    
-    socket =
-      socket
-      |> assign(:selected_video_id, video_id)
-      |> assign(:search_results, [])
-      |> assign(:search_term, "")
-
-    {:noreply, socket}
-  end
 
   def handle_event("search", %{"search[term]" => ""}, socket) do
     socket =
@@ -117,8 +99,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
 
   @impl true
-  def handle_info({:perform_search, term, video_id}, socket) do
-    results = Video.search_frames_by_text_simple(term, video_id)
+  def handle_info({:perform_search, term}, socket) do
+    results = Video.search_frames_by_text_simple(term)
     
     socket =
       socket
@@ -136,15 +118,10 @@ defmodule NathanForUsWeb.VideoSearchLive do
         <.search_header search_term={@search_term} results_count={length(@search_results)} />
         
         <div class="space-y-4">
-          <.video_selector 
-            videos={@videos}
-            selected_video_id={@selected_video_id}
-          />
-          
           <.search_interface 
             search_term={@search_term} 
             loading={@loading}
-            selected_video_id={@selected_video_id}
+            videos={@videos}
           />
           
           <.search_results 
@@ -161,36 +138,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   # Component functions
-
-  # Video selector component
-  defp video_selector(assigns) do
-    ~H"""
-    <div class="bg-white border border-zinc-300 rounded-lg p-4 md:p-6 shadow-sm">
-      <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">VIDEO SELECTION</div>
-      
-      <div class="space-y-3">
-        <%= for video <- @videos do %>
-          <div class={[
-            "p-3 border rounded cursor-pointer transition-colors font-mono text-sm",
-            if(@selected_video_id == video.id, do: "border-blue-500 bg-blue-50 text-blue-900", else: "border-zinc-300 hover:border-zinc-400 text-zinc-700")
-          ]}
-          phx-click="video_select"
-          phx-value-video_id={video.id}>
-            <div class="font-bold truncate"><%= video.title %></div>
-            <div class="text-xs text-zinc-500 mt-1">
-              <%= if video.frame_count, do: "#{video.frame_count} frames", else: "Processing..." %> | 
-              <%= if video.duration_ms, do: format_timestamp(video.duration_ms), else: "Unknown duration" %>
-            </div>
-          </div>
-        <% end %>
-        
-        <%= if length(@videos) == 0 do %>
-          <div class="text-zinc-500 text-sm italic">No videos available</div>
-        <% end %>
-      </div>
-    </div>
-    """
-  end
 
   # Search header component (captain's log style)
   defp search_header(assigns) do
@@ -218,7 +165,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
       <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">SEARCH INTERFACE</div>
       
       <.form for={%{}} as={:search} phx-submit="search" class="mb-4">
-        <input type="hidden" name="search[video_id]" value={@selected_video_id} />
         <div class="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
@@ -226,11 +172,10 @@ defmodule NathanForUsWeb.VideoSearchLive do
             value={@search_term}
             placeholder="Enter search query for spoken dialogue..."
             class="flex-1 border border-zinc-300 text-zinc-900 px-4 py-3 rounded font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-            disabled={is_nil(@selected_video_id)}
           />
           <button
             type="submit"
-            disabled={@loading or is_nil(@selected_video_id)}
+            disabled={@loading}
             class="bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-400 text-white px-6 py-3 rounded font-mono text-sm transition-colors whitespace-nowrap"
           >
             <%= if @loading, do: "SEARCHING", else: "EXECUTE" %>
@@ -242,18 +187,18 @@ defmodule NathanForUsWeb.VideoSearchLive do
       <div class="border-t border-zinc-200 pt-4">
         <div class="text-xs text-zinc-500 uppercase mb-2">QUICK QUERIES</div>
         <div class="flex flex-wrap gap-2">
-          <.suggestion_button query="train" disabled={is_nil(@selected_video_id)} />
-          <.suggestion_button query="choo choo" disabled={is_nil(@selected_video_id)} />
-          <.suggestion_button query="sound" disabled={is_nil(@selected_video_id)} />
-          <.suggestion_button query="business" disabled={is_nil(@selected_video_id)} />
+          <.suggestion_button query="nathan" />
+          <.suggestion_button query="business" />
+          <.suggestion_button query="train" />
+          <.suggestion_button query="conan" />
+          <.suggestion_button query="rehearsal" />
         </div>
       </div>
       
-      <%= if is_nil(@selected_video_id) do %>
-        <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
-          Please select a video above to begin searching.
-        </div>
-      <% end %>
+      <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm font-mono">
+        <div class="text-xs text-blue-600 uppercase mb-1">DATABASE STATUS</div>
+        Searching across <%= length(@videos) %> videos with thousands of searchable frames
+      </div>
     </div>
     """
   end
@@ -264,8 +209,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
     <button
       phx-click="search"
       phx-value-search[term]={@query}
-      disabled={Map.get(assigns, :disabled, false)}
-      class="px-3 py-1 bg-zinc-100 hover:bg-zinc-200 disabled:bg-zinc-50 disabled:text-zinc-400 text-zinc-700 border border-zinc-300 rounded text-xs font-mono transition-colors"
+      class="px-3 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-300 rounded text-xs font-mono transition-colors"
     >
       "<%= @query %>"
     </button>
@@ -454,6 +398,12 @@ defmodule NathanForUsWeb.VideoSearchLive do
   defp frame_tile_info(assigns) do
     ~H"""
     <div class="p-2">
+      <%= if Map.get(@frame, :video_title) do %>
+        <div class="text-blue-600 text-xs font-mono font-bold mb-1 truncate">
+          <%= String.slice(@frame.video_title, 0..40) %><%= if String.length(@frame.video_title) > 40, do: "..." %>
+        </div>
+      <% end %>
+      
       <div class="flex items-center justify-between mb-2">
         <span class="text-zinc-500 text-xs font-mono">FRAME #<%= @frame.frame_number %></span>
         <%= if @frame.file_size do %>
