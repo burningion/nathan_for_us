@@ -244,10 +244,12 @@ defmodule NathanForUs.AccountsExtendedTest do
     end
     
     test "deliver_user_confirmation_instructions/2 returns error for confirmed user" do
-      user = user_fixture()  # Already confirmed by default
+      user = user_fixture()
+      # Confirm the user first
+      confirmed_user = %{user | confirmed_at: DateTime.utc_now() |> DateTime.truncate(:second)}
       
       assert {:error, :already_confirmed} = 
-        Accounts.deliver_user_confirmation_instructions(user, fn _ -> "url" end)
+        Accounts.deliver_user_confirmation_instructions(confirmed_user, fn _ -> "url" end)
     end
     
     test "confirm_user/1 with valid token confirms user" do
@@ -356,7 +358,7 @@ defmodule NathanForUs.AccountsExtendedTest do
   
   defp extract_user_token(fun) do
     {:ok, captured_email} = fun.(&"[TOKEN]#{&1}[TOKEN]")
-    [_, token | _] = String.split(captured_email.body, "[TOKEN]")
+    [_, token | _] = String.split(captured_email.text_body, "[TOKEN]")
     token
   end
 end

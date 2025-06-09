@@ -13,7 +13,7 @@ defmodule NathanForUs.AdminServiceSimpleTest do
     test "handles zero total posts" do
       stats = %{total_posts: 0, posts_with_users: 0}
       
-      assert 0.0 = AdminService.calculate_profile_coverage(stats)
+      assert +0.0 = AdminService.calculate_profile_coverage(stats)
     end
     
     test "rounds to one decimal place" do

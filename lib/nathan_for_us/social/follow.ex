@@ -24,7 +24,8 @@ defmodule NathanForUs.Social.Follow do
     follower_id = get_field(changeset, :follower_id)
     following_id = get_field(changeset, :following_id)
 
-    if follower_id == following_id do
+    # Only validate if both IDs are present and equal
+    if follower_id && following_id && follower_id == following_id do
       add_error(changeset, :following_id, "cannot follow yourself")
     else
       changeset
