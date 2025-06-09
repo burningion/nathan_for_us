@@ -32,6 +32,7 @@ defmodule NathanForUsWeb.Router do
 
     live "/", FeedLive
     live "/video-search", VideoSearchLive
+    live "/skeets", SkeetsLive
   end
 
   # Other scopes may use custom stacks.
@@ -74,7 +75,6 @@ defmodule NathanForUsWeb.Router do
   scope "/", NathanForUsWeb do
     pipe_through [:browser, :require_authenticated_user]
     
-    live "/skeets", SkeetsLive
     live "/admin", AdminLive
     get "/users/settings", UserSettingsController, :edit
     put "/users/settings", UserSettingsController, :update
