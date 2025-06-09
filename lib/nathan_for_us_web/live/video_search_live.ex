@@ -785,7 +785,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
                   
                   <!-- Animation overlay info -->
                   <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
-                    LOOP: 134ms/frame
+                    LOOP: 200ms/frame
                   </div>
                   
                   <!-- Frame counter -->
@@ -907,7 +907,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
           
           <!-- Animation Status -->
           <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded text-green-800 text-sm font-mono">
-            ✅ Animation active - <%= length(@selected_frame_indices) %> of <%= @frame_sequence.sequence_info.total_frames %> frames cycling at 134ms intervals (~7.5fps simulation)
+            ✅ Animation active - <%= length(@selected_frame_indices) %> of <%= @frame_sequence.sequence_info.total_frames %> frames cycling at 200ms intervals (5fps simulation)
           </div>
           
           <!-- Frame Legend -->

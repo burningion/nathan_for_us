@@ -302,10 +302,10 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
-  Gets a sequence of frames around a target frame (target + 2 before and 2 after).
-  Returns 5 frames total for creating animation sequences.
+  Gets a sequence of frames around a target frame (target + 5 before and 5 after).
+  Returns up to 11 frames total for creating animation sequences.
   """
-  def get_frame_sequence(frame_id, sequence_length \\ 2) do
+  def get_frame_sequence(frame_id, sequence_length \\ 5) do
     case Repo.get(VideoFrame, frame_id) do
       %VideoFrame{video_id: video_id, frame_number: target_frame_number} = target_frame ->
         start_frame = max(1, target_frame_number - sequence_length)

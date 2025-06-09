@@ -100,7 +100,7 @@ Hooks.FrameAnimator = {
       if (this.counter) {
         this.counter.textContent = `${this.currentFrameIndex + 1}/${this.animationFrameCount}`
       }
-    }, 134) // 134ms per frame (~7.5fps simulation)
+    }, 200) // 200ms per frame (5fps simulation)
   }
 }
 
