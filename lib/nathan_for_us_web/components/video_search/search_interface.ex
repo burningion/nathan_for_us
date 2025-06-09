@@ -17,6 +17,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
   attr :selected_video_ids, :list, required: true
   attr :autocomplete_suggestions, :list, default: []
   attr :show_autocomplete, :boolean, default: false
+  attr :search_form, :map, default: %{}
   
   def search_interface(assigns) do
     ~H"""
@@ -24,7 +25,8 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
       <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">SEARCH INTERFACE</div>
       
       <.search_form 
-        search_term={@search_term} 
+        search_term={@search_term}
+        search_form={@search_form}
         loading={@loading}
         autocomplete_suggestions={@autocomplete_suggestions}
         show_autocomplete={@show_autocomplete}
@@ -45,6 +47,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
   Renders the main search form with autocomplete.
   """
   attr :search_term, :string, required: true
+  attr :search_form, :map, required: true
   attr :loading, :boolean, required: true
   attr :autocomplete_suggestions, :list, default: []
   attr :show_autocomplete, :boolean, default: false
@@ -52,7 +55,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
   def search_form(assigns) do
     ~H"""
     <div class="relative mb-4">
-      <.form for={%{}} as={:search} phx-submit="search">
+      <.form for={@search_form} as={:search} phx-submit="search">
         <div class="flex flex-col sm:flex-row gap-2">
           <div class="relative flex-1">
             <input
@@ -63,7 +66,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
               class="w-full border border-zinc-300 text-zinc-900 px-4 py-3 rounded font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               phx-change="autocomplete_search"
               phx-debounce="150"
-              phx-blur="hide_autocomplete"
               autocomplete="off"
             />
             
@@ -101,7 +103,10 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
 
   def autocomplete_dropdown(assigns) do
     ~H"""
-    <div class="absolute top-full left-0 right-0 z-50 bg-white border border-zinc-300 border-t-0 rounded-b-lg shadow-lg max-h-48 overflow-y-auto">
+    <div 
+      class="absolute top-full left-0 right-0 z-50 bg-white border border-zinc-300 border-t-0 rounded-b-lg shadow-lg max-h-48 overflow-y-auto"
+      phx-click-away="hide_autocomplete"
+    >
       <div class="text-xs text-zinc-500 px-3 py-1 bg-zinc-50 border-b border-zinc-200">
         SUGGESTED PHRASES
       </div>

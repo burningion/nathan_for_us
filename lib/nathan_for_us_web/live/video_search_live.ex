@@ -33,8 +33,11 @@ defmodule NathanForUsWeb.VideoSearchLive do
   def mount(_params, _session, socket) do
     videos = Video.list_videos()
 
+    search_form = %{"term" => ""}
+    
     socket =
       socket
+      |> assign(:search_form, search_form)
       |> assign(:search_term, "")
       |> assign(:search_results, [])
       |> assign(:loading, false)
@@ -207,11 +210,14 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   def handle_event("autocomplete_search", %{"search" => %{"term" => term}}, socket) do
+    search_form = %{"term" => term}
+    
     if String.length(term) >= 3 do
       suggestions = Search.get_autocomplete_suggestions(term, socket.assigns.search_mode, socket.assigns.selected_video_ids)
       
       socket =
         socket
+        |> assign(:search_form, search_form)
         |> assign(:search_term, term)
         |> assign(:autocomplete_suggestions, suggestions)
         |> assign(:show_autocomplete, true)
@@ -220,6 +226,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
     else
       socket =
         socket
+        |> assign(:search_form, search_form)
         |> assign(:search_term, term)
         |> assign(:autocomplete_suggestions, [])
         |> assign(:show_autocomplete, false)
@@ -229,8 +236,12 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   def handle_event("select_suggestion", %{"suggestion" => suggestion}, socket) do
+    # Only populate the search field, don't trigger search
+    search_form = %{"term" => suggestion}
+    
     socket =
       socket
+      |> assign(:search_form, search_form)
       |> assign(:search_term, suggestion)
       |> assign(:show_autocomplete, false)
       |> assign(:autocomplete_suggestions, [])
@@ -275,7 +286,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
         
         <div class="space-y-4">
           <SearchInterface.search_interface 
-            search_term={@search_term} 
+            search_term={@search_term}
+            search_form={@search_form}
             loading={@loading}
             videos={@videos}
             search_mode={@search_mode}
