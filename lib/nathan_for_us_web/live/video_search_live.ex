@@ -50,6 +50,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:selected_frame_indices, [])
       |> assign(:autocomplete_suggestions, [])
       |> assign(:show_autocomplete, false)
+      |> assign(:animation_speed, 150)
 
     {:ok, socket}
   end
@@ -297,6 +298,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
 
+
   @impl true
   def handle_info({:perform_search, term}, socket) do
     case Search.search_frames(term, socket.assigns.search_mode, socket.assigns.selected_video_ids) do
@@ -357,6 +359,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
           :if={@show_sequence_modal}
           frame_sequence={@frame_sequence}
           selected_frame_indices={@selected_frame_indices}
+          animation_speed={@animation_speed}
         />
       </div>
     </div>

@@ -10,6 +10,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
+  attr :animation_speed, :integer, default: 150
   
   def frame_sequence_modal(assigns) do
     ~H"""
@@ -21,6 +22,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           <.compact_animation_section 
             frame_sequence={@frame_sequence}
             selected_frame_indices={@selected_frame_indices}
+            animation_speed={@animation_speed}
           />
           
           <.frame_sequence_grid 
@@ -31,6 +33,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           <.compact_info_footer 
             frame_sequence={@frame_sequence}
             selected_frame_indices={@selected_frame_indices}
+            animation_speed={@animation_speed}
           />
         </div>
       </div>
@@ -88,6 +91,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
+  attr :animation_speed, :integer, default: 150
   
   def compact_animation_section(assigns) do
     ~H"""
@@ -104,25 +108,49 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
         </div>
         <div class="text-white text-xs font-mono text-right">
           <div>🎬 ANIMATING <%= length(@selected_frame_indices) %>/<%= length(@frame_sequence.sequence_frames) %></div>
-          <div class="text-zinc-400">FULL RES • LIFELIKE SPEED</div>
+          <div class="text-zinc-400">FULL RES • USER CONTROLLED</div>
         </div>
       </div>
       
       <!-- Animation controls -->
-      <div class="mb-3 flex items-center gap-2">
-        <button 
-          phx-click="select_all_frames"
-          class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded"
-        >
-          ALL
-        </button>
-        <button 
-          phx-click="deselect_all_frames"
-          class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded"
-        >
-          NONE
-        </button>
-        <div class="text-zinc-400 text-xs ml-2">
+      <div class="mb-3 flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <button 
+            phx-click="select_all_frames"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded"
+          >
+            ALL
+          </button>
+          <button 
+            phx-click="deselect_all_frames"
+            class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded"
+          >
+            NONE
+          </button>
+        </div>
+        
+        <!-- Animation speed control -->
+        <div class="flex items-center gap-2 bg-zinc-800 px-3 py-1 rounded">
+          <label class="text-zinc-300 text-xs font-mono">SPEED:</label>
+          <input 
+            type="range" 
+            min="50" 
+            max="1000" 
+            value={@animation_speed} 
+            step="25"
+            phx-hook="AnimationSpeedSlider"
+            phx-click-away="ignore"
+            class="w-24 h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer slider"
+            id="speed-slider"
+            data-animation-container={"animation-container-#{@frame_sequence.target_frame.id}"}
+            onmousedown="event.stopPropagation()"
+            onmouseup="event.stopPropagation()"
+            onclick="event.stopPropagation()"
+          />
+          <span class="text-zinc-300 text-xs font-mono w-8" id="speed-display"><%= @animation_speed %>ms</span>
+        </div>
+        
+        <div class="text-zinc-400 text-xs">
           Click frames below to toggle animation
         </div>
       </div>
@@ -131,6 +159,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
       <.animation_container 
         frame_sequence={@frame_sequence}
         selected_frame_indices={@selected_frame_indices}
+        animation_speed={@animation_speed}
       />
     </div>
     """
@@ -204,6 +233,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
+  attr :animation_speed, :integer, default: 150
   
   def animation_container(assigns) do
     first_frame = List.first(assigns.frame_sequence.sequence_frames)
@@ -247,6 +277,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           data-frame-timestamps={Jason.encode!(Enum.map(@frame_sequence.sequence_frames, fn frame -> 
             Map.get(frame, :timestamp_ms, 0)
           end))}
+          data-animation-speed={@animation_speed}
         >
           <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
             <%= if Map.get(frame, :image_data) do %>
@@ -522,6 +553,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
+  attr :animation_speed, :integer, default: 150
   
   def compact_info_footer(assigns) do
     ~H"""
@@ -543,7 +575,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
         <!-- Status and legend -->
         <div class="flex items-center gap-4">
           <div class="text-green-600">
-            ✅ <%= length(@selected_frame_indices) %>/<%= @frame_sequence.sequence_info.total_frames %> animating
+            ✅ <%= length(@selected_frame_indices) %>/<%= @frame_sequence.sequence_info.total_frames %> animating @ <%= @animation_speed %>ms
           </div>
           <div class="flex items-center gap-2">
             <div class="w-3 h-3 border-2 border-blue-500 bg-blue-50 rounded"></div>

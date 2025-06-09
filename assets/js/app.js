@@ -24,8 +24,55 @@ import topbar from "../vendor/topbar"
 
 // Frame Animator Hook for cycling through frame sequences
 let Hooks = {}
+
+// Animation Speed Slider Hook for real-time speed control
+Hooks.AnimationSpeedSlider = {
+  mounted() {
+    // Prevent all mouse events from bubbling up to prevent modal closure
+    this.el.addEventListener('mousedown', (e) => e.stopPropagation())
+    this.el.addEventListener('mouseup', (e) => e.stopPropagation())
+    this.el.addEventListener('click', (e) => e.stopPropagation())
+    this.el.addEventListener('touchstart', (e) => e.stopPropagation())
+    this.el.addEventListener('touchend', (e) => e.stopPropagation())
+    
+    this.el.addEventListener('input', (e) => {
+      e.stopPropagation()
+      const newSpeed = parseInt(e.target.value)
+      const containerSelector = this.el.dataset.animationContainer
+      const animationContainer = document.getElementById(containerSelector)
+      
+      if (animationContainer && animationContainer.phxHook) {
+        // Update the animation speed directly in the FrameAnimator hook
+        animationContainer.phxHook.updateAnimationSpeed(newSpeed)
+      }
+      
+      // Update the display text
+      const speedDisplay = document.getElementById('speed-display')
+      if (speedDisplay) {
+        speedDisplay.textContent = `${newSpeed}ms`
+      }
+    })
+    
+    // Handle change event for when user releases the slider
+    this.el.addEventListener('change', (e) => {
+      e.stopPropagation()
+      const newSpeed = parseInt(e.target.value)
+      const containerSelector = this.el.dataset.animationContainer
+      const animationContainer = document.getElementById(containerSelector)
+      
+      if (animationContainer && animationContainer.phxHook) {
+        // Ensure the speed is set when user releases slider
+        animationContainer.phxHook.setAnimationSpeed(newSpeed)
+      }
+    })
+  }
+}
+
 Hooks.FrameAnimator = {
   mounted() {
+    // Store reference to this hook instance for external access
+    this.el.phxHook = this
+    
     this.updateAnimationRange()
     
     if (this.animationFrameCount > 1) {
@@ -56,14 +103,12 @@ Hooks.FrameAnimator = {
     this.frames = JSON.parse(this.el.dataset.frames).filter(frame => frame !== null)
     this.selectedIndices = JSON.parse(this.el.dataset.selectedIndices || '[]')
     this.frameTimestamps = JSON.parse(this.el.dataset.frameTimestamps || '[]')
+    this.animationSpeed = parseInt(this.el.dataset.animationSpeed) || 150
     
     this.animationFrameCount = this.selectedIndices.length
     this.currentFrameIndex = 0  // Index within selectedIndices array
     this.frameElements = Array.from(this.el.querySelectorAll('[data-frame-index]'))
     this.counter = document.getElementById(this.el.id.replace('animation-container', 'frame-counter'))
-    
-    // Calculate frame intervals based on actual timestamps
-    this.calculateFrameIntervals()
     
     // Hide all frames initially
     this.frameElements.forEach(el => {
@@ -83,68 +128,6 @@ Hooks.FrameAnimator = {
     }
   },
   
-  calculateFrameIntervals() {
-    // Calculate intervals between consecutive selected frames based on their timestamps
-    this.frameIntervals = []
-    
-    if (this.selectedIndices.length <= 1) {
-      return
-    }
-    
-    for (let i = 0; i < this.selectedIndices.length; i++) {
-      const currentIndex = this.selectedIndices[i]
-      const nextIndex = this.selectedIndices[(i + 1) % this.selectedIndices.length]
-      
-      const currentTimestamp = this.frameTimestamps[currentIndex] || 0
-      const nextTimestamp = this.frameTimestamps[nextIndex] || 0
-      
-      let interval
-      if (nextTimestamp > currentTimestamp) {
-        // Normal forward progression
-        interval = nextTimestamp - currentTimestamp
-      } else {
-        // Loop back to beginning or missing timestamp, use average interval
-        const averageInterval = this.calculateAverageInterval()
-        interval = averageInterval
-      }
-      
-      // For lifelike animation, clamp intervals to much faster speeds
-      // Map long intervals (like 5000ms) down to reasonable animation speeds
-      if (interval > 500) {
-        // For very long intervals, use a fast default (like 100-200ms for smooth animation)
-        interval = 150
-      } else {
-        // For shorter intervals, clamp between 50ms (20fps) and 300ms (3.3fps) 
-        interval = Math.max(50, Math.min(300, interval))
-      }
-      this.frameIntervals.push(interval)
-    }
-  },
-  
-  calculateAverageInterval() {
-    if (this.selectedIndices.length <= 1) return 150 // faster fallback
-    
-    let totalInterval = 0
-    let validIntervals = 0
-    
-    for (let i = 0; i < this.selectedIndices.length - 1; i++) {
-      const currentIndex = this.selectedIndices[i]
-      const nextIndex = this.selectedIndices[i + 1]
-      
-      const currentTimestamp = this.frameTimestamps[currentIndex] || 0
-      const nextTimestamp = this.frameTimestamps[nextIndex] || 0
-      
-      if (nextTimestamp > currentTimestamp) {
-        totalInterval += (nextTimestamp - currentTimestamp)
-        validIntervals++
-      }
-    }
-    
-    const avgInterval = validIntervals > 0 ? Math.round(totalInterval / validIntervals) : 150
-    
-    // If the average is very long (like 5000ms), use a fast animation speed instead
-    return avgInterval > 500 ? 150 : avgInterval
-  },
   
   startAnimation() {
     this.scheduleNextFrame()
@@ -173,11 +156,40 @@ Hooks.FrameAnimator = {
       this.counter.textContent = `${this.currentFrameIndex + 1}/${this.animationFrameCount}`
     }
     
-    // Schedule next frame with calculated interval
-    const currentInterval = this.frameIntervals[this.currentFrameIndex] || 200
+    // Schedule next frame with user-controlled speed
     this.animationTimeout = setTimeout(() => {
       this.scheduleNextFrame()
-    }, currentInterval)
+    }, this.animationSpeed)
+  },
+  
+  updateAnimationSpeed(newSpeed) {
+    // Update the animation speed and restart animation with new timing
+    this.animationSpeed = newSpeed
+    
+    // If animation is currently running, restart it with the new speed
+    if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout)
+      
+      // Only restart if we have frames to animate
+      if (this.animationFrameCount > 1) {
+        this.scheduleNextFrame()
+      }
+    }
+  },
+  
+  setAnimationSpeed(newSpeed) {
+    // Set the animation speed and ensure it persists
+    this.animationSpeed = newSpeed
+    
+    // If animation is currently running, restart it with the new speed
+    if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout)
+      
+      // Only restart if we have frames to animate
+      if (this.animationFrameCount > 1) {
+        this.scheduleNextFrame()
+      }
+    }
   }
 }
 
