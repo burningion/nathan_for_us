@@ -25,7 +25,13 @@ defmodule NathanForUs.Video.Search do
   alias NathanForUs.Video
   
   @type search_mode :: :global | :filtered
-  @type search_result :: %{video: Video.Video.t(), frames: list()}
+  @type video_result :: %{
+    video_id: integer(),
+    video_title: String.t(),
+    frame_count: integer(),
+    frames: list(),
+    expanded: boolean()
+  }
   @type frame_sequence :: %{
     target_frame: map(),
     sequence_frames: list(),
@@ -68,8 +74,9 @@ defmodule NathanForUs.Video.Search do
 
   def search_frames(term, :global, _selected_video_ids) do
     try do
-      results = Video.search_frames_by_text_simple(term)
-      {:ok, results}
+      frames = Video.search_frames_by_text_simple(term)
+      grouped_results = group_frames_by_video(frames)
+      {:ok, grouped_results}
     rescue
       error ->
         {:error, "Search failed: #{Exception.message(error)}"}
@@ -78,8 +85,9 @@ defmodule NathanForUs.Video.Search do
 
   def search_frames(term, :filtered, selected_video_ids) when length(selected_video_ids) > 0 do
     try do
-      results = Video.search_frames_by_text_simple_filtered(term, selected_video_ids)
-      {:ok, results}
+      frames = Video.search_frames_by_text_simple_filtered(term, selected_video_ids)
+      grouped_results = group_frames_by_video(frames)
+      {:ok, grouped_results}
     rescue
       error ->
         {:error, "Filtered search failed: #{Exception.message(error)}"}
@@ -235,6 +243,30 @@ defmodule NathanForUs.Video.Search do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @doc """
+  Groups frames by video for organized display.
+  
+  Returns a list of video result maps with frames grouped by video.
+  All videos start in collapsed state (expanded: false).
+  """
+  @spec group_frames_by_video(list()) :: list(video_result())
+  def group_frames_by_video(frames) do
+    frames
+    |> Enum.group_by(fn frame -> 
+      {Map.get(frame, :video_id), Map.get(frame, :video_title, "Unknown Video")}
+    end)
+    |> Enum.map(fn {{video_id, video_title}, video_frames} ->
+      %{
+        video_id: video_id,
+        video_title: video_title,
+        frame_count: length(video_frames),
+        frames: video_frames,
+        expanded: false  # All videos start collapsed
+      }
+    end)
+    |> Enum.sort_by(& &1.video_title)
   end
 
   # Private functions

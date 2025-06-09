@@ -89,6 +89,7 @@ defmodule NathanForUsWeb.VideoSearchLiveTest do
       assert assigns(view).autocomplete_suggestions == []
       assert assigns(view).show_autocomplete == false
       assert assigns(view).animation_speed == 150
+      assert assigns(view).expanded_videos == MapSet.new()
     end
 
     test "loads videos on mount", %{conn: conn, video: video} do
@@ -651,6 +652,100 @@ defmodule NathanForUsWeb.VideoSearchLiveTest do
       render_click(view, "close_sequence_modal")
       assert assigns(view).show_sequence_modal == false
       assert assigns(view).frame_sequence == nil
+    end
+  end
+
+  describe "video expansion events" do
+    test "toggle_video_expansion expands a collapsed video", %{conn: conn, video: video} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Perform a search to get grouped results
+      send(view.pid, {:perform_search, "test"})
+      :timer.sleep(50)
+
+      # Initially, no videos should be expanded
+      assert assigns(view).expanded_videos == MapSet.new()
+
+      # Expand the video
+      render_click(view, "toggle_video_expansion", %{"video_id" => to_string(video.id)})
+
+      # Video should now be expanded
+      assert MapSet.member?(assigns(view).expanded_videos, video.id)
+      
+      # Check that search results reflect the expanded state
+      video_result = Enum.find(assigns(view).search_results, fn vr -> vr.video_id == video.id end)
+      if video_result do
+        assert video_result.expanded == true
+      end
+    end
+
+    test "toggle_video_expansion collapses an expanded video", %{conn: conn, video: video} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Perform a search to get grouped results
+      send(view.pid, {:perform_search, "test"})
+      :timer.sleep(50)
+
+      # Expand the video first
+      render_click(view, "toggle_video_expansion", %{"video_id" => to_string(video.id)})
+      assert MapSet.member?(assigns(view).expanded_videos, video.id)
+
+      # Collapse the video
+      render_click(view, "toggle_video_expansion", %{"video_id" => to_string(video.id)})
+
+      # Video should now be collapsed
+      assert !MapSet.member?(assigns(view).expanded_videos, video.id)
+      
+      # Check that search results reflect the collapsed state
+      video_result = Enum.find(assigns(view).search_results, fn vr -> vr.video_id == video.id end)
+      if video_result do
+        assert video_result.expanded == false
+      end
+    end
+
+    test "toggle_video_expansion with invalid video_id shows error", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      render_click(view, "toggle_video_expansion", %{"video_id" => "invalid"})
+
+      # Should handle gracefully with error flash
+      assert assigns(view).expanded_videos == MapSet.new()
+    end
+
+    test "new search clears all video expansion states", %{conn: conn, video: video} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Perform initial search and expand some videos
+      send(view.pid, {:perform_search, "test"})
+      :timer.sleep(50)
+
+      # Expand a video
+      render_click(view, "toggle_video_expansion", %{"video_id" => to_string(video.id)})
+      assert MapSet.member?(assigns(view).expanded_videos, video.id)
+
+      # Perform a new search
+      send(view.pid, {:perform_search, "caption"})
+      :timer.sleep(50)
+
+      # All expansion states should be cleared
+      assert assigns(view).expanded_videos == MapSet.new()
+    end
+
+    test "video expansion state persists across multiple toggles", %{conn: conn, video: video} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Perform a search
+      send(view.pid, {:perform_search, "test"})
+      :timer.sleep(50)
+
+      # Test multiple rapid toggles
+      for _i <- 1..3 do
+        render_click(view, "toggle_video_expansion", %{"video_id" => to_string(video.id)})
+        render_click(view, "toggle_video_expansion", %{"video_id" => to_string(video.id)})
+      end
+
+      # Should end in collapsed state (even number of toggles)
+      assert !MapSet.member?(assigns(view).expanded_videos, video.id)
     end
   end
 

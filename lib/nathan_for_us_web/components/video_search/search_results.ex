@@ -17,16 +17,70 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
     ~H"""
     <%= if length(@search_results) > 0 do %>
       <div class="bg-white border border-zinc-300 rounded-lg p-4 md:p-6 shadow-sm">
-        <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">SEARCH RESULTS - MOSAIC VIEW</div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <%= for frame <- @search_results do %>
-            <.frame_tile frame={frame} />
+        <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">
+          SEARCH RESULTS - GROUPED BY VIDEO
+        </div>
+        <div class="space-y-4">
+          <%= for video_result <- @search_results do %>
+            <.video_group video_result={video_result} />
           <% end %>
         </div>
       </div>
     <% else %>
       <.empty_state :if={@search_term != ""} search_term={@search_term} />
     <% end %>
+    """
+  end
+  
+  @doc """
+  Renders a video group with expandable frame tiles.
+  """
+  attr :video_result, :map, required: true
+  
+  def video_group(assigns) do
+    ~H"""
+    <div class="border border-zinc-200 rounded-lg overflow-hidden">
+      <!-- Video Header - Always Visible -->
+      <div 
+        class="bg-zinc-50 p-3 cursor-pointer hover:bg-zinc-100 transition-colors border-b border-zinc-200"
+        phx-click="toggle_video_expansion"
+        phx-value-video_id={@video_result.video_id}
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="text-blue-600">
+              <%= if @video_result.expanded do %>
+                <.icon name="hero-chevron-down" class="w-5 h-5" />
+              <% else %>
+                <.icon name="hero-chevron-right" class="w-5 h-5" />
+              <% end %>
+            </div>
+            <div>
+              <h3 class="font-medium text-zinc-900 text-sm">
+                <%= @video_result.video_title %>
+              </h3>
+              <p class="text-xs text-zinc-500 font-mono">
+                <%= @video_result.frame_count %> matching frame<%= if @video_result.frame_count != 1, do: "s" %>
+              </p>
+            </div>
+          </div>
+          <div class="text-xs text-zinc-400 font-mono">
+            <%= if @video_result.expanded, do: "COLLAPSE", else: "EXPAND" %>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Frames Grid - Only Visible When Expanded -->
+      <%= if @video_result.expanded do %>
+        <div class="p-4 bg-white">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <%= for frame <- @video_result.frames do %>
+              <.frame_tile frame={frame} />
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
     """
   end
   

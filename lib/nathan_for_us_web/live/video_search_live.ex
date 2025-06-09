@@ -51,6 +51,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:autocomplete_suggestions, [])
       |> assign(:show_autocomplete, false)
       |> assign(:animation_speed, 150)
+      |> assign(:expanded_videos, MapSet.new())  # Track which videos are expanded
 
     {:ok, socket}
   end
@@ -375,16 +376,51 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("toggle_video_expansion", %{"video_id" => video_id_str}, socket) do
+    try do
+      video_id = String.to_integer(video_id_str)
+      expanded_videos = socket.assigns.expanded_videos
+      
+      updated_expanded = 
+        if MapSet.member?(expanded_videos, video_id) do
+          MapSet.delete(expanded_videos, video_id)
+        else
+          MapSet.put(expanded_videos, video_id)
+        end
+      
+      # Update the search results to reflect the new expanded state
+      updated_results = update_video_expansion_state(socket.assigns.search_results, updated_expanded)
+      
+      socket =
+        socket
+        |> assign(:expanded_videos, updated_expanded)
+        |> assign(:search_results, updated_results)
+      
+      {:noreply, socket}
+    rescue
+      ArgumentError ->
+        socket = put_flash(socket, :error, "Invalid video ID")
+        {:noreply, socket}
+    end
+  end
 
+  # Helper function to update expansion state in search results
+  defp update_video_expansion_state(search_results, expanded_videos) do
+    Enum.map(search_results, fn video_result ->
+      Map.put(video_result, :expanded, MapSet.member?(expanded_videos, video_result.video_id))
+    end)
+  end
 
   @impl true
   def handle_info({:perform_search, term}, socket) when is_binary(term) do
     case Search.search_frames(term, socket.assigns.search_mode, socket.assigns.selected_video_ids) do
       {:ok, results} ->
+        # Clear expanded state for new searches - all videos start collapsed
         socket =
           socket
           |> assign(:search_results, results)
           |> assign(:loading, false)
+          |> assign(:expanded_videos, MapSet.new())
 
         {:noreply, socket}
       
