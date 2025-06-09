@@ -211,14 +211,24 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   def handle_event("expand_sequence_backward", _params, socket) do
+    require Logger
+    Logger.info("Expand sequence backward clicked")
+    
     case socket.assigns.frame_sequence do
-      nil -> {:noreply, socket}
+      nil -> 
+        Logger.info("No frame sequence found")
+        {:noreply, socket}
       frame_sequence ->
+        Logger.info("Current sequence: #{frame_sequence.sequence_info.start_frame_number}-#{frame_sequence.sequence_info.end_frame_number}")
+        
         # Get one frame before the current sequence start
         case Search.expand_frame_sequence_backward(frame_sequence) do
           {:ok, expanded_sequence} ->
+            Logger.info("Expanded sequence: #{expanded_sequence.sequence_info.start_frame_number}-#{expanded_sequence.sequence_info.end_frame_number}")
+            
             # Update selected indices to account for the new frame at the beginning
             updated_indices = Enum.map(socket.assigns.selected_frame_indices, fn index -> index + 1 end)
+            Logger.info("Updated selected indices: #{inspect(updated_indices)}")
             
             socket =
               socket
@@ -227,26 +237,35 @@ defmodule NathanForUsWeb.VideoSearchLive do
             
             {:noreply, socket}
           
-          {:error, _reason} ->
-            # Can't expand backward (already at beginning of video)
+          {:error, reason} ->
+            Logger.info("Expand backward failed: #{inspect(reason)}")
             {:noreply, socket}
         end
     end
   end
 
   def handle_event("expand_sequence_forward", _params, socket) do
+    require Logger
+    Logger.info("Expand sequence forward clicked")
+    
     case socket.assigns.frame_sequence do
-      nil -> {:noreply, socket}
+      nil -> 
+        Logger.info("No frame sequence found")
+        {:noreply, socket}
       frame_sequence ->
+        Logger.info("Current sequence: #{frame_sequence.sequence_info.start_frame_number}-#{frame_sequence.sequence_info.end_frame_number}")
+        
         # Get one frame after the current sequence end
         case Search.expand_frame_sequence_forward(frame_sequence) do
           {:ok, expanded_sequence} ->
+            Logger.info("Expanded sequence: #{expanded_sequence.sequence_info.start_frame_number}-#{expanded_sequence.sequence_info.end_frame_number}")
+            
             # Selected indices stay the same since we're adding at the end
             socket = assign(socket, :frame_sequence, expanded_sequence)
             {:noreply, socket}
           
-          {:error, _reason} ->
-            # Can't expand forward (already at end of video)
+          {:error, reason} ->
+            Logger.info("Expand forward failed: #{inspect(reason)}")
             {:noreply, socket}
         end
     end
@@ -294,6 +313,11 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   def handle_event("hide_autocomplete", _params, socket) do
     socket = assign(socket, :show_autocomplete, false)
+    {:noreply, socket}
+  end
+
+  def handle_event("ignore", _params, socket) do
+    # Ignore events (e.g. from animation speed slider)
     {:noreply, socket}
   end
 

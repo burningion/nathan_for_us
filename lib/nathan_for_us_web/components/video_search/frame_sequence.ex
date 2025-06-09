@@ -14,8 +14,8 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   
   def frame_sequence_modal(assigns) do
     ~H"""
-    <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" phx-click="close_sequence_modal">
-      <div class="bg-white rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[95vh] overflow-y-auto" phx-click-away="close_sequence_modal">
+    <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[95vh] overflow-y-auto">
         <div class="p-4">
           <.modal_header frame_sequence={@frame_sequence} />
           
@@ -139,7 +139,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
             value={@animation_speed} 
             step="25"
             phx-hook="AnimationSpeedSlider"
-            phx-click-away="ignore"
             class="w-24 h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer slider"
             id="speed-slider"
             data-animation-container={"animation-container-#{@frame_sequence.target_frame.id}"}
@@ -628,14 +627,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   end
   defp format_timestamp(_), do: "0:00"
 
-  defp format_file_size(bytes) when is_integer(bytes) do
-    cond do
-      bytes >= 1_048_576 -> "#{Float.round(bytes / 1_048_576, 1)} MB"
-      bytes >= 1_024 -> "#{Float.round(bytes / 1_024, 1)} KB"
-      true -> "#{bytes} B"
-    end
-  end
-  defp format_file_size(_), do: "Unknown"
 
   defp encode_image_data(nil), do: ""
   defp encode_image_data(hex_data) when is_binary(hex_data) do
