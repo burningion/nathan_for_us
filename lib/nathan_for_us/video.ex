@@ -131,6 +131,29 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Searches for captions containing the given text using simple ILIKE search within multiple specific videos.
+  """
+  def search_frames_by_text_simple_filtered(search_term, video_ids) when is_binary(search_term) and is_list(video_ids) do
+    search_pattern = "%#{search_term}%"
+    
+    query = """
+    SELECT DISTINCT f.*, 
+           v.title as video_title,
+           string_agg(DISTINCT c.text, ' | ') as caption_texts
+    FROM video_frames f
+    JOIN videos v ON v.id = f.video_id
+    JOIN frame_captions fc ON fc.frame_id = f.id
+    JOIN video_captions c ON c.id = fc.caption_id
+    WHERE c.text ILIKE $1 AND f.video_id = ANY($2)
+    GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at, v.title
+    ORDER BY v.title, f.timestamp_ms
+    """
+    
+    Ecto.Adapters.SQL.query!(Repo, query, [search_pattern, video_ids])
+    |> map_frame_results_with_captions()
+  end
+
+  @doc """
   Searches for captions containing the given text using simple ILIKE search within a specific video.
   """
   def search_frames_by_text_simple(search_term, video_id) when is_binary(search_term) and is_integer(video_id) do

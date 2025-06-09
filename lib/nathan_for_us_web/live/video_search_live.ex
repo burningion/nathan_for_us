@@ -31,6 +31,9 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:search_results, [])
       |> assign(:loading, false)
       |> assign(:videos, videos)
+      |> assign(:show_video_modal, false)
+      |> assign(:selected_video_ids, [])
+      |> assign(:search_mode, :global)
 
     {:ok, socket}
   end
@@ -81,6 +84,46 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("toggle_video_modal", _params, socket) do
+    {:noreply, assign(socket, :show_video_modal, !socket.assigns.show_video_modal)}
+  end
+
+  def handle_event("toggle_video_selection", %{"video_id" => video_id}, socket) do
+    video_id = String.to_integer(video_id)
+    selected_ids = socket.assigns.selected_video_ids
+    
+    new_selected_ids = 
+      if video_id in selected_ids do
+        List.delete(selected_ids, video_id)
+      else
+        [video_id | selected_ids]
+      end
+
+    {:noreply, assign(socket, :selected_video_ids, new_selected_ids)}
+  end
+
+  def handle_event("apply_video_filter", _params, socket) do
+    search_mode = if Enum.empty?(socket.assigns.selected_video_ids), do: :global, else: :filtered
+    
+    socket =
+      socket
+      |> assign(:search_mode, search_mode)
+      |> assign(:show_video_modal, false)
+      |> assign(:search_results, [])
+
+    {:noreply, socket}
+  end
+
+  def handle_event("clear_video_filter", _params, socket) do
+    socket =
+      socket
+      |> assign(:selected_video_ids, [])
+      |> assign(:search_mode, :global)
+      |> assign(:search_results, [])
+
+    {:noreply, socket}
+  end
+
   def handle_event("process_video", %{"video_path" => video_path}, socket) do
     case NathanForUs.VideoProcessing.process_video(video_path) do
       {:ok, video} ->
@@ -100,7 +143,12 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   @impl true
   def handle_info({:perform_search, term}, socket) do
-    results = Video.search_frames_by_text_simple(term)
+    results = case socket.assigns.search_mode do
+      :global -> 
+        Video.search_frames_by_text_simple(term)
+      :filtered -> 
+        Video.search_frames_by_text_simple_filtered(term, socket.assigns.selected_video_ids)
+    end
     
     socket =
       socket
@@ -122,6 +170,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
             search_term={@search_term} 
             loading={@loading}
             videos={@videos}
+            search_mode={@search_mode}
+            selected_video_ids={@selected_video_ids}
           />
           
           <.search_results 
@@ -132,6 +182,12 @@ defmodule NathanForUsWeb.VideoSearchLive do
           
           <.loading_state :if={@loading} search_term={@search_term} />
         </div>
+        
+        <.video_filter_modal 
+          :if={@show_video_modal}
+          videos={@videos}
+          selected_video_ids={@selected_video_ids}
+        />
       </div>
     </div>
     """
@@ -180,6 +236,16 @@ defmodule NathanForUsWeb.VideoSearchLive do
           >
             <%= if @loading, do: "SEARCHING", else: "EXECUTE" %>
           </button>
+          <button
+            type="button"
+            phx-click="toggle_video_modal"
+            class="bg-zinc-600 hover:bg-zinc-700 text-white px-4 py-3 rounded font-mono text-sm transition-colors whitespace-nowrap flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            FILTER
+          </button>
         </div>
       </.form>
       
@@ -196,8 +262,22 @@ defmodule NathanForUsWeb.VideoSearchLive do
       </div>
       
       <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm font-mono">
-        <div class="text-xs text-blue-600 uppercase mb-1">DATABASE STATUS</div>
-        Searching across <%= length(@videos) %> videos with thousands of searchable frames
+        <div class="text-xs text-blue-600 uppercase mb-1">SEARCH STATUS</div>
+        <%= if @search_mode == :global do %>
+          Searching across all <%= length(@videos) %> videos
+        <% else %>
+          <div class="flex items-center justify-between">
+            <div>
+              Filtering <%= length(@selected_video_ids) %> of <%= length(@videos) %> videos
+            </div>
+            <button
+              phx-click="clear_video_filter"
+              class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
+            >
+              CLEAR FILTER
+            </button>
+          </div>
+        <% end %>
       </div>
     </div>
     """
@@ -418,6 +498,75 @@ defmodule NathanForUsWeb.VideoSearchLive do
           </div>
         </div>
       <% end %>
+    </div>
+    """
+  end
+
+  # Video filter modal component
+  defp video_filter_modal(assigns) do
+    ~H"""
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" phx-click="toggle_video_modal">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" phx-click-away="toggle_video_modal">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-zinc-900 font-mono">SELECT VIDEOS TO SEARCH</h2>
+            <button
+              phx-click="toggle_video_modal"
+              class="text-zinc-500 hover:text-zinc-700 transition-colors"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div class="space-y-3 mb-6">
+            <%= for video <- @videos do %>
+              <div class={[
+                "p-3 border rounded cursor-pointer transition-colors font-mono text-sm",
+                if(video.id in @selected_video_ids, do: "border-blue-500 bg-blue-50 text-blue-900", else: "border-zinc-300 hover:border-zinc-400 text-zinc-700")
+              ]}
+              phx-click="toggle_video_selection"
+              phx-value-video_id={video.id}>
+                <div class="flex items-center gap-3">
+                  <div class={[
+                    "w-5 h-5 border-2 rounded flex items-center justify-center",
+                    if(video.id in @selected_video_ids, do: "border-blue-500 bg-blue-500", else: "border-zinc-300")
+                  ]}>
+                    <%= if video.id in @selected_video_ids do %>
+                      <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    <% end %>
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-bold truncate"><%= video.title %></div>
+                    <div class="text-xs text-zinc-500 mt-1">
+                      <%= if video.frame_count, do: "#{video.frame_count} frames", else: "Processing..." %> | 
+                      <%= if video.duration_ms, do: format_timestamp(video.duration_ms), else: "Unknown duration" %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          
+          <div class="flex gap-3 justify-end">
+            <button
+              phx-click="toggle_video_modal"
+              class="px-4 py-2 border border-zinc-300 text-zinc-700 rounded font-mono text-sm hover:bg-zinc-50 transition-colors"
+            >
+              CANCEL
+            </button>
+            <button
+              phx-click="apply_video_filter"
+              class="px-4 py-2 bg-blue-600 text-white rounded font-mono text-sm hover:bg-blue-700 transition-colors"
+            >
+              APPLY FILTER (<%= length(@selected_video_ids) %> selected)
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     """
   end
