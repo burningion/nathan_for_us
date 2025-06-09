@@ -257,14 +257,6 @@ defmodule NathanForUs.Video do
 
   # Private helper functions
 
-  defp map_frame_results(%{rows: rows, columns: columns}) do
-    Enum.map(rows, fn row ->
-      columns
-      |> Enum.zip(row)
-      |> Enum.into(%{})
-      |> atomize_keys()
-    end)
-  end
 
   defp map_frame_results_with_captions(%{rows: rows, columns: columns}) do
     Enum.map(rows, fn row ->

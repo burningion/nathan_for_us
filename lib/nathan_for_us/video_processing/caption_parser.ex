@@ -16,7 +16,7 @@ defmodule NathanForUs.VideoProcessing.CaptionParser do
   end
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     Logger.info("Caption parser starting")
     
     {:producer_consumer, %{},
@@ -31,59 +31,81 @@ defmodule NathanForUs.VideoProcessing.CaptionParser do
     
     events = 
       frame_events
-      |> Enum.map(&parse_captions_for_video/1)
+      |> Enum.map(&process_captions/1)
       |> Enum.reject(&is_nil/1)
     
     {:noreply, events, state}
   end
 
-  defp parse_captions_for_video(%{video: video} = frame_event) do
-    Logger.info("Looking for captions for video: #{video.title}")
+  defp process_captions(%{video: video} = frame_event) do
+    Logger.info("Processing captions for video: #{video.title}")
     
-    # Look for SRT file with same base name as video
-    video_dir = Path.dirname(video.file_path)
-    video_basename = Path.basename(video.file_path, Path.extname(video.file_path))
-    
-    srt_patterns = [
-      Path.join(video_dir, "#{video_basename}.srt"),
-      Path.join(video_dir, "#{video_basename}.en.srt"),
-      # Handle the format we have in vid/ directory
-      video.file_path |> String.replace(Path.extname(video.file_path), ".en.srt")
-    ]
-    
-    srt_file = Enum.find(srt_patterns, &File.exists?/1)
-    
-    if srt_file do
-      Logger.info("Found caption file: #{srt_file}")
-      parse_srt_file(frame_event, srt_file)
-    else
-      Logger.warn("No caption file found for #{video.title}, proceeding without captions")
-      Map.put(frame_event, :caption_data, [])
+    case find_caption_file(video) do
+      {:ok, srt_file} ->
+        Logger.info("Found caption file: #{srt_file}")
+        parse_and_attach_captions(frame_event, srt_file)
+      
+      {:error, :not_found} ->
+        Logger.warning("No caption file found for #{video.title}, proceeding without captions")
+        attach_empty_captions(frame_event)
     end
   end
+  
+  defp find_caption_file(%{file_path: file_path}) do
+    video_dir = Path.dirname(file_path)
+    video_basename = Path.basename(file_path, Path.extname(file_path))
+    
+    srt_patterns = build_srt_patterns(video_dir, video_basename, file_path)
+    
+    case Enum.find(srt_patterns, &File.exists?/1) do
+      nil -> {:error, :not_found}
+      srt_file -> {:ok, srt_file}
+    end
+  end
+  
+  defp build_srt_patterns(video_dir, video_basename, file_path) do
+    [
+      Path.join(video_dir, "#{video_basename}.srt"),
+      Path.join(video_dir, "#{video_basename}.en.srt"),
+      String.replace(file_path, Path.extname(file_path), ".en.srt")
+    ]
+  end
+  
+  defp parse_and_attach_captions(frame_event, srt_file) do
+    case parse_srt_file(srt_file) do
+      {:ok, caption_data} ->
+        Map.put(frame_event, :caption_data, caption_data)
+      
+      {:error, reason} ->
+        Logger.error("Failed to parse SRT file #{srt_file}: #{reason}")
+        attach_empty_captions(frame_event)
+    end
+  end
+  
+  defp attach_empty_captions(frame_event) do
+    Map.put(frame_event, :caption_data, [])
+  end
 
-  defp parse_srt_file(frame_event, srt_file) do
+  defp parse_srt_file(srt_file) do
     case SrtParser.parse_file(srt_file) do
       {:ok, subtitle_entries} ->
         Logger.info("Parsed #{length(subtitle_entries)} subtitle entries")
-        
-        # Convert SRT entries to database format
-        caption_data = 
-          subtitle_entries
-          |> Enum.map(fn entry ->
-            %{
-              start_time_ms: entry.start_time,
-              end_time_ms: entry.end_time, 
-              text: entry.text,
-              caption_index: entry.index
-            }
-          end)
-        
-        Map.put(frame_event, :caption_data, caption_data)
-        
+        caption_data = convert_to_database_format(subtitle_entries)
+        {:ok, caption_data}
+      
       {:error, reason} ->
-        Logger.error("Failed to parse SRT file #{srt_file}: #{reason}")
-        Map.put(frame_event, :caption_data, [])
+        {:error, reason}
     end
+  end
+  
+  defp convert_to_database_format(subtitle_entries) do
+    Enum.map(subtitle_entries, fn entry ->
+      %{
+        start_time_ms: entry.start_time,
+        end_time_ms: entry.end_time,
+        text: entry.text,
+        caption_index: entry.index
+      }
+    end)
   end
 end

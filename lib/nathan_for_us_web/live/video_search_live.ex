@@ -395,95 +395,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
     """
   end
 
-  # Individual frame card component (kept for backwards compatibility)
-  defp frame_card(assigns) do
-    ~H"""
-    <div class="bg-white border border-zinc-300 rounded-lg p-4 hover:bg-zinc-50 transition-colors shadow-sm">
-      <.frame_header frame={@frame} />
-      <.frame_content frame={@frame} />
-      <.frame_footer frame={@frame} />
-    </div>
-    """
-  end
-
-  # Frame header with timestamp and metadata
-  defp frame_header(assigns) do
-    ~H"""
-    <div class="flex flex-col sm:flex-row sm:items-start justify-between mb-3 gap-2">
-      <div class="text-zinc-500 text-xs">
-        TIMESTAMP: <.frame_timestamp frame={@frame} />
-      </div>
-      <div class="text-left sm:text-right text-xs text-zinc-500 space-y-1">
-        <div>FRAME: #<%= @frame.frame_number %></div>
-        <%= if @frame.file_size do %>
-          <div>SIZE: <%= format_file_size(@frame.file_size) %></div>
-        <% end %>
-      </div>
-    </div>
-    """
-  end
-
-  # Frame timestamp component
-  defp frame_timestamp(assigns) do
-    ~H"""
-    <%= format_timestamp(@frame.timestamp_ms) %>
-    """
-  end
-
-  # Frame content with image and caption
-  defp frame_content(assigns) do
-    ~H"""
-    <div class="flex flex-col sm:flex-row gap-4">
-      <.frame_image frame={@frame} />
-      <.frame_caption :if={Map.get(@frame, :caption_texts)} frame={@frame} />
-    </div>
-    """
-  end
-
-  # Frame image component
-  defp frame_image(assigns) do
-    ~H"""
-    <div class="flex-shrink-0 w-full sm:w-32 h-48 sm:h-24">
-      <%= if Map.get(@frame, :image_data) do %>
-        <img
-          id={"frame-#{@frame.id}"}
-          src={"data:image/jpeg;base64,#{encode_image_data(@frame.image_data)}"}
-          alt={"Frame at " <> format_timestamp(@frame.timestamp_ms)}
-          class="w-full h-full object-cover rounded border border-zinc-300"
-        />
-      <% else %>
-        <div class="w-full h-full flex items-center justify-center bg-zinc-100 border border-zinc-300 rounded text-zinc-400">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-      <% end %>
-    </div>
-    """
-  end
-
-  # Frame caption component
-  defp frame_caption(assigns) do
-    ~H"""
-    <div class="flex-1">
-      <div class="text-xs text-blue-600 uppercase mb-2">SPOKEN DIALOGUE</div>
-      <div class="text-zinc-800 text-sm leading-relaxed pl-4 border-l-2 border-blue-600">
-        "<%= @frame.caption_texts %>"
-      </div>
-    </div>
-    """
-  end
-
-  # Frame footer component
-  defp frame_footer(assigns) do
-    ~H"""
-    <div class="mt-3 pt-3 border-t border-zinc-200">
-      <div class="text-xs text-zinc-500">
-        ID: <%= String.slice(to_string(@frame.id), 0, 8) %>
-      </div>
-    </div>
-    """
-  end
 
   # Loading state component
   defp loading_state(assigns) do
@@ -643,12 +554,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   # Helper functions
-
-  defp video_status_class("pending"), do: "bg-yellow-100 text-yellow-800 border border-yellow-300"
-  defp video_status_class("processing"), do: "bg-blue-100 text-blue-800 border border-blue-300" 
-  defp video_status_class("completed"), do: "bg-green-100 text-green-800 border border-green-300"
-  defp video_status_class("failed"), do: "bg-red-100 text-red-800 border border-red-300"
-  defp video_status_class(_), do: "bg-zinc-100 text-zinc-800 border border-zinc-300"
 
   defp format_timestamp(ms) when is_integer(ms) do
     total_seconds = div(ms, 1000)

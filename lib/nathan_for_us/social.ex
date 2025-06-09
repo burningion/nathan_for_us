@@ -6,11 +6,7 @@ defmodule NathanForUs.Social do
   import Ecto.Query, warn: false
   alias NathanForUs.Repo
 
-  alias NathanForUs.Social.Post
-  alias NathanForUs.Social.Follow
-  alias NathanForUs.Social.BlueskyPost
-  alias NathanForUs.Social.BlueskyUser
-  alias NathanForUs.Accounts.User
+  alias NathanForUs.Social.{Post, Follow, BlueskyPost, BlueskyUser}
   alias NathanForUs.BlueskyAPI
 
   @doc """

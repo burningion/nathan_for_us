@@ -38,7 +38,7 @@ defmodule NathanForUs.VideoProcessing.Producer do
   end
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     Logger.info("Video processing producer starting")
     
     # Schedule periodic checks for new videos

@@ -1,22 +1,47 @@
 defmodule NathanForUs.VideoProcessing.FrameExtractor do
   @moduledoc """
-  GenStage producer-consumer that extracts frames from videos using ffmpeg.
+  GenStage producer-consumer for video frame extraction.
   
-  Takes video records from the producer, extracts frames, and emits
-  events containing both the video and the extracted frame data.
+  This stage receives video records from the Producer and performs frame extraction
+  using ffmpeg through the VideoProcessor module. It handles:
+  
+  - Frame extraction with configurable quality and frame rate
+  - Video metadata retrieval (duration, frame count)
+  - Error handling with proper video status updates
+  - Efficient processing with hardware acceleration when available
+  
+  ## Pipeline Position
+  
+      Producer -> FrameExtractor -> CaptionParser -> DatabaseConsumer
+      
+  ## Processing Flow
+  
+  1. Receives video records from Producer
+  2. Extracts frames using VideoProcessor
+  3. Retrieves video metadata (duration, etc.)
+  4. Updates video record with metadata
+  5. Emits processed events with frame data
+  6. Handles errors by marking videos as failed
+  
+  ## Configuration
+  
+  Frame extraction uses these defaults:
+  - FPS: 1 (one frame per second)
+  - Quality: 3 (good quality, reasonable file size)
+  - Hardware acceleration: enabled (VideoToolbox on macOS)
   """
   
   use GenStage
   require Logger
   
-  alias NathanForUs.{VideoProcessor, Video}
+  alias NathanForUs.{VideoProcessor, Video, Errors}
 
   def start_link(opts) do
     GenStage.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     Logger.info("Frame extractor starting")
     
     {:producer_consumer, %{},
@@ -53,7 +78,13 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
       }
     else
       {:error, reason} ->
-        Logger.error("Failed to process video #{video.title}: #{reason}")
+        error = Errors.VideoProcessingError.exception(
+          video_path: video.file_path,
+          stage: "frame_extraction",
+          reason: reason
+        )
+        
+        Errors.log_error("Frame extraction failed", error, video_id: video.id, video_title: video.title)
         mark_video_failed(video)
         nil
     end

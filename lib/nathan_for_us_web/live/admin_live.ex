@@ -1,7 +1,7 @@
 defmodule NathanForUsWeb.AdminLive do
   use NathanForUsWeb, :live_view
 
-  alias NathanForUs.{Admin, AdminService}
+  alias NathanForUs.AdminService
 
   on_mount {NathanForUsWeb.UserAuth, :ensure_authenticated}
 

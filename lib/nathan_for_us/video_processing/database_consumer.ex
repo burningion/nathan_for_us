@@ -16,7 +16,7 @@ defmodule NathanForUs.VideoProcessing.DatabaseConsumer do
   end
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     Logger.info("Database consumer starting")
     
     {:consumer, %{},
