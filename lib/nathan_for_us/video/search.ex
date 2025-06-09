@@ -207,6 +207,36 @@ defmodule NathanForUs.Video.Search do
     end
   end
 
+  @doc """
+  Expands frame sequence backward by adding the previous frame.
+  """
+  @spec expand_frame_sequence_backward(frame_sequence()) :: {:ok, frame_sequence()} | {:error, term()}
+  def expand_frame_sequence_backward(frame_sequence) do
+    case Video.expand_frame_sequence_backward(frame_sequence) do
+      {:ok, expanded_sequence} ->
+        enriched_sequence = enrich_frame_sequence(expanded_sequence)
+        {:ok, enriched_sequence}
+      
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Expands frame sequence forward by adding the next frame.
+  """
+  @spec expand_frame_sequence_forward(frame_sequence()) :: {:ok, frame_sequence()} | {:error, term()}
+  def expand_frame_sequence_forward(frame_sequence) do
+    case Video.expand_frame_sequence_forward(frame_sequence) do
+      {:ok, expanded_sequence} ->
+        enriched_sequence = enrich_frame_sequence(expanded_sequence)
+        {:ok, enriched_sequence}
+      
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   # Private functions
 
   defp enrich_frame_sequence(frame_sequence) do

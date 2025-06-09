@@ -304,6 +304,9 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   def frame_sequence_grid(assigns) do
     ~H"""
     <div class="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
+      <!-- Expand backward button -->
+      <.expand_backward_button />
+      
       <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
         <.frame_grid_item 
           frame={frame}
@@ -312,10 +315,47 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           selected_frame_indices={@selected_frame_indices}
         />
       <% end %>
+      
+      <!-- Expand forward button -->
+      <.expand_forward_button />
     </div>
     """
   end
   
+  @doc """
+  Renders expand backward button (adds previous frame).
+  """
+  def expand_backward_button(assigns) do
+    ~H"""
+    <div class="border-2 border-dashed border-zinc-300 rounded-lg overflow-hidden cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all aspect-video bg-zinc-50 flex items-center justify-center"
+         phx-click="expand_sequence_backward"
+         title="Add previous frame to sequence">
+      <div class="text-center">
+        <div class="text-2xl text-zinc-400 hover:text-blue-500 mb-1">−</div>
+        <div class="text-xs text-zinc-500 font-mono">EXPAND</div>
+        <div class="text-xs text-zinc-400 font-mono">BACK</div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders expand forward button (adds next frame).
+  """
+  def expand_forward_button(assigns) do
+    ~H"""
+    <div class="border-2 border-dashed border-zinc-300 rounded-lg overflow-hidden cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all aspect-video bg-zinc-50 flex items-center justify-center"
+         phx-click="expand_sequence_forward"
+         title="Add next frame to sequence">
+      <div class="text-center">
+        <div class="text-2xl text-zinc-400 hover:text-blue-500 mb-1">+</div>
+        <div class="text-xs text-zinc-500 font-mono">EXPAND</div>
+        <div class="text-xs text-zinc-400 font-mono">NEXT</div>
+      </div>
+    </div>
+    """
+  end
+
   @doc """
   Renders an individual frame in the grid.
   """

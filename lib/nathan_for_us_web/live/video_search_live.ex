@@ -209,6 +209,48 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("expand_sequence_backward", _params, socket) do
+    case socket.assigns.frame_sequence do
+      nil -> {:noreply, socket}
+      frame_sequence ->
+        # Get one frame before the current sequence start
+        case Search.expand_frame_sequence_backward(frame_sequence) do
+          {:ok, expanded_sequence} ->
+            # Update selected indices to account for the new frame at the beginning
+            updated_indices = Enum.map(socket.assigns.selected_frame_indices, fn index -> index + 1 end)
+            
+            socket =
+              socket
+              |> assign(:frame_sequence, expanded_sequence)
+              |> assign(:selected_frame_indices, updated_indices)
+            
+            {:noreply, socket}
+          
+          {:error, _reason} ->
+            # Can't expand backward (already at beginning of video)
+            {:noreply, socket}
+        end
+    end
+  end
+
+  def handle_event("expand_sequence_forward", _params, socket) do
+    case socket.assigns.frame_sequence do
+      nil -> {:noreply, socket}
+      frame_sequence ->
+        # Get one frame after the current sequence end
+        case Search.expand_frame_sequence_forward(frame_sequence) do
+          {:ok, expanded_sequence} ->
+            # Selected indices stay the same since we're adding at the end
+            socket = assign(socket, :frame_sequence, expanded_sequence)
+            {:noreply, socket}
+          
+          {:error, _reason} ->
+            # Can't expand forward (already at end of video)
+            {:noreply, socket}
+        end
+    end
+  end
+
   def handle_event("autocomplete_search", %{"search" => %{"term" => term}}, socket) do
     search_form = %{"term" => term}
     

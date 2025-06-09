@@ -352,6 +352,124 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Expands frame sequence backward by adding the previous frame.
+  """
+  def expand_frame_sequence_backward(frame_sequence) do
+    %{target_frame: target_frame, sequence_frames: current_frames, sequence_info: info} = frame_sequence
+    video_id = target_frame.video_id
+    current_start = info.start_frame_number
+    
+    # Can we go back one more frame?
+    if current_start > 1 do
+      new_start = current_start - 1
+      
+      # Get the additional frame
+      additional_frame = VideoFrame
+      |> where([f], f.video_id == ^video_id and f.frame_number == ^new_start)
+      |> Repo.one()
+      
+      case additional_frame do
+        %VideoFrame{} = frame ->
+          # Add the new frame to the beginning of the sequence
+          new_frames = [frame | current_frames]
+          
+          # Get captions for the new frame
+          new_frame_captions = from(fc in FrameCaption,
+            join: c in VideoCaption, on: fc.caption_id == c.id,
+            where: fc.frame_id == ^frame.id,
+            select: c.text
+          )
+          |> Repo.all()
+          
+          # Update sequence captions
+          updated_sequence_captions = Map.put(frame_sequence.sequence_captions, frame.id, new_frame_captions)
+          
+          # Update sequence info
+          updated_info = %{info | 
+            start_frame_number: new_start,
+            total_frames: length(new_frames)
+          }
+          
+          {:ok, %{frame_sequence | 
+            sequence_frames: new_frames,
+            sequence_captions: updated_sequence_captions,
+            sequence_info: updated_info
+          }}
+        
+        nil ->
+          {:error, :frame_not_found}
+      end
+    else
+      {:error, :at_beginning}
+    end
+  end
+
+  @doc """
+  Expands frame sequence forward by adding the next frame.
+  """
+  def expand_frame_sequence_forward(frame_sequence) do
+    %{target_frame: target_frame, sequence_frames: current_frames, sequence_info: info} = frame_sequence
+    video_id = target_frame.video_id
+    current_end = info.end_frame_number
+    
+    # Get the video to check max frame count
+    video = Repo.get(Video, video_id)
+    max_frame_number = case video.frame_count do
+      nil -> 
+        # Fallback: get the highest frame number for this video
+        VideoFrame
+        |> where([f], f.video_id == ^video_id)
+        |> select([f], max(f.frame_number))
+        |> Repo.one() || current_end
+      count -> count
+    end
+    
+    # Can we go forward one more frame?
+    if current_end < max_frame_number do
+      new_end = current_end + 1
+      
+      # Get the additional frame
+      additional_frame = VideoFrame
+      |> where([f], f.video_id == ^video_id and f.frame_number == ^new_end)
+      |> Repo.one()
+      
+      case additional_frame do
+        %VideoFrame{} = frame ->
+          # Add the new frame to the end of the sequence
+          new_frames = current_frames ++ [frame]
+          
+          # Get captions for the new frame
+          new_frame_captions = from(fc in FrameCaption,
+            join: c in VideoCaption, on: fc.caption_id == c.id,
+            where: fc.frame_id == ^frame.id,
+            select: c.text
+          )
+          |> Repo.all()
+          
+          # Update sequence captions
+          updated_sequence_captions = Map.put(frame_sequence.sequence_captions, frame.id, new_frame_captions)
+          
+          # Update sequence info
+          updated_info = %{info | 
+            end_frame_number: new_end,
+            total_frames: length(new_frames)
+          }
+          
+          {:ok, %{frame_sequence | 
+            sequence_frames: new_frames,
+            sequence_captions: updated_sequence_captions,
+            sequence_info: updated_info
+          }}
+        
+        nil ->
+          {:error, :frame_not_found}
+      end
+    else
+      {:error, :at_end}
+    end
+  end
+
+  @doc """
   Gets autocomplete suggestions for search phrases based on video captions.
   Returns full caption phrases that contain the given term.
   """
