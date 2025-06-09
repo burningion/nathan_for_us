@@ -170,6 +170,19 @@ defmodule NathanForUs.Video.Search do
   def get_all_frame_indices(%{sequence_frames: []}), do: []
 
   @doc """
+  Gets autocomplete suggestions based on search term and selected videos.
+  """
+  @spec get_autocomplete_suggestions(String.t(), search_mode(), list(integer())) :: list(String.t())
+  def get_autocomplete_suggestions(search_term, search_mode, selected_video_ids) do
+    video_ids = case search_mode do
+      :global -> nil
+      :filtered -> selected_video_ids
+    end
+    
+    Video.get_autocomplete_suggestions(search_term, video_ids, 5)
+  end
+
+  @doc """
   Gets concatenated captions for selected frames.
   """
   @spec get_selected_frames_captions(frame_sequence(), list()) :: String.t()

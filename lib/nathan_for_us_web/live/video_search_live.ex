@@ -45,6 +45,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:show_sequence_modal, false)
       |> assign(:frame_sequence, nil)
       |> assign(:selected_frame_indices, [])
+      |> assign(:autocomplete_suggestions, [])
+      |> assign(:show_autocomplete, false)
 
     {:ok, socket}
   end
@@ -204,6 +206,43 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("autocomplete_search", %{"search" => %{"term" => term}}, socket) do
+    if String.length(term) >= 3 do
+      suggestions = Search.get_autocomplete_suggestions(term, socket.assigns.search_mode, socket.assigns.selected_video_ids)
+      
+      socket =
+        socket
+        |> assign(:search_term, term)
+        |> assign(:autocomplete_suggestions, suggestions)
+        |> assign(:show_autocomplete, true)
+      
+      {:noreply, socket}
+    else
+      socket =
+        socket
+        |> assign(:search_term, term)
+        |> assign(:autocomplete_suggestions, [])
+        |> assign(:show_autocomplete, false)
+      
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("select_suggestion", %{"suggestion" => suggestion}, socket) do
+    socket =
+      socket
+      |> assign(:search_term, suggestion)
+      |> assign(:show_autocomplete, false)
+      |> assign(:autocomplete_suggestions, [])
+
+    {:noreply, socket}
+  end
+
+  def handle_event("hide_autocomplete", _params, socket) do
+    socket = assign(socket, :show_autocomplete, false)
+    {:noreply, socket}
+  end
+
 
   @impl true
   def handle_info({:perform_search, term}, socket) do
@@ -241,6 +280,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
             videos={@videos}
             search_mode={@search_mode}
             selected_video_ids={@selected_video_ids}
+            autocomplete_suggestions={@autocomplete_suggestions}
+            show_autocomplete={@show_autocomplete}
           />
           
           <SearchResults.search_results 

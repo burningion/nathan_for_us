@@ -352,6 +352,44 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Gets autocomplete suggestions for search phrases based on video captions.
+  Returns full caption phrases that contain the given term.
+  """
+  def get_autocomplete_suggestions(search_term, _video_ids \\ nil, limit \\ 5) when is_binary(search_term) do
+    if String.length(search_term) < 3 do
+      []
+    else
+      search_pattern = "%#{search_term}%"
+      
+      # Fixed query: SELECT DISTINCT with ORDER BY in subquery
+      query = """
+      SELECT text FROM (
+        SELECT DISTINCT text, length(text) as text_length 
+        FROM video_captions 
+        WHERE text ILIKE $1
+      ) sub 
+      ORDER BY text_length 
+      LIMIT $2
+      """
+      
+      case Ecto.Adapters.SQL.query(Repo, query, [search_pattern, limit]) do
+        {:ok, %{rows: rows}} ->
+          rows
+          |> List.flatten()
+          |> Enum.map(&String.trim/1)
+          |> Enum.reject(&(String.length(&1) < 5))  # Filter out very short phrases
+          |> Enum.uniq()
+          |> Enum.take(limit)
+        
+        {:error, reason} ->
+          require Logger
+          Logger.warning("Autocomplete query failed: #{inspect(reason)}")
+          []
+      end
+    end
+  end
+
+  @doc """
   Migrates existing frames from file paths to binary storage with compression.
   """
   def migrate_frames_to_binary(video_id, jpeg_quality \\ 75) do
