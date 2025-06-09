@@ -3,7 +3,6 @@ defmodule NathanForUsWeb.SkeetsLive do
 
   alias NathanForUs.Social
 
-  on_mount {NathanForUsWeb.UserAuth, :ensure_authenticated}
 
   def mount(_params, _session, socket) do
     if connected?(socket) do
