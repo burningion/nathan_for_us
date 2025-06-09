@@ -302,6 +302,48 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Gets a sequence of frames around a target frame (target + 2 before and 2 after).
+  Returns 5 frames total for creating animation sequences.
+  """
+  def get_frame_sequence(frame_id, sequence_length \\ 2) do
+    case Repo.get(VideoFrame, frame_id) do
+      %VideoFrame{video_id: video_id, frame_number: target_frame_number} = target_frame ->
+        start_frame = max(1, target_frame_number - sequence_length)
+        end_frame = target_frame_number + sequence_length
+        
+        frames = VideoFrame
+        |> where([f], f.video_id == ^video_id)
+        |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
+        |> order_by([f], f.frame_number)
+        |> Repo.all()
+        
+        # Get captions for the target frame to provide context
+        target_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          where: fc.frame_id == ^frame_id,
+          select: c.text
+        )
+        |> Repo.all()
+        |> Enum.join(" | ")
+        
+        {:ok, %{
+          target_frame: target_frame,
+          sequence_frames: frames,
+          target_captions: target_captions,
+          sequence_info: %{
+            target_frame_number: target_frame_number,
+            start_frame_number: start_frame,
+            end_frame_number: end_frame,
+            total_frames: length(frames)
+          }
+        }}
+      
+      nil ->
+        {:error, :frame_not_found}
+    end
+  end
+
+  @doc """
   Migrates existing frames from file paths to binary storage with compression.
   """
   def migrate_frames_to_binary(video_id, jpeg_quality \\ 75) do

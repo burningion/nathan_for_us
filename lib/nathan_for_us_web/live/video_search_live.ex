@@ -34,6 +34,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:show_video_modal, false)
       |> assign(:selected_video_ids, [])
       |> assign(:search_mode, :global)
+      |> assign(:show_sequence_modal, false)
+      |> assign(:frame_sequence, nil)
 
     {:ok, socket}
   end
@@ -140,6 +142,33 @@ defmodule NathanForUsWeb.VideoSearchLive do
     end
   end
 
+  def handle_event("show_frame_sequence", %{"frame_id" => frame_id}, socket) do
+    frame_id = String.to_integer(frame_id)
+    
+    case Video.get_frame_sequence(frame_id) do
+      {:ok, frame_sequence} ->
+        socket =
+          socket
+          |> assign(:frame_sequence, frame_sequence)
+          |> assign(:show_sequence_modal, true)
+        
+        {:noreply, socket}
+      
+      {:error, _reason} ->
+        socket = put_flash(socket, :error, "Could not load frame sequence")
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_sequence_modal", _params, socket) do
+    socket =
+      socket
+      |> assign(:show_sequence_modal, false)
+      |> assign(:frame_sequence, nil)
+    
+    {:noreply, socket}
+  end
+
 
   @impl true
   def handle_info({:perform_search, term}, socket) do
@@ -187,6 +216,11 @@ defmodule NathanForUsWeb.VideoSearchLive do
           :if={@show_video_modal}
           videos={@videos}
           selected_video_ids={@selected_video_ids}
+        />
+        
+        <.frame_sequence_modal 
+          :if={@show_sequence_modal}
+          frame_sequence={@frame_sequence}
         />
       </div>
     </div>
@@ -317,7 +351,11 @@ defmodule NathanForUsWeb.VideoSearchLive do
   # Individual frame tile component for mosaic view
   defp frame_tile(assigns) do
     ~H"""
-    <div class="border border-zinc-300 rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white">
+    <div 
+      class="border border-zinc-300 rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white cursor-pointer hover:border-blue-500"
+      phx-click="show_frame_sequence"
+      phx-value-frame_id={@frame.id}
+    >
       <.frame_tile_image frame={@frame} />
       <.frame_tile_info frame={@frame} />
     </div>
@@ -612,5 +650,178 @@ defmodule NathanForUsWeb.VideoSearchLive do
         # Already binary data, encode directly
         Base.encode64(hex_data)
     end
+  end
+
+  # Frame sequence modal component
+  defp frame_sequence_modal(assigns) do
+    ~H"""
+    <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" phx-click="close_sequence_modal">
+      <div class="bg-white rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto" phx-click-away="close_sequence_modal">
+        <div class="p-6">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-zinc-900 font-mono">FRAME SEQUENCE VIEWER</h2>
+              <p class="text-sm text-zinc-600 font-mono mt-1">
+                Frame #<%= @frame_sequence.target_frame.frame_number %> with surrounding frames (± 2)
+              </p>
+            </div>
+            <button
+              phx-click="close_sequence_modal"
+              class="text-zinc-500 hover:text-zinc-700 transition-colors"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Target Frame Info -->
+          <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded font-mono text-sm">
+            <div class="text-blue-600 uppercase mb-2">TARGET FRAME CONTEXT</div>
+            <div class="text-blue-900">
+              <div class="mb-1">Timestamp: <%= format_timestamp(@frame_sequence.target_frame.timestamp_ms) %></div>
+              <%= if @frame_sequence.target_captions != "" do %>
+                <div class="border-l-2 border-blue-600 pl-3 mt-2">
+                  "<%= @frame_sequence.target_captions %>"
+                </div>
+              <% end %>
+            </div>
+          </div>
+          
+          <!-- Animated GIF Preview -->
+          <div class="mb-8 bg-zinc-900 rounded-lg p-6">
+            <div class="text-white uppercase mb-4 font-mono text-sm">🎬 ANIMATED PREVIEW</div>
+            <div class="flex justify-center">
+              <div class="relative bg-black rounded-lg overflow-hidden">
+                <div 
+                  id={"animation-container-#{@frame_sequence.target_frame.id}"}
+                  class="w-80 h-48 relative"
+                  phx-hook="FrameAnimator"
+                  data-frames={Jason.encode!(Enum.map(@frame_sequence.sequence_frames, fn frame -> 
+                    if Map.get(frame, :image_data) do
+                      "data:image/jpeg;base64,#{encode_image_data(frame.image_data)}"
+                    else
+                      nil
+                    end
+                  end))}
+                >
+                  <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
+                    <%= if Map.get(frame, :image_data) do %>
+                      <img
+                        id={"anim-frame-#{frame.id}"}
+                        src={"data:image/jpeg;base64,#{encode_image_data(frame.image_data)}"}
+                        alt={"Frame ##{frame.frame_number}"}
+                        class={[
+                          "absolute inset-0 w-full h-full object-cover transition-opacity duration-50",
+                          if(index == 0, do: "opacity-100", else: "opacity-0")
+                        ]}
+                        data-frame-index={index}
+                      />
+                    <% end %>
+                  <% end %>
+                  
+                  <!-- Animation overlay info -->
+                  <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
+                    LOOP: 134ms/frame
+                  </div>
+                  
+                  <!-- Frame counter -->
+                  <div id={"frame-counter-#{@frame_sequence.target_frame.id}"} class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
+                    1/<%= length(@frame_sequence.sequence_frames) %>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="text-center mt-4">
+              <p class="text-zinc-400 text-sm font-mono">Frames cycling automatically to simulate video motion</p>
+            </div>
+          </div>
+          
+          <!-- Frame Sequence Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
+              <div class={[
+                "border rounded-lg overflow-hidden",
+                if(frame.id == @frame_sequence.target_frame.id, do: "border-blue-500 border-2 bg-blue-50", else: "border-zinc-300")
+              ]}>
+                <!-- Frame Image -->
+                <div class="aspect-video bg-zinc-100 relative">
+                  <%= if Map.get(frame, :image_data) do %>
+                    <img
+                      src={"data:image/jpeg;base64,#{encode_image_data(frame.image_data)}"}
+                      alt={"Frame ##{frame.frame_number}"}
+                      class="w-full h-full object-cover"
+                    />
+                  <% else %>
+                    <div class="w-full h-full flex items-center justify-center text-zinc-400">
+                      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  <% end %>
+                  
+                  <!-- Frame number overlay -->
+                  <div class={[
+                    "absolute bottom-1 right-1 px-1 py-0.5 rounded text-xs font-mono",
+                    if(frame.id == @frame_sequence.target_frame.id, do: "bg-blue-600 text-white", else: "bg-black/70 text-white")
+                  ]}>
+                    #<%= frame.frame_number %>
+                  </div>
+                  
+                  <!-- Target frame indicator -->
+                  <%= if frame.id == @frame_sequence.target_frame.id do %>
+                    <div class="absolute top-1 left-1 bg-blue-600 text-white px-1 py-0.5 rounded text-xs font-mono">
+                      TARGET
+                    </div>
+                  <% end %>
+                </div>
+                
+                <!-- Frame Info -->
+                <div class="p-2">
+                  <div class="text-xs text-zinc-500 font-mono text-center">
+                    <%= format_timestamp(frame.timestamp_ms) %>
+                  </div>
+                  <%= if frame.file_size do %>
+                    <div class="text-xs text-zinc-400 font-mono text-center">
+                      <%= format_file_size(frame.file_size) %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          
+          <!-- Sequence Info -->
+          <div class="mt-6 p-4 bg-zinc-50 border border-zinc-200 rounded font-mono text-sm">
+            <div class="text-zinc-600 uppercase mb-2">SEQUENCE INFORMATION</div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-zinc-700">
+              <div>
+                <div class="text-xs text-zinc-500">FRAMES LOADED</div>
+                <div><%= @frame_sequence.sequence_info.total_frames %></div>
+              </div>
+              <div>
+                <div class="text-xs text-zinc-500">FRAME RANGE</div>
+                <div>#<%= @frame_sequence.sequence_info.start_frame_number %>-<%= @frame_sequence.sequence_info.end_frame_number %></div>
+              </div>
+              <div>
+                <div class="text-xs text-zinc-500">TARGET FRAME</div>
+                <div>#<%= @frame_sequence.sequence_info.target_frame_number %></div>
+              </div>
+              <div>
+                <div class="text-xs text-zinc-500">ANIMATION READY</div>
+                <div class="text-blue-600">✓ YES</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Animation Status -->
+          <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded text-green-800 text-sm font-mono">
+            ✅ Animation active - <%= @frame_sequence.sequence_info.total_frames %> frames cycling at 134ms intervals (~7.5fps simulation)
+          </div>
+        </div>
+      </div>
+    </div>
+    """
   end
 end
