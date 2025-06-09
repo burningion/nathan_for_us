@@ -504,7 +504,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
     case String.starts_with?(hex_data, "\\x") do
       true ->
         # Remove the \x prefix and decode from hex
-        hex_string = String.slice(hex_data, 2..-1)
+        hex_string = String.slice(hex_data, 2..-1//1)
         case Base.decode16(hex_string, case: :lower) do
           {:ok, binary_data} -> Base.encode64(binary_data)
           :error -> ""
