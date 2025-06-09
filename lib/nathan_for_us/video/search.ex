@@ -255,7 +255,11 @@ defmodule NathanForUs.Video.Search do
   def group_frames_by_video(frames) do
     frames
     |> Enum.group_by(fn frame -> 
-      {Map.get(frame, :video_id), Map.get(frame, :video_title, "Unknown Video")}
+      video_title = case Map.get(frame, :video_title) do
+        nil -> "Unknown Video"
+        title -> title
+      end
+      {Map.get(frame, :video_id), video_title}
     end)
     |> Enum.map(fn {{video_id, video_title}, video_frames} ->
       %{

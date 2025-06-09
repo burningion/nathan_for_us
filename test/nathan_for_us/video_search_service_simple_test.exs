@@ -173,4 +173,190 @@ defmodule NathanForUs.SearchSimpleTest do
       assert result == "Hello World !"
     end
   end
+  
+  describe "group_frames_by_video/1" do
+    test "groups frames by video correctly" do
+      frames = [
+        %{id: 1, video_id: 1, video_title: "Video A", timestamp_ms: 1000},
+        %{id: 2, video_id: 2, video_title: "Video B", timestamp_ms: 2000},
+        %{id: 3, video_id: 1, video_title: "Video A", timestamp_ms: 3000},
+        %{id: 4, video_id: 3, video_title: "Video C", timestamp_ms: 4000},
+        %{id: 5, video_id: 2, video_title: "Video B", timestamp_ms: 5000}
+      ]
+      
+      result = Search.group_frames_by_video(frames)
+      
+      # Should return 3 video groups
+      assert length(result) == 3
+      
+      # Find each video group
+      video_a = Enum.find(result, fn vr -> vr.video_id == 1 end)
+      video_b = Enum.find(result, fn vr -> vr.video_id == 2 end)
+      video_c = Enum.find(result, fn vr -> vr.video_id == 3 end)
+      
+      # Verify Video A group
+      assert video_a.video_title == "Video A"
+      assert video_a.frame_count == 2
+      assert length(video_a.frames) == 2
+      assert video_a.expanded == false
+      assert Enum.any?(video_a.frames, fn f -> f.id == 1 end)
+      assert Enum.any?(video_a.frames, fn f -> f.id == 3 end)
+      
+      # Verify Video B group
+      assert video_b.video_title == "Video B"
+      assert video_b.frame_count == 2
+      assert length(video_b.frames) == 2
+      assert video_b.expanded == false
+      assert Enum.any?(video_b.frames, fn f -> f.id == 2 end)
+      assert Enum.any?(video_b.frames, fn f -> f.id == 5 end)
+      
+      # Verify Video C group
+      assert video_c.video_title == "Video C"
+      assert video_c.frame_count == 1
+      assert length(video_c.frames) == 1
+      assert video_c.expanded == false
+      assert List.first(video_c.frames).id == 4
+    end
+    
+    test "handles frames with missing video_title gracefully" do
+      frames = [
+        %{id: 1, video_id: 1, timestamp_ms: 1000},  # missing video_title key
+        %{id: 2, video_id: 1, video_title: nil, timestamp_ms: 2000},  # nil video_title
+        %{id: 3, video_id: 2, video_title: "Video B", timestamp_ms: 3000}
+      ]
+      
+      result = Search.group_frames_by_video(frames)
+      
+      # Should group frames with missing/nil titles under "Unknown Video"
+      assert length(result) == 2
+      
+      unknown_video = Enum.find(result, fn vr -> vr.video_title == "Unknown Video" end)
+      video_b = Enum.find(result, fn vr -> vr.video_title == "Video B" end)
+      
+      assert unknown_video.video_id == 1
+      assert unknown_video.frame_count == 2
+      assert length(unknown_video.frames) == 2
+      
+      assert video_b.video_id == 2
+      assert video_b.frame_count == 1
+      assert length(video_b.frames) == 1
+    end
+    
+    test "returns empty list for empty frames" do
+      result = Search.group_frames_by_video([])
+      assert result == []
+    end
+    
+    test "handles single frame correctly" do
+      frames = [
+        %{id: 1, video_id: 42, video_title: "Single Video", timestamp_ms: 1000}
+      ]
+      
+      result = Search.group_frames_by_video(frames)
+      
+      assert length(result) == 1
+      video_group = List.first(result)
+      
+      assert video_group.video_id == 42
+      assert video_group.video_title == "Single Video"
+      assert video_group.frame_count == 1
+      assert length(video_group.frames) == 1
+      assert video_group.expanded == false
+      assert List.first(video_group.frames).id == 1
+    end
+    
+    test "sorts video groups by title" do
+      frames = [
+        %{id: 1, video_id: 1, video_title: "Zebra Video", timestamp_ms: 1000},
+        %{id: 2, video_id: 2, video_title: "Apple Video", timestamp_ms: 2000},
+        %{id: 3, video_id: 3, video_title: "Banana Video", timestamp_ms: 3000}
+      ]
+      
+      result = Search.group_frames_by_video(frames)
+      
+      # Should be sorted alphabetically by title
+      titles = Enum.map(result, & &1.video_title)
+      assert titles == ["Apple Video", "Banana Video", "Zebra Video"]
+    end
+    
+    test "preserves frame order within each video group" do
+      frames = [
+        %{id: 3, video_id: 1, video_title: "Video A", timestamp_ms: 3000, frame_number: 3},
+        %{id: 1, video_id: 1, video_title: "Video A", timestamp_ms: 1000, frame_number: 1},
+        %{id: 2, video_id: 1, video_title: "Video A", timestamp_ms: 2000, frame_number: 2}
+      ]
+      
+      result = Search.group_frames_by_video(frames)
+      
+      assert length(result) == 1
+      video_group = List.first(result)
+      
+      # Frames should maintain their original order (as returned by search query)
+      frame_ids = Enum.map(video_group.frames, & &1.id)
+      assert frame_ids == [3, 1, 2]
+    end
+    
+    test "handles frames with same video_id but different video_title" do
+      # This could happen due to data inconsistency
+      frames = [
+        %{id: 1, video_id: 1, video_title: "Video A", timestamp_ms: 1000},
+        %{id: 2, video_id: 1, video_title: "Video A Modified", timestamp_ms: 2000}
+      ]
+      
+      result = Search.group_frames_by_video(frames)
+      
+      # Should create separate groups for different titles even with same video_id
+      assert length(result) == 2
+      
+      video_a = Enum.find(result, fn vr -> vr.video_title == "Video A" end)
+      video_a_mod = Enum.find(result, fn vr -> vr.video_title == "Video A Modified" end)
+      
+      assert video_a.frame_count == 1
+      assert video_a_mod.frame_count == 1
+      assert List.first(video_a.frames).id == 1
+      assert List.first(video_a_mod.frames).id == 2
+    end
+    
+    test "all video groups start with expanded false" do
+      frames = [
+        %{id: 1, video_id: 1, video_title: "Video A", timestamp_ms: 1000},
+        %{id: 2, video_id: 2, video_title: "Video B", timestamp_ms: 2000},
+        %{id: 3, video_id: 3, video_title: "Video C", timestamp_ms: 3000}
+      ]
+      
+      result = Search.group_frames_by_video(frames)
+      
+      # All videos should start collapsed
+      assert Enum.all?(result, fn video_group -> video_group.expanded == false end)
+    end
+    
+    test "preserves all frame data in grouped results" do
+      frames = [
+        %{
+          id: 1, 
+          video_id: 1, 
+          video_title: "Video A", 
+          timestamp_ms: 1000,
+          frame_number: 42,
+          file_path: "/path/to/frame.jpg",
+          caption_texts: "Hello world"
+        }
+      ]
+      
+      result = Search.group_frames_by_video(frames)
+      
+      assert length(result) == 1
+      video_group = List.first(result)
+      frame = List.first(video_group.frames)
+      
+      # All original frame data should be preserved
+      assert frame.id == 1
+      assert frame.video_id == 1
+      assert frame.video_title == "Video A"
+      assert frame.timestamp_ms == 1000
+      assert frame.frame_number == 42
+      assert frame.file_path == "/path/to/frame.jpg"
+      assert frame.caption_texts == "Hello world"
+    end
+  end
 end
