@@ -685,6 +685,32 @@ defmodule NathanForUsWeb.VideoSearchLive do
     end
   end
 
+  defp get_selected_frames_captions(frame_sequence, selected_frame_indices) do
+    if frame_sequence && Map.has_key?(frame_sequence, :sequence_captions) do
+      # Get selected frames
+      selected_frames = selected_frame_indices
+      |> Enum.map(fn index -> 
+        Enum.at(frame_sequence.sequence_frames, index)
+      end)
+      |> Enum.reject(&is_nil/1)
+      
+      # Collect all captions from selected frames
+      all_captions = selected_frames
+      |> Enum.flat_map(fn frame ->
+        Map.get(frame_sequence.sequence_captions, frame.id, [])
+      end)
+      |> Enum.uniq()
+      |> Enum.reject(&(is_nil(&1) or String.trim(&1) == ""))
+      
+      case all_captions do
+        [] -> "No dialogue found for selected frames"
+        captions -> Enum.join(captions, " ")
+      end
+    else
+      "Loading captions..."
+    end
+  end
+
   # Frame sequence modal component
   defp frame_sequence_modal(assigns) do
     ~H"""
@@ -795,6 +821,15 @@ defmodule NathanForUsWeb.VideoSearchLive do
                 </div>
               </div>
             </div>
+            
+            <!-- Selected Frames Captions -->
+            <div class="mt-6 p-4 bg-zinc-800 rounded border border-zinc-700">
+              <div class="text-zinc-300 text-xs uppercase mb-3 font-mono">🎬 SELECTED FRAMES DIALOGUE</div>
+              <div class="text-zinc-100 text-sm leading-relaxed font-mono">
+                <%= get_selected_frames_captions(@frame_sequence, @selected_frame_indices) %>
+              </div>
+            </div>
+            
             <div class="text-center mt-4">
               <p class="text-zinc-400 text-sm font-mono">Click frames below to control which ones animate</p>
             </div>

@@ -326,10 +326,26 @@ defmodule NathanForUs.Video do
         |> Repo.all()
         |> Enum.join(" | ")
         
+        # Get captions for all frames in the sequence
+        frame_ids = Enum.map(frames, & &1.id)
+        sequence_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          join: f in VideoFrame, on: fc.frame_id == f.id,
+          where: f.id in ^frame_ids,
+          select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
+          order_by: [f.frame_number, c.start_time_ms]
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.frame_id)
+        |> Enum.into(%{}, fn {frame_id, captions} ->
+          {frame_id, Enum.map(captions, & &1.caption_text)}
+        end)
+        
         {:ok, %{
           target_frame: target_frame,
           sequence_frames: frames,
           target_captions: target_captions,
+          sequence_captions: sequence_captions,
           sequence_info: %{
             target_frame_number: target_frame_number,
             start_frame_number: start_frame,
