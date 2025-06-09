@@ -7,22 +7,33 @@ defmodule NathanForUs.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
+    base_children = [
       NathanForUsWeb.Telemetry,
       NathanForUs.Repo,
       {DNSCluster, query: Application.get_env(:nathan_for_us, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: NathanForUs.PubSub},
       # Start the Finch HTTP client for sending emails
-      {Finch, name: NathanForUs.Finch},
-      # Start the Bluesky firehose connection
-      NathanForUs.BlueskyHose,
-      # Start the video processing pipeline
-      NathanForUs.VideoProcessing,
-      # Start a worker by calling: NathanForUs.Worker.start_link(arg)
-      # {NathanForUs.Worker, arg},
-      # Start to serve requests, typically the last entry
-      NathanForUsWeb.Endpoint
+      {Finch, name: NathanForUs.Finch}
     ]
+    
+    # Conditionally add services based on environment
+    optional_children = []
+    
+    optional_children = 
+      if Application.get_env(:nathan_for_us, :start_bluesky_hose, true) do
+        [NathanForUs.BlueskyHose | optional_children]
+      else
+        optional_children
+      end
+    
+    optional_children = 
+      if Application.get_env(:nathan_for_us, :start_video_processing, true) do
+        [NathanForUs.VideoProcessing | optional_children]
+      else
+        optional_children
+      end
+    
+    children = base_children ++ optional_children ++ [NathanForUsWeb.Endpoint]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

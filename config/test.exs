@@ -38,3 +38,7 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+# Disable video processing and external services during tests
+config :nathan_for_us, :start_video_processing, false
+config :nathan_for_us, :start_bluesky_hose, false
