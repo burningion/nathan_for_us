@@ -172,6 +172,27 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("select_all_videos", _params, socket) do
+    all_video_ids = Enum.map(socket.assigns.videos, & &1.id)
+    search_mode = Search.determine_search_mode(all_video_ids)
+    
+    socket =
+      socket
+      |> assign(:selected_video_ids, all_video_ids)
+      |> assign(:search_mode, search_mode)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("clear_video_selection", _params, socket) do
+    socket =
+      socket
+      |> assign(:selected_video_ids, [])
+      |> assign(:search_mode, :global)
+
+    {:noreply, socket}
+  end
+
   def handle_event("process_video", %{"video_path" => video_path}, socket) do
     try do
       case NathanForUs.VideoProcessing.process_video(video_path) do
