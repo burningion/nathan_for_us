@@ -8,7 +8,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
   
   use NathanForUsWeb, :live_view
   
-  alias NathanForUs.Video
+  alias NathanForUs.{Video, VideoSearchService}
 
   on_mount {__MODULE__, :assign_meta_tags}
 
@@ -93,20 +93,15 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   def handle_event("toggle_video_selection", %{"video_id" => video_id}, socket) do
     video_id = String.to_integer(video_id)
-    selected_ids = socket.assigns.selected_video_ids
+    current_selected = socket.assigns.selected_video_ids
     
-    new_selected_ids = 
-      if video_id in selected_ids do
-        List.delete(selected_ids, video_id)
-      else
-        [video_id | selected_ids]
-      end
+    new_selected_ids = VideoSearchService.update_video_filter(current_selected, video_id)
 
     {:noreply, assign(socket, :selected_video_ids, new_selected_ids)}
   end
 
   def handle_event("apply_video_filter", _params, socket) do
-    search_mode = if Enum.empty?(socket.assigns.selected_video_ids), do: :global, else: :filtered
+    search_mode = VideoSearchService.determine_search_mode(socket.assigns.selected_video_ids)
     
     socket =
       socket
@@ -204,19 +199,24 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   @impl true
   def handle_info({:perform_search, term}, socket) do
-    results = case socket.assigns.search_mode do
-      :global -> 
-        Video.search_frames_by_text_simple(term)
-      :filtered -> 
-        Video.search_frames_by_text_simple_filtered(term, socket.assigns.selected_video_ids)
-    end
-    
-    socket =
-      socket
-      |> assign(:search_results, results)
-      |> assign(:loading, false)
+    case VideoSearchService.search_frames(term, socket.assigns.search_mode, socket.assigns.selected_video_ids) do
+      {:ok, results} ->
+        socket =
+          socket
+          |> assign(:search_results, results)
+          |> assign(:loading, false)
 
-    {:noreply, socket}
+        {:noreply, socket}
+      
+      {:error, reason} ->
+        socket =
+          socket
+          |> assign(:search_results, [])
+          |> assign(:loading, false)
+          |> put_flash(:error, "Search failed: #{reason}")
+
+        {:noreply, socket}
+    end
   end
 
   @impl true

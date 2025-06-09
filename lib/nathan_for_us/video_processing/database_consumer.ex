@@ -30,52 +30,81 @@ defmodule NathanForUs.VideoProcessing.DatabaseConsumer do
     Logger.info("Database consumer received #{length(processing_events)} processing events")
     
     for event <- processing_events do
-      save_video_data(event)
+      process_event(event)
     end
     
     {:noreply, [], state}
   end
 
-  defp save_video_data(%{video: video, frame_data: frame_data, caption_data: caption_data}) do
-    Logger.info("Saving data for video: #{video.title}")
+  defp process_event(%{video: video} = event) do
+    Logger.info("Processing event for video: #{video.title}")
     
-    Repo.transaction(fn ->
-      try do
-        # Save frames in batch
-        if length(frame_data) > 0 do
-          Logger.info("Saving #{length(frame_data)} frames")
-          Video.create_frames_batch(video.id, frame_data)
-        end
-        
-        # Save captions in batch
-        if length(caption_data) > 0 do
-          Logger.info("Saving #{length(caption_data)} captions")
-          Video.create_captions_batch(video.id, caption_data)
-          
-          # Link frames to captions based on timestamp overlap
-          Logger.info("Linking frames to captions")
-          Video.link_frames_to_captions(video.id)
-        end
-        
-        # Mark video as completed
-        Video.update_video(video, %{
-          status: "completed",
-          completed_at: DateTime.utc_now()
-        })
-        
+    case save_video_data(event) do
+      {:ok, _result} ->
         Logger.info("Successfully processed video: #{video.title}")
-        
-      rescue
-        error ->
-          Logger.error("Failed to save video data: #{Exception.format(:error, error, __STACKTRACE__)}")
-          
-          Video.update_video(video, %{
-            status: "failed",
-            completed_at: DateTime.utc_now()
-          })
-          
-          Repo.rollback(error)
+        mark_video_completed(video)
+      
+      {:error, reason} ->
+        Logger.error("Failed to process video #{video.title}: #{reason}")
+        mark_video_failed(video)
+    end
+  end
+
+  defp save_video_data(%{video: video, frame_data: frame_data, caption_data: caption_data}) do
+    Repo.transaction(fn ->
+      with {:ok, _frames} <- save_frames(video.id, frame_data),
+           {:ok, _captions} <- save_captions(video.id, caption_data),
+           {:ok, _links} <- link_frames_to_captions(video.id, caption_data) do
+        :ok
+      else
+        {:error, reason} ->
+          Logger.error("Database operation failed: #{reason}")
+          Repo.rollback(reason)
       end
     end)
+  end
+
+  defp save_frames(video_id, frame_data) when length(frame_data) > 0 do
+    Logger.info("Saving #{length(frame_data)} frames")
+    
+    case Video.create_frames_batch(video_id, frame_data) do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, "Failed to save frames: #{reason}"}
+    end
+  end
+  defp save_frames(_video_id, []), do: {:ok, []}
+
+  defp save_captions(video_id, caption_data) when length(caption_data) > 0 do
+    Logger.info("Saving #{length(caption_data)} captions")
+    
+    case Video.create_captions_batch(video_id, caption_data) do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, "Failed to save captions: #{reason}"}
+    end
+  end
+  defp save_captions(_video_id, []), do: {:ok, []}
+
+  defp link_frames_to_captions(video_id, caption_data) when length(caption_data) > 0 do
+    Logger.info("Linking frames to captions")
+    
+    case Video.link_frames_to_captions(video_id) do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, "Failed to link frames to captions: #{reason}"}
+    end
+  end
+  defp link_frames_to_captions(_video_id, []), do: {:ok, []}
+
+  defp mark_video_completed(video) do
+    Video.update_video(video, %{
+      status: "completed",
+      completed_at: DateTime.utc_now()
+    })
+  end
+
+  defp mark_video_failed(video) do
+    Video.update_video(video, %{
+      status: "failed",
+      completed_at: DateTime.utc_now()
+    })
   end
 end

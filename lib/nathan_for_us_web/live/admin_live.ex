@@ -1,66 +1,72 @@
 defmodule NathanForUsWeb.AdminLive do
   use NathanForUsWeb, :live_view
 
-  alias NathanForUs.Admin
+  alias NathanForUs.{Admin, AdminService}
 
   on_mount {NathanForUsWeb.UserAuth, :ensure_authenticated}
 
   def mount(_params, _session, socket) do
-    # Check if user is admin
-    if Admin.is_admin?(socket.assigns.current_user) do
-      stats = Admin.get_stats()
+    case AdminService.validate_admin_access(socket.assigns.current_user) do
+      :ok ->
+        stats = AdminService.get_admin_stats()
+        
+        {:ok, assign(socket,
+          stats: stats,
+          backfill_running: false,
+          backfill_results: nil,
+          page_title: "Admin Dashboard",
+          page_description: "Administrative functions for Nathan For Us"
+        )}
       
-      {:ok, assign(socket,
-        stats: stats,
-        backfill_running: false,
-        backfill_results: nil,
-        page_title: "Admin Dashboard",
-        page_description: "Administrative functions for Nathan For Us"
-      )}
-    else
-      {:ok, 
-        socket
-        |> put_flash(:error, "Access denied. Admin privileges required.")
-        |> redirect(to: ~p"/")}
+      {:error, :access_denied} ->
+        {:ok, 
+          socket
+          |> put_flash(:error, "Access denied. Admin privileges required.")
+          |> redirect(to: ~p"/")}
     end
   end
 
   def handle_event("start_backfill", %{"limit" => limit_str, "dry_run" => dry_run_str}, socket) do
-    if socket.assigns.backfill_running do
+    if not AdminService.can_start_backfill?(socket.assigns.backfill_running) do
       {:noreply, put_flash(socket, :error, "Backfill already running")}
     else
-      limit = String.to_integer(limit_str)
-      dry_run = dry_run_str == "true"
-
-      # Start backfill in a task
-      task = Task.async(fn ->
-        Admin.backfill_bluesky_profiles(limit: limit, dry_run: dry_run)
-      end)
-
-      {:noreply, 
-        socket
-        |> assign(
-          backfill_running: true,
-          backfill_task: task,
-          backfill_results: nil
-        )
-        |> put_flash(:info, "Starting profile backfill...")}
+      params = %{"limit" => limit_str, "dry_run" => dry_run_str}
+      
+      case AdminService.parse_backfill_params(params) do
+        {:ok, options} ->
+          case AdminService.start_backfill(options) do
+            {:ok, task} ->
+              {:noreply, 
+                socket
+                |> assign(
+                  backfill_running: true,
+                  backfill_task: task,
+                  backfill_results: nil
+                )
+                |> put_flash(:info, "Starting profile backfill...")}
+            
+            {:error, reason} ->
+              {:noreply, put_flash(socket, :error, "Failed to start backfill: #{reason}")}
+          end
+        
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, reason)}
+      end
     end
   end
 
   def handle_event("refresh_stats", _params, socket) do
-    stats = Admin.get_stats()
+    stats = AdminService.get_admin_stats()
     {:noreply, assign(socket, stats: stats)}
   end
 
   def handle_info({ref, result}, socket) do
     if socket.assigns[:backfill_task] && socket.assigns.backfill_task.ref == ref do
-      # Backfill task completed
       Process.demonitor(ref, [:flush])
       
-      case result do
+      case AdminService.handle_backfill_completion(result) do
         {:ok, results} ->
-          stats = Admin.get_stats()
+          stats = AdminService.get_admin_stats()
           
           {:noreply,
             socket
@@ -79,7 +85,7 @@ defmodule NathanForUsWeb.AdminLive do
               backfill_running: false,
               backfill_task: nil
             )
-            |> put_flash(:error, "Backfill failed: #{inspect(reason)}")}
+            |> put_flash(:error, reason)}
       end
     else
       {:noreply, socket}
