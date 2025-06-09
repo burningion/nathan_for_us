@@ -36,6 +36,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:search_mode, :global)
       |> assign(:show_sequence_modal, false)
       |> assign(:frame_sequence, nil)
+      |> assign(:selected_frame_indices, [])
 
     {:ok, socket}
   end
@@ -147,10 +148,14 @@ defmodule NathanForUsWeb.VideoSearchLive do
     
     case Video.get_frame_sequence(frame_id) do
       {:ok, frame_sequence} ->
+        # Select all frames by default
+        all_frame_indices = 0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
+        
         socket =
           socket
           |> assign(:frame_sequence, frame_sequence)
           |> assign(:show_sequence_modal, true)
+          |> assign(:selected_frame_indices, all_frame_indices)
         
         {:noreply, socket}
       
@@ -165,7 +170,34 @@ defmodule NathanForUsWeb.VideoSearchLive do
       socket
       |> assign(:show_sequence_modal, false)
       |> assign(:frame_sequence, nil)
+      |> assign(:selected_frame_indices, [])
     
+    {:noreply, socket}
+  end
+
+  def handle_event("toggle_frame_selection", %{"frame_index" => frame_index_str}, socket) do
+    frame_index = String.to_integer(frame_index_str)
+    current_selected = socket.assigns.selected_frame_indices
+    
+    new_selected = 
+      if frame_index in current_selected do
+        List.delete(current_selected, frame_index)
+      else
+        [frame_index | current_selected] |> Enum.sort()
+      end
+    
+    socket = assign(socket, :selected_frame_indices, new_selected)
+    {:noreply, socket}
+  end
+
+  def handle_event("select_all_frames", _params, socket) do
+    all_frame_indices = 0..(length(socket.assigns.frame_sequence.sequence_frames) - 1) |> Enum.to_list()
+    socket = assign(socket, :selected_frame_indices, all_frame_indices)
+    {:noreply, socket}
+  end
+
+  def handle_event("deselect_all_frames", _params, socket) do
+    socket = assign(socket, :selected_frame_indices, [])
     {:noreply, socket}
   end
 
@@ -221,6 +253,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
         <.frame_sequence_modal 
           :if={@show_sequence_modal}
           frame_sequence={@frame_sequence}
+          selected_frame_indices={@selected_frame_indices}
         />
       </div>
     </div>
@@ -663,7 +696,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
             <div>
               <h2 class="text-xl font-bold text-zinc-900 font-mono">FRAME SEQUENCE VIEWER</h2>
               <p class="text-sm text-zinc-600 font-mono mt-1">
-                Frame #<%= @frame_sequence.target_frame.frame_number %> with surrounding frames (± 2)
+                Frame #<%= @frame_sequence.target_frame.frame_number %> with surrounding frames (± 5)
               </p>
             </div>
             <button
@@ -691,7 +724,35 @@ defmodule NathanForUsWeb.VideoSearchLive do
           
           <!-- Animated GIF Preview -->
           <div class="mb-8 bg-zinc-900 rounded-lg p-6">
-            <div class="text-white uppercase mb-4 font-mono text-sm">🎬 ANIMATED PREVIEW</div>
+            <div class="text-white uppercase mb-4 font-mono text-sm flex items-center justify-between">
+              <span>🎬 ANIMATED PREVIEW</span>
+              <span class="text-xs text-zinc-400">
+                Animating <%= length(@selected_frame_indices) %> of <%= length(@frame_sequence.sequence_frames) %> frames
+              </span>
+            </div>
+            
+            <!-- Selection Controls -->
+            <div class="mb-4 p-3 bg-zinc-800 rounded border border-zinc-700">
+              <div class="text-zinc-300 text-xs uppercase mb-2">FRAME SELECTION CONTROLS</div>
+              <div class="flex items-center gap-4">
+                <button 
+                  phx-click="select_all_frames"
+                  class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
+                >
+                  SELECT ALL
+                </button>
+                <button 
+                  phx-click="deselect_all_frames"
+                  class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
+                >
+                  DESELECT ALL
+                </button>
+                <div class="text-zinc-400 text-xs ml-4">
+                  Click individual frames below to toggle them in/out of animation
+                </div>
+              </div>
+            </div>
+            
             <div class="flex justify-center">
               <div class="relative bg-black rounded-lg overflow-hidden">
                 <div 
@@ -705,6 +766,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
                       nil
                     end
                   end))}
+                  data-selected-indices={Jason.encode!(@selected_frame_indices)}
                 >
                   <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
                     <%= if Map.get(frame, :image_data) do %>
@@ -714,7 +776,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
                         alt={"Frame ##{frame.frame_number}"}
                         class={[
                           "absolute inset-0 w-full h-full object-cover transition-opacity duration-50",
-                          if(index == 0, do: "opacity-100", else: "opacity-0")
+                          if(index == Enum.at(@selected_frame_indices, 0, 0), do: "opacity-100", else: "opacity-0")
                         ]}
                         data-frame-index={index}
                       />
@@ -728,23 +790,36 @@ defmodule NathanForUsWeb.VideoSearchLive do
                   
                   <!-- Frame counter -->
                   <div id={"frame-counter-#{@frame_sequence.target_frame.id}"} class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
-                    1/<%= length(@frame_sequence.sequence_frames) %>
+                    1/<%= length(@selected_frame_indices) %>
                   </div>
                 </div>
               </div>
             </div>
             <div class="text-center mt-4">
-              <p class="text-zinc-400 text-sm font-mono">Frames cycling automatically to simulate video motion</p>
+              <p class="text-zinc-400 text-sm font-mono">Click frames below to control which ones animate</p>
             </div>
           </div>
           
           <!-- Frame Sequence Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
               <div class={[
-                "border rounded-lg overflow-hidden",
-                if(frame.id == @frame_sequence.target_frame.id, do: "border-blue-500 border-2 bg-blue-50", else: "border-zinc-300")
-              ]}>
+                "border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-all",
+                cond do
+                  frame.id == @frame_sequence.target_frame.id and index in @selected_frame_indices -> 
+                    "border-blue-500 border-2 bg-blue-50 ring-2 ring-blue-200"
+                  frame.id == @frame_sequence.target_frame.id -> 
+                    "border-blue-300 border-2 bg-blue-25 ring-1 ring-blue-100 opacity-60"
+                  index in @selected_frame_indices -> 
+                    "border-blue-500 border-2 bg-blue-50"
+                  true -> 
+                    "border-zinc-300 hover:border-zinc-400 opacity-60"
+                end
+              ]}
+              phx-click="toggle_frame_selection"
+              phx-value-frame_index={index}
+              title={if index in @selected_frame_indices, do: "Click to remove from animation", else: "Click to add to animation"}
+              >
                 <!-- Frame Image -->
                 <div class="aspect-video bg-zinc-100 relative">
                   <%= if Map.get(frame, :image_data) do %>
@@ -773,6 +848,21 @@ defmodule NathanForUsWeb.VideoSearchLive do
                   <%= if frame.id == @frame_sequence.target_frame.id do %>
                     <div class="absolute top-1 left-1 bg-blue-600 text-white px-1 py-0.5 rounded text-xs font-mono">
                       TARGET
+                    </div>
+                  <% end %>
+                  
+                  <!-- Selection indicator -->
+                  <%= if index in @selected_frame_indices do %>
+                    <div class="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  <% else %>
+                    <div class="absolute top-1 right-1 bg-zinc-400 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-50">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </div>
                   <% end %>
                 </div>
@@ -817,7 +907,30 @@ defmodule NathanForUsWeb.VideoSearchLive do
           
           <!-- Animation Status -->
           <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded text-green-800 text-sm font-mono">
-            ✅ Animation active - <%= @frame_sequence.sequence_info.total_frames %> frames cycling at 134ms intervals (~7.5fps simulation)
+            ✅ Animation active - <%= length(@selected_frame_indices) %> of <%= @frame_sequence.sequence_info.total_frames %> frames cycling at 134ms intervals (~7.5fps simulation)
+          </div>
+          
+          <!-- Frame Legend -->
+          <div class="mt-4 p-3 bg-zinc-50 border border-zinc-200 rounded text-zinc-700 text-sm font-mono">
+            <div class="text-zinc-600 uppercase mb-2 text-xs">FRAME LEGEND</div>
+            <div class="flex flex-wrap gap-4 text-xs">
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 border-2 border-blue-500 bg-blue-50 rounded"></div>
+                <span>Target Frame</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 border-2 border-blue-500 bg-blue-50 rounded flex items-center justify-center">
+                  <svg class="w-2 h-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <span>Selected for Animation</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 border border-zinc-300 bg-white rounded opacity-60"></div>
+                <span>Not Selected</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

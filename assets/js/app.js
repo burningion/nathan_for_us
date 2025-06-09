@@ -26,13 +26,22 @@ import topbar from "../vendor/topbar"
 let Hooks = {}
 Hooks.FrameAnimator = {
   mounted() {
-    this.currentFrame = 0
-    this.frames = JSON.parse(this.el.dataset.frames).filter(frame => frame !== null)
-    this.frameCount = this.frames.length
-    this.frameElements = Array.from(this.el.querySelectorAll('[data-frame-index]'))
-    this.counter = document.getElementById(this.el.id.replace('animation-container', 'frame-counter'))
+    this.updateAnimationRange()
     
-    if (this.frameCount > 1) {
+    if (this.animationFrameCount > 1) {
+      this.startAnimation()
+    }
+  },
+  
+  updated() {
+    // Stop current animation and restart with new range
+    if (this.animationInterval) {
+      clearInterval(this.animationInterval)
+    }
+    
+    this.updateAnimationRange()
+    
+    if (this.animationFrameCount > 1) {
       this.startAnimation()
     }
   },
@@ -43,26 +52,53 @@ Hooks.FrameAnimator = {
     }
   },
   
+  updateAnimationRange() {
+    this.frames = JSON.parse(this.el.dataset.frames).filter(frame => frame !== null)
+    this.selectedIndices = JSON.parse(this.el.dataset.selectedIndices || '[]')
+    
+    this.animationFrameCount = this.selectedIndices.length
+    this.currentFrameIndex = 0  // Index within selectedIndices array
+    this.frameElements = Array.from(this.el.querySelectorAll('[data-frame-index]'))
+    this.counter = document.getElementById(this.el.id.replace('animation-container', 'frame-counter'))
+    
+    // Hide all frames initially
+    this.frameElements.forEach(el => {
+      el.classList.remove('opacity-100')
+      el.classList.add('opacity-0')
+    })
+    
+    // Show the first selected frame
+    if (this.selectedIndices.length > 0 && this.frameElements[this.selectedIndices[0]]) {
+      this.frameElements[this.selectedIndices[0]].classList.remove('opacity-0')
+      this.frameElements[this.selectedIndices[0]].classList.add('opacity-100')
+    }
+    
+    // Update counter
+    if (this.counter) {
+      this.counter.textContent = `1/${this.animationFrameCount}`
+    }
+  },
+  
   startAnimation() {
     this.animationInterval = setInterval(() => {
       // Hide current frame
-      this.frameElements.forEach(el => {
-        el.classList.remove('opacity-100')
-        el.classList.add('opacity-0')
-      })
+      if (this.selectedIndices.length > 0 && this.frameElements[this.selectedIndices[this.currentFrameIndex]]) {
+        this.frameElements[this.selectedIndices[this.currentFrameIndex]].classList.remove('opacity-100')
+        this.frameElements[this.selectedIndices[this.currentFrameIndex]].classList.add('opacity-0')
+      }
       
-      // Move to next frame
-      this.currentFrame = (this.currentFrame + 1) % this.frameCount
+      // Move to next frame within selected indices
+      this.currentFrameIndex = (this.currentFrameIndex + 1) % this.selectedIndices.length
       
       // Show next frame
-      if (this.frameElements[this.currentFrame]) {
-        this.frameElements[this.currentFrame].classList.remove('opacity-0')
-        this.frameElements[this.currentFrame].classList.add('opacity-100')
+      if (this.selectedIndices.length > 0 && this.frameElements[this.selectedIndices[this.currentFrameIndex]]) {
+        this.frameElements[this.selectedIndices[this.currentFrameIndex]].classList.remove('opacity-0')
+        this.frameElements[this.selectedIndices[this.currentFrameIndex]].classList.add('opacity-100')
       }
       
       // Update counter
       if (this.counter) {
-        this.counter.textContent = `${this.currentFrame + 1}/${this.frameCount}`
+        this.counter.textContent = `${this.currentFrameIndex + 1}/${this.animationFrameCount}`
       }
     }, 134) // 134ms per frame (~7.5fps simulation)
   }
