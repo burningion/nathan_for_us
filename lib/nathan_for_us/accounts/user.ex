@@ -117,16 +117,20 @@ defmodule NathanForUs.Accounts.User do
       Defaults to `true`.
   """
   def password_changeset(user, attrs, opts \\ []) do
-    changeset = 
-      user
-      |> cast(attrs, [:password])
-      |> validate_confirmation(:password, message: "does not match password")
-    
+    user
+    |> cast(attrs, [:password])
+    |> validate_confirmation(:password, message: "does not match password")
+    |> maybe_validate_password(attrs, opts)
+  end
+  
+  defp maybe_validate_password(changeset, attrs, opts) do
     # Only validate password requirements if password is provided
     if Map.get(attrs, "password") || Map.get(attrs, :password) do
       validate_password(changeset, opts)
     else
-      changeset
+      # Still mark password as required for form structure, but don't validate it
+      validate_required(changeset, [])
+      |> Map.put(:required, [:password])
     end
   end
 
