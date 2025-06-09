@@ -14,13 +14,11 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   def frame_sequence_modal(assigns) do
     ~H"""
     <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" phx-click="close_sequence_modal">
-      <div class="bg-white rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto" phx-click-away="close_sequence_modal">
-        <div class="p-6">
+      <div class="bg-white rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[95vh] overflow-y-auto" phx-click-away="close_sequence_modal">
+        <div class="p-4">
           <.modal_header frame_sequence={@frame_sequence} />
           
-          <.target_frame_context frame_sequence={@frame_sequence} />
-          
-          <.animation_preview 
+          <.compact_animation_section 
             frame_sequence={@frame_sequence}
             selected_frame_indices={@selected_frame_indices}
           />
@@ -30,14 +28,10 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
             selected_frame_indices={@selected_frame_indices}
           />
           
-          <.sequence_info frame_sequence={@frame_sequence} />
-          
-          <.animation_status 
-            selected_frame_indices={@selected_frame_indices}
+          <.compact_info_footer 
             frame_sequence={@frame_sequence}
+            selected_frame_indices={@selected_frame_indices}
           />
-          
-          <.frame_legend />
         </div>
       </div>
     </div>
@@ -51,18 +45,18 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   
   def modal_header(assigns) do
     ~H"""
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-3">
       <div>
-        <h2 class="text-xl font-bold text-zinc-900 font-mono">FRAME SEQUENCE VIEWER</h2>
-        <p class="text-sm text-zinc-600 font-mono mt-1">
-          Frame #<%= @frame_sequence.target_frame.frame_number %> with surrounding frames (± 5)
+        <h2 class="text-lg font-bold text-zinc-900 font-mono">FRAME SEQUENCE • #<%= @frame_sequence.target_frame.frame_number %></h2>
+        <p class="text-xs text-zinc-600 font-mono">
+          Surrounding frames (± 5) • Full resolution animation
         </p>
       </div>
       <button
         phx-click="close_sequence_modal"
         class="text-zinc-500 hover:text-zinc-700 transition-colors"
       >
-        <.icon name="hero-x-mark" class="w-6 h-6" />
+        <.icon name="hero-x-mark" class="w-5 h-5" />
       </button>
     </div>
     """
@@ -89,6 +83,59 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
     """
   end
   
+  @doc """
+  Renders the compact animation section with context and preview.
+  """
+  attr :frame_sequence, :map, required: true
+  attr :selected_frame_indices, :list, required: true
+  
+  def compact_animation_section(assigns) do
+    ~H"""
+    <div class="mb-4 bg-zinc-900 rounded-lg p-4">
+      <!-- Top row: Context info and controls -->
+      <div class="flex items-start justify-between mb-3">
+        <div class="text-blue-300 text-xs font-mono">
+          <div class="mb-1">TIMESTAMP: <%= format_timestamp(@frame_sequence.target_frame.timestamp_ms) %></div>
+          <%= if @frame_sequence.target_captions != "" do %>
+            <div class="text-blue-100 italic">
+              "<%= String.slice(@frame_sequence.target_captions, 0, 80) %><%= if String.length(@frame_sequence.target_captions) > 80, do: "..." %>"
+            </div>
+          <% end %>
+        </div>
+        <div class="text-white text-xs font-mono text-right">
+          <div>🎬 ANIMATING <%= length(@selected_frame_indices) %>/<%= length(@frame_sequence.sequence_frames) %></div>
+          <div class="text-zinc-400">FULL RES • LIFELIKE SPEED</div>
+        </div>
+      </div>
+      
+      <!-- Animation controls -->
+      <div class="mb-3 flex items-center gap-2">
+        <button 
+          phx-click="select_all_frames"
+          class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded"
+        >
+          ALL
+        </button>
+        <button 
+          phx-click="deselect_all_frames"
+          class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded"
+        >
+          NONE
+        </button>
+        <div class="text-zinc-400 text-xs ml-2">
+          Click frames below to toggle animation
+        </div>
+      </div>
+      
+      <!-- Animation container -->
+      <.animation_container 
+        frame_sequence={@frame_sequence}
+        selected_frame_indices={@selected_frame_indices}
+      />
+    </div>
+    """
+  end
+
   @doc """
   Renders the animated GIF preview section.
   """
@@ -174,9 +221,9 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
       _ -> 1080
     end
     
-    # Calculate aspect ratio and set max size constraints
+    # Calculate aspect ratio and set more compact size constraints
     aspect_ratio = frame_width / frame_height
-    max_width = min(1200, frame_width)  # Max 1200px wide or original width
+    max_width = min(600, frame_width)  # Smaller max width for compact view
     calculated_height = round(max_width / aspect_ratio)
     
     assigns = assign(assigns, :container_style, "width: #{max_width}px; height: #{calculated_height}px")
@@ -256,7 +303,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   
   def frame_sequence_grid(assigns) do
     ~H"""
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+    <div class="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
       <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
         <.frame_grid_item 
           frame={frame}
@@ -347,15 +394,10 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   
   def frame_grid_info(assigns) do
     ~H"""
-    <div class="p-2">
+    <div class="p-1">
       <div class="text-xs text-zinc-500 font-mono text-center">
         <%= format_timestamp(@frame.timestamp_ms) %>
       </div>
-      <%= if @frame.file_size do %>
-        <div class="text-xs text-zinc-400 font-mono text-center">
-          <%= format_file_size(@frame.file_size) %>
-        </div>
-      <% end %>
     </div>
     """
   end
@@ -435,6 +477,48 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
     """
   end
   
+  @doc """
+  Renders compact info footer combining sequence info, status, and legend.
+  """
+  attr :frame_sequence, :map, required: true
+  attr :selected_frame_indices, :list, required: true
+  
+  def compact_info_footer(assigns) do
+    ~H"""
+    <div class="mt-3 p-3 bg-zinc-50 border border-zinc-200 rounded text-zinc-700 text-sm font-mono">
+      <div class="flex items-center justify-between text-xs">
+        <!-- Sequence info -->
+        <div class="flex items-center gap-4">
+          <div>
+            <span class="text-zinc-500">FRAMES:</span> <%= @frame_sequence.sequence_info.total_frames %>
+          </div>
+          <div>
+            <span class="text-zinc-500">RANGE:</span> #<%= @frame_sequence.sequence_info.start_frame_number %>-<%= @frame_sequence.sequence_info.end_frame_number %>
+          </div>
+          <div>
+            <span class="text-zinc-500">TARGET:</span> #<%= @frame_sequence.sequence_info.target_frame_number %>
+          </div>
+        </div>
+        
+        <!-- Status and legend -->
+        <div class="flex items-center gap-4">
+          <div class="text-green-600">
+            ✅ <%= length(@selected_frame_indices) %>/<%= @frame_sequence.sequence_info.total_frames %> animating
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 border-2 border-blue-500 bg-blue-50 rounded"></div>
+            <span class="text-xs">Target</span>
+            <div class="w-3 h-3 border-2 border-blue-500 bg-blue-50 rounded flex items-center justify-center ml-2">
+              <.icon name="hero-check" class="w-2 h-2 text-blue-500" />
+            </div>
+            <span class="text-xs">Selected</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
   @doc """
   Renders frame legend.
   """
