@@ -691,11 +691,18 @@ defmodule NathanForUsWeb.VideoSearchLive do
         try do
           frame_id = String.to_integer(frame_id_str)
           
-          case Video.get_frame_sequence(frame_id) do
+          # Parse selected frames from URL first
+          selected_indices = parse_selected_frames_from_params(params)
+          
+          # Use the new function that ensures all selected frames are loaded
+          frame_sequence_result = if Enum.empty?(selected_indices) do
+            Video.get_frame_sequence(frame_id)
+          else
+            Video.get_frame_sequence_with_selected_indices(frame_id, selected_indices)
+          end
+          
+          case frame_sequence_result do
             {:ok, frame_sequence} ->
-              # Parse selected frames from URL
-              selected_indices = parse_selected_frames_from_params(params)
-              
               socket
               |> assign(:frame_sequence, frame_sequence)
               |> assign(:show_sequence_modal, true)

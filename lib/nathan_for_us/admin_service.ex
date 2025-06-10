@@ -330,14 +330,6 @@ defmodule NathanForUs.AdminService do
     calculate_framerate_from_timestamps(frame_sequence, selected_frame_indices)
   end
 
-  defp get_video_fps(frame_sequence) do
-    # Try to get FPS from the video record
-    case Map.get(frame_sequence, :video) do
-      %{fps: fps} when is_number(fps) -> fps
-      _ -> nil
-    end
-  end
-
   defp calculate_framerate_from_timestamps(frame_sequence, selected_frame_indices) do
     if length(selected_frame_indices) < 2 do
       # Single frame gets reasonable default

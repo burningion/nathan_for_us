@@ -352,6 +352,98 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Gets a sequence of frames around a target frame, ensuring all selected frame indices are covered.
+  This variant is used when loading frame sequences from shared URLs with specific frame selections.
+  """
+  def get_frame_sequence_with_selected_indices(frame_id, selected_indices, base_sequence_length \\ 5) do
+    case Repo.get(VideoFrame, frame_id) do
+      %VideoFrame{video_id: video_id, frame_number: target_frame_number} = target_frame ->
+        # Calculate the range needed to cover all selected indices
+        {start_frame, end_frame} = calculate_range_for_selected_indices(
+          target_frame_number, 
+          selected_indices, 
+          base_sequence_length
+        )
+        
+        frames = VideoFrame
+        |> where([f], f.video_id == ^video_id)
+        |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
+        |> order_by([f], f.frame_number)
+        |> Repo.all()
+        
+        # Get captions for the target frame to provide context
+        target_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          where: fc.frame_id == ^frame_id,
+          select: c.text
+        )
+        |> Repo.all()
+        |> Enum.join(" | ")
+        
+        # Get captions for all frames in the sequence
+        frame_ids = Enum.map(frames, & &1.id)
+        sequence_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          join: f in VideoFrame, on: fc.frame_id == f.id,
+          where: f.id in ^frame_ids,
+          select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
+          order_by: [f.frame_number, c.start_time_ms]
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.frame_id)
+        |> Enum.into(%{}, fn {frame_id, captions} ->
+          {frame_id, Enum.map(captions, & &1.caption_text)}
+        end)
+        
+        {:ok, %{
+          target_frame: target_frame,
+          sequence_frames: frames,
+          target_captions: target_captions,
+          sequence_captions: sequence_captions,
+          sequence_info: %{
+            target_frame_number: target_frame_number,
+            start_frame_number: start_frame,
+            end_frame_number: end_frame,
+            total_frames: length(frames)
+          }
+        }}
+      
+      nil ->
+        {:error, :frame_not_found}
+    end
+  end
+
+  # Private helper to calculate the frame range needed to cover selected indices
+  defp calculate_range_for_selected_indices(target_frame_number, selected_indices, base_sequence_length) do
+    if Enum.empty?(selected_indices) do
+      # No selected indices, use default range
+      start_frame = max(1, target_frame_number - base_sequence_length)
+      end_frame = target_frame_number + base_sequence_length
+      {start_frame, end_frame}
+    else
+      # Calculate the range based on default sequence and selected indices
+      default_start = max(1, target_frame_number - base_sequence_length)
+      default_end = target_frame_number + base_sequence_length
+      
+      # Convert selected indices to actual frame numbers
+      # Assuming the sequence starts at default_start, selected indices map to:
+      # index 0 -> default_start, index 1 -> default_start + 1, etc.
+      min_selected_index = Enum.min(selected_indices)
+      max_selected_index = Enum.max(selected_indices)
+      
+      # Calculate the actual frame numbers for the selected indices
+      min_selected_frame = default_start + min_selected_index
+      max_selected_frame = default_start + max_selected_index
+      
+      # Expand the range to ensure we cover all selected frames
+      start_frame = max(1, min(default_start, min_selected_frame))
+      end_frame = max(default_end, max_selected_frame)
+      
+      {start_frame, end_frame}
+    end
+  end
+
+  @doc """
   Expands frame sequence backward by adding the previous frame.
   """
   def expand_frame_sequence_backward(frame_sequence) do
