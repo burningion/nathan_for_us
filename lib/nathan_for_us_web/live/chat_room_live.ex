@@ -296,13 +296,13 @@ defmodule NathanForUsWeb.ChatRoomLive do
   def handle_info({:new_message, message}, socket) do
     messages = [message | socket.assigns.chat_messages]
     new_total = socket.assigns.total_messages + 1
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:chat_messages, messages)
       |> assign(:total_messages, new_total)
       |> assign(:show_link_feature, new_total >= 250)
-    
+
     {:noreply, socket}
   end
 
@@ -419,7 +419,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
         </div>
 
         <div class="p-3 border-b border-gray-200 flex-shrink-0">
-          <h2 class="text-base font-semibold text-gray-900">Word Approval (please submit more)</h2>
+          <h2 class="text-base font-semibold text-gray-900">Word Approval (please submit more and approve/deny more)</h2>
         </div>
 
         <!-- Pending Words List -->
