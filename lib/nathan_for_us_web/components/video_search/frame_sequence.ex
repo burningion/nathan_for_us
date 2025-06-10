@@ -162,7 +162,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           </button>
         <% end %>
 
-        <%= if @gif_generation_status == :completed and @generated_gif_data do %>
+        <%= if @gif_generation_status == :completed and (@generated_gif_data != nil or @client_download_url != nil) do %>
           <%= if @client_download_url do %>
             <!-- Client-generated GIF download -->
             <a
@@ -255,15 +255,26 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
 
       <!-- Animation container or Generated GIF (replaces animation when GIF is ready) -->
       <div class="flex justify-center">
-        <%= if @gif_generation_status == :completed and @generated_gif_data do %>
+        <%= if @gif_generation_status == :completed and (@generated_gif_data != nil or @client_download_url != nil) do %>
           <div class="text-center">
             <div class="relative bg-black rounded-lg overflow-hidden mb-4">
-              <img
-                src={"data:image/gif;base64,#{@generated_gif_data}"}
-                alt="Generated GIF from selected frames"
-                class="max-w-full max-h-80 rounded"
-                style="width: 600px; height: auto;"
-              />
+              <%= if @client_download_url do %>
+                <!-- Client-generated GIF (blob URL) -->
+                <img
+                  src={@client_download_url}
+                  alt="Generated GIF from selected frames"
+                  class="max-w-full max-h-80 rounded"
+                  style="width: 600px; height: auto;"
+                />
+              <% else %>
+                <!-- Server-generated GIF (base64 data) -->
+                <img
+                  src={"data:image/gif;base64,#{@generated_gif_data}"}
+                  alt="Generated GIF from selected frames"
+                  class="max-w-full max-h-80 rounded"
+                  style="width: 600px; height: auto;"
+                />
+              <% end %>
               <!-- GIF overlay info -->
               <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
                 GIF • <%= length(@selected_frame_indices) %> FRAMES

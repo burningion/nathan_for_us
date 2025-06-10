@@ -695,6 +695,9 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   def handle_event("gif_generation_complete", %{"download_url" => download_url}, socket) do
+    require Logger
+    Logger.info("Received gif_generation_complete with download_url: #{inspect(download_url)}")
+    
     socket = 
       socket
       |> assign(:gif_generation_status, :completed)

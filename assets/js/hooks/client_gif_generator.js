@@ -77,10 +77,30 @@ const ClientGifGenerator = {
       
       // Create download URL
       const downloadUrl = this.gifGenerator.createDownloadUrl(gifData);
+      console.log("Created download URL:", downloadUrl);
       
+      // Try multiple ways to send the event
+      console.log("Attempting to send gif_generation_complete event...");
+      
+      // Method 1: Standard pushEvent
       this.pushEvent("gif_generation_complete", { 
         download_url: downloadUrl
       });
+      
+      // Method 2: Try to target the parent LiveView directly  
+      const liveSocket = window.liveSocket;
+      if (liveSocket) {
+        console.log("Attempting to send via liveSocket...");
+        // Find the LiveView element
+        const liveViewEl = this.el.closest('[data-phx-main]') || this.el.closest('[phx-session]');
+        if (liveViewEl && liveViewEl.phxHook) {
+          liveViewEl.phxHook.pushEvent("gif_generation_complete", { 
+            download_url: downloadUrl
+          });
+        }
+      }
+      
+      console.log("Sent gif_generation_complete event with download_url:", downloadUrl);
 
     } catch (error) {
       console.error("Client-side GIF generation failed:", error);
