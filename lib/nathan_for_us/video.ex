@@ -358,11 +358,24 @@ defmodule NathanForUs.Video do
   def get_frame_sequence_with_selected_indices(frame_id, selected_indices, base_sequence_length \\ 5) do
     case Repo.get(VideoFrame, frame_id) do
       %VideoFrame{video_id: video_id, frame_number: target_frame_number} = target_frame ->
+        # Get video info to check frame count limits
+        video = Repo.get(Video, video_id)
+        max_frame_number = case video.frame_count do
+          nil -> 
+            # Fallback: get the highest frame number for this video
+            VideoFrame
+            |> where([f], f.video_id == ^video_id)
+            |> select([f], max(f.frame_number))
+            |> Repo.one() || target_frame_number + base_sequence_length
+          count -> count
+        end
+        
         # Calculate the range needed to cover all selected indices
         {start_frame, end_frame} = calculate_range_for_selected_indices(
           target_frame_number, 
           selected_indices, 
-          base_sequence_length
+          base_sequence_length,
+          max_frame_number
         )
         
         frames = VideoFrame
@@ -414,11 +427,13 @@ defmodule NathanForUs.Video do
   end
 
   # Private helper to calculate the frame range needed to cover selected indices
-  defp calculate_range_for_selected_indices(target_frame_number, selected_indices, base_sequence_length) do
+  defp calculate_range_for_selected_indices(target_frame_number, selected_indices, base_sequence_length, max_frame_number) do
     if Enum.empty?(selected_indices) do
       # No selected indices, use default range
       start_frame = max(1, target_frame_number - base_sequence_length)
       end_frame = target_frame_number + base_sequence_length
+      # Limit end_frame to max available frame if specified
+      end_frame = if max_frame_number, do: min(end_frame, max_frame_number), else: end_frame
       {start_frame, end_frame}
     else
       # Calculate the range based on default sequence and selected indices
@@ -438,6 +453,9 @@ defmodule NathanForUs.Video do
       # Expand the range to ensure we cover all selected frames
       start_frame = max(1, min(default_start, min_selected_frame))
       end_frame = max(default_end, max_selected_frame)
+      
+      # Limit end_frame to max available frame if specified
+      end_frame = if max_frame_number, do: min(end_frame, max_frame_number), else: end_frame
       
       {start_frame, end_frame}
     end

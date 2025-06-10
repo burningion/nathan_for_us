@@ -296,11 +296,14 @@ defmodule NathanForUs.AdminService do
       
       if frame && frame.image_data do
         # Decode image data and write to temp file
-        output_path = Path.join(temp_dir, "frame_#{String.pad_leading(to_string(output_index), 4, "0")}.jpg")
+        # FFmpeg expects 1-based numbering, so add 1 to output_index
+        output_path = Path.join(temp_dir, "frame_#{String.pad_leading(to_string(output_index + 1), 4, "0")}.jpg")
         
         image_binary = decode_frame_image_data(frame.image_data)
         File.write!(output_path, image_binary)
         
+        require Logger
+        Logger.debug("Created frame file: #{output_path}")
         output_path
       else
         nil
@@ -386,25 +389,31 @@ defmodule NathanForUs.AdminService do
     if Enum.empty?(frame_paths) do
       {:error, "No valid frames to process"}
     else
+      require Logger
+      Logger.info("Generating GIF with #{length(frame_paths)} frames at #{framerate} fps")
       output_path = Path.join(temp_dir, "output.gif")
       palette_path = Path.join(temp_dir, "palette.png")
+      # Use 1-based numbering pattern to match our file naming
       input_pattern = Path.join(temp_dir, "frame_%04d.jpg")
       
       # Step 1: Generate optimized palette
       palette_args = [
         "-y",  # Overwrite output file
         "-framerate", Float.to_string(framerate),
+        "-start_number", "1",  # Start numbering from 1
         "-i", input_pattern,
         "-vf", "scale=640:-1:flags=lanczos,palettegen=max_colors=256:reserve_transparent=0",
         palette_path
       ]
       
+      Logger.info("Running palette generation: ffmpeg #{Enum.join(palette_args, " ")}")
       case System.cmd("ffmpeg", palette_args, stderr_to_stdout: true) do
         {_palette_output, 0} ->
           # Step 2: Create GIF using the generated palette
           gif_args = [
             "-y",  # Overwrite output file
             "-framerate", Float.to_string(framerate),
+            "-start_number", "1",  # Start numbering from 1
             "-i", input_pattern,
             "-i", palette_path,
             "-lavfi", "scale=640:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5",
@@ -412,6 +421,7 @@ defmodule NathanForUs.AdminService do
             output_path
           ]
           
+          Logger.info("Running GIF generation: ffmpeg #{Enum.join(gif_args, " ")}")
           case System.cmd("ffmpeg", gif_args, stderr_to_stdout: true) do
             {_gif_output, 0} ->
               # Read the generated GIF file

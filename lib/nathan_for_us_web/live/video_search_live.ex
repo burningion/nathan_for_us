@@ -703,10 +703,17 @@ defmodule NathanForUsWeb.VideoSearchLive do
           
           case frame_sequence_result do
             {:ok, frame_sequence} ->
+              # If no specific frames selected, select all frames by default
+              final_selected_indices = if Enum.empty?(selected_indices) do
+                0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
+              else
+                selected_indices
+              end
+              
               socket
               |> assign(:frame_sequence, frame_sequence)
               |> assign(:show_sequence_modal, true)
-              |> assign(:selected_frame_indices, selected_indices)
+              |> assign(:selected_frame_indices, final_selected_indices)
             
             {:error, _reason} ->
               socket
@@ -721,10 +728,12 @@ defmodule NathanForUsWeb.VideoSearchLive do
   defp parse_selected_frames_from_params(params) do
     case Map.get(params, "frames") do
       nil -> []
+      "" -> []  # Handle empty string
       frames_str ->
         frames_str
         |> String.split(",")
         |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))  # Reject empty strings
         |> Enum.reduce([], fn frame_str, acc ->
           try do
             frame_index = String.to_integer(frame_str)
@@ -733,6 +742,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
             ArgumentError -> acc
           end
         end)
+        |> Enum.uniq()  # Remove duplicates
         |> Enum.sort()
     end
   end
