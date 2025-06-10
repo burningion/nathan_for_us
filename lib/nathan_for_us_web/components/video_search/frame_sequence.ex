@@ -188,10 +188,14 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
               <div class="absolute bottom-2 right-2">
                 <a
                   href={"data:image/gif;base64,#{@generated_gif_data}"}
-                  download="nathan_for_us_gif.gif"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-mono transition-colors"
+                  download={"nathan_#{@frame_sequence.target_frame.frame_number}_#{length(@selected_frame_indices)}frames.gif"}
+                  class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-mono font-bold transition-colors shadow-lg flex items-center gap-1"
+                  title="Download GIF"
                 >
-                  ⬇ DOWNLOAD
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3"></path>
+                  </svg>
+                  DOWNLOAD
                 </a>
               </div>
             </div>
