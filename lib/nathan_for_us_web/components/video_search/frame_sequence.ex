@@ -10,7 +10,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
-  attr :animation_speed, :integer, default: 150
+  attr :frame_sequence_version, :integer, default: 0
   attr :gif_generation_status, :atom, default: nil
   attr :generated_gif_data, :string, default: nil
   
@@ -24,7 +24,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           <.compact_animation_section 
             frame_sequence={@frame_sequence}
             selected_frame_indices={@selected_frame_indices}
-            animation_speed={@animation_speed}
             gif_generation_status={@gif_generation_status}
             generated_gif_data={@generated_gif_data}
           />
@@ -38,12 +37,12 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           <.frame_sequence_grid 
             frame_sequence={@frame_sequence}
             selected_frame_indices={@selected_frame_indices}
+            frame_sequence_version={@frame_sequence_version}
           />
           
           <.compact_info_footer 
             frame_sequence={@frame_sequence}
             selected_frame_indices={@selected_frame_indices}
-            animation_speed={@animation_speed}
           />
         </div>
       </div>
@@ -181,7 +180,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
-  attr :animation_speed, :integer, default: 150
   attr :gif_generation_status, :atom, default: nil
   attr :generated_gif_data, :string, default: nil
   
@@ -221,25 +219,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           </button>
         </div>
         
-        <!-- Animation speed control -->
-        <div class="flex items-center gap-2 bg-zinc-800 px-3 py-1 rounded">
-          <label class="text-zinc-300 text-xs font-mono">SPEED:</label>
-          <input 
-            type="range" 
-            min="50" 
-            max="1000" 
-            value={@animation_speed} 
-            step="25"
-            phx-hook="AnimationSpeedSlider"
-            class="w-24 h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer slider"
-            id="speed-slider"
-            data-animation-container={"animation-container-#{@frame_sequence.target_frame.id}"}
-            onmousedown="event.stopPropagation()"
-            onmouseup="event.stopPropagation()"
-            onclick="event.stopPropagation()"
-          />
-          <span class="text-zinc-300 text-xs font-mono w-8" id="speed-display"><%= @animation_speed %>ms</span>
-        </div>
         
         <div class="text-zinc-400 text-xs">
           Click frames below to toggle animation
@@ -247,39 +226,58 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
       </div>
       
       <!-- Animation container or Generated GIF (replaces animation when GIF is ready) -->
-      <%= if @gif_generation_status == :completed and @generated_gif_data do %>
-        <div class="flex justify-center">
-          <div class="relative bg-black rounded-lg overflow-hidden">
-            <img 
-              src={"data:image/gif;base64,#{@generated_gif_data}"}
-              alt="Generated GIF from selected frames"
-              class="max-w-full max-h-80 rounded"
-              style="width: 600px; height: auto;"
-            />
-            <!-- GIF overlay info -->
-            <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
-              GIF • <%= length(@selected_frame_indices) %> FRAMES
+      <div class="flex justify-center">
+        <%= if @gif_generation_status == :completed and @generated_gif_data do %>
+          <div class="text-center">
+            <div class="relative bg-black rounded-lg overflow-hidden mb-4">
+              <img 
+                src={"data:image/gif;base64,#{@generated_gif_data}"}
+                alt="Generated GIF from selected frames"
+                class="max-w-full max-h-80 rounded"
+                style="width: 600px; height: auto;"
+              />
+              <!-- GIF overlay info -->
+              <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
+                GIF • <%= length(@selected_frame_indices) %> FRAMES
+              </div>
+              
+              <!-- Download button overlay -->
+              <div class="absolute bottom-2 right-2">
+                <a 
+                  href={"data:image/gif;base64,#{@generated_gif_data}"}
+                  download="nathan_for_us_gif.gif"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-mono transition-colors"
+                >
+                  ⬇ DOWNLOAD
+                </a>
+              </div>
             </div>
             
-            <!-- Download button overlay -->
-            <div class="absolute bottom-2 right-2">
-              <a 
-                href={"data:image/gif;base64,#{@generated_gif_data}"}
-                download="nathan_for_us_gif.gif"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-mono transition-colors"
-              >
-                ⬇ DOWNLOAD
-              </a>
+            <!-- Caption underneath GIF -->
+            <div class="bg-zinc-800 rounded-lg p-3 max-w-[600px]">
+              <div class="text-zinc-300 text-xs uppercase mb-2 font-mono">🎬 DIALOGUE</div>
+              <div class="text-zinc-100 text-sm leading-relaxed font-mono text-left">
+                <%= get_selected_frames_captions(@frame_sequence, @selected_frame_indices) %>
+              </div>
             </div>
           </div>
-        </div>
-      <% else %>
-        <.animation_container 
-          frame_sequence={@frame_sequence}
-          selected_frame_indices={@selected_frame_indices}
-          animation_speed={@animation_speed}
-        />
-      <% end %>
+        <% else %>
+          <div class="text-center">
+            <.animation_container 
+              frame_sequence={@frame_sequence}
+              selected_frame_indices={@selected_frame_indices}
+            />
+            
+            <!-- Caption underneath animation -->
+            <div class="bg-zinc-800 rounded-lg p-3 max-w-[600px] mt-4">
+              <div class="text-zinc-300 text-xs uppercase mb-2 font-mono">🎬 DIALOGUE</div>
+              <div class="text-zinc-100 text-sm leading-relaxed font-mono text-left">
+                <%= get_selected_frames_captions(@frame_sequence, @selected_frame_indices) %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
     </div>
     """
   end
@@ -352,7 +350,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
-  attr :animation_speed, :integer, default: 150
   
   def animation_container(assigns) do
     first_frame = List.first(assigns.frame_sequence.sequence_frames)
@@ -396,7 +393,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           data-frame-timestamps={Jason.encode!(Enum.map(@frame_sequence.sequence_frames, fn frame -> 
             Map.get(frame, :timestamp_ms, 0)
           end))}
-          data-animation-speed={@animation_speed}
+          data-animation-speed="150"
         >
           <%= for {frame, index} <- Enum.with_index(@frame_sequence.sequence_frames) do %>
             <%= if Map.get(frame, :image_data) do %>
@@ -450,10 +447,22 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
+  attr :frame_sequence_version, :integer, default: 0
   
   def frame_sequence_grid(assigns) do
+    # Create a unique key based on frame count and version to force re-render
+    assigns = 
+      assigns
+      |> assign(:unique_key, "frames-#{length(assigns.frame_sequence.sequence_frames)}-v#{assigns[:frame_sequence_version] || 0}")
+      |> assign(:frame_count, length(assigns.frame_sequence.sequence_frames))
+    
     ~H"""
-    <div class="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
+    <!-- Debug info -->
+    <div class="mb-2 p-2 bg-yellow-100 text-xs font-mono">
+      🐛 DEBUG: Frames: <%= @frame_count %> | Version: <%= @frame_sequence_version %> | Key: <%= @unique_key %>
+    </div>
+    
+    <div class="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2" id={@unique_key} phx-update="replace">
       <!-- Expand backward button -->
       <.expand_backward_button />
       
@@ -716,7 +725,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
-  attr :animation_speed, :integer, default: 150
   
   def compact_info_footer(assigns) do
     ~H"""
@@ -738,7 +746,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
         <!-- Status and legend -->
         <div class="flex items-center gap-4">
           <div class="text-green-600">
-            ✅ <%= length(@selected_frame_indices) %>/<%= @frame_sequence.sequence_info.total_frames %> animating @ <%= @animation_speed %>ms
+            ✅ <%= length(@selected_frame_indices) %>/<%= @frame_sequence.sequence_info.total_frames %> animating @ 150ms
           </div>
           <div class="flex items-center gap-2">
             <div class="w-3 h-3 border-2 border-blue-500 bg-blue-50 rounded"></div>

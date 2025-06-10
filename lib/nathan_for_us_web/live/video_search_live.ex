@@ -53,8 +53,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:selected_frame_indices, [])
       |> assign(:autocomplete_suggestions, [])
       |> assign(:show_autocomplete, false)
-      |> assign(:animation_speed, 150)
       |> assign(:expanded_videos, MapSet.new())  # Track which videos are expanded
+      |> assign(:frame_sequence_version, 0)
       |> assign(:show_welcome_modal, show_welcome_modal)
       |> assign(:gif_generation_status, nil)
       |> assign(:generated_gif_data, nil)
@@ -64,11 +64,20 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   @impl true
   def handle_params(params, _url, socket) do
+    # Only handle URL params if we don't already have a frame sequence open
+    # This prevents URL updates from overriding expanded sequences
     socket = 
       socket
       |> assign(:current_params, params)
       |> handle_video_selection_from_params(params)
-      |> handle_frame_selection_from_params(params)
+    
+    socket = 
+      if socket.assigns.show_sequence_modal do
+        # Don't override existing frame sequence if modal is already open
+        socket
+      else
+        handle_frame_selection_from_params(socket, params)
+      end
     
     {:noreply, socket}
   end
@@ -350,6 +359,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
               socket
               |> assign(:frame_sequence, expanded_sequence)
               |> assign(:selected_frame_indices, updated_indices)
+              |> assign(:frame_sequence_version, socket.assigns.frame_sequence_version + 1)
               |> push_frame_selection_to_url()
             
             {:noreply, socket}
@@ -386,6 +396,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
               socket
               |> assign(:frame_sequence, expanded_sequence)
               |> assign(:selected_frame_indices, updated_indices)
+              |> assign(:frame_sequence_version, socket.assigns.frame_sequence_version + 1)
               |> push_frame_selection_to_url()
             
             {:noreply, socket}
@@ -397,85 +408,137 @@ defmodule NathanForUsWeb.VideoSearchLive do
     end
   end
 
-  def handle_event("expand_sequence_backward_multiple", %{"value" => count_str}, socket) do
+  def handle_event("expand_sequence_backward_multiple", params, socket) do
     require Logger
+    Logger.info("Received expand_sequence_backward_multiple event with params: #{inspect(params)}")
     
-    case {socket.assigns.frame_sequence, String.to_integer(count_str)} do
+    count_str = Map.get(params, "value", "")
+    Logger.info("Extracted count_str: #{inspect(count_str)}")
+    
+    case {socket.assigns.frame_sequence, count_str} do
       {nil, _} -> 
+        Logger.info("No frame sequence available")
         {:noreply, socket}
       
-      {frame_sequence, count} when count >= 1 and count <= 20 ->
-        Logger.info("Expanding backward by #{count} frames")
-        
-        # Expand backward multiple times
-        {final_sequence, total_added} = expand_backward_multiple(frame_sequence, count, 0)
-        
-        if total_added > 0 do
-          # Add new indices for all added frames (they'll be at indices 0 to total_added-1)
-          new_indices = Enum.to_list(0..(total_added-1))
-          # Shift existing indices by total_added
-          shifted_existing = Enum.map(socket.assigns.selected_frame_indices, &(&1 + total_added))
-          updated_indices = new_indices ++ shifted_existing
+      {_, ""} ->
+        Logger.info("Empty value provided")
+        {:noreply, socket}
+      
+      {frame_sequence, count_str} ->
+        try do
+          count = String.to_integer(count_str)
+          Logger.info("Parsed count: #{count}")
           
-          socket =
-            socket
-            |> assign(:frame_sequence, final_sequence)
-            |> assign(:selected_frame_indices, updated_indices)
-            |> push_frame_selection_to_url()
-            |> push_event("clear_expand_form", %{target: "expand-backward-form"})
-          
-          {:noreply, socket}
-        else
-          {:noreply, socket}
+          case count do
+            c when c >= 1 and c <= 20 ->
+              Logger.info("Expanding backward by #{count} frames")
+              Logger.info("Current sequence frames: #{length(frame_sequence.sequence_frames)}")
+              Logger.info("Current start frame: #{frame_sequence.sequence_info.start_frame_number}")
+              Logger.info("Current end frame: #{frame_sequence.sequence_info.end_frame_number}")
+              
+              # Expand backward multiple times
+              {final_sequence, total_added} = expand_backward_multiple(frame_sequence, count, 0)
+              Logger.info("Final sequence frames: #{length(final_sequence.sequence_frames)}, added: #{total_added}")
+              Logger.info("Final start frame: #{final_sequence.sequence_info.start_frame_number}")
+              Logger.info("Final end frame: #{final_sequence.sequence_info.end_frame_number}")
+              
+              if total_added > 0 do
+                # Add new indices for all added frames (they'll be at indices 0 to total_added-1)
+                new_indices = Enum.to_list(0..(total_added-1))
+                # Shift existing indices by total_added
+                shifted_existing = Enum.map(socket.assigns.selected_frame_indices, &(&1 + total_added))
+                updated_indices = (new_indices ++ shifted_existing) |> Enum.uniq() |> Enum.sort()
+                
+                socket =
+                  socket
+                  |> assign(:frame_sequence, final_sequence)
+                  |> assign(:selected_frame_indices, updated_indices)
+                  |> assign(:frame_sequence_version, socket.assigns.frame_sequence_version + 1)
+                  |> push_frame_selection_to_url()
+                  |> push_event("clear_expand_form", %{target: "expand-backward-form"})
+                
+                {:noreply, socket}
+              else
+                Logger.info("No frames were added")
+                {:noreply, socket}
+              end
+            
+            _ ->
+              Logger.info("Invalid count: #{count}")
+              {:noreply, socket}
+          end
+        rescue
+          ArgumentError ->
+            Logger.info("Failed to parse count_str: #{inspect(count_str)}")
+            {:noreply, socket}
         end
-      
-      {_, _} ->
-        # Invalid count, ignore
-        {:noreply, socket}
     end
-  rescue
-    ArgumentError ->
-      {:noreply, socket}
   end
 
-  def handle_event("expand_sequence_forward_multiple", %{"value" => count_str}, socket) do
+  def handle_event("expand_sequence_forward_multiple", params, socket) do
     require Logger
+    Logger.info("Received expand_sequence_forward_multiple event with params: #{inspect(params)}")
     
-    case {socket.assigns.frame_sequence, String.to_integer(count_str)} do
+    count_str = Map.get(params, "value", "")
+    Logger.info("Extracted count_str: #{inspect(count_str)}")
+    
+    case {socket.assigns.frame_sequence, count_str} do
       {nil, _} -> 
+        Logger.info("No frame sequence available")
         {:noreply, socket}
       
-      {frame_sequence, count} when count >= 1 and count <= 20 ->
-        Logger.info("Expanding forward by #{count} frames")
-        
-        # Expand forward multiple times
-        {final_sequence, total_added} = expand_forward_multiple(frame_sequence, count, 0)
-        
-        if total_added > 0 do
-          # Add new indices for all added frames (they'll be at the end)
-          original_length = length(socket.assigns.frame_sequence.sequence_frames)
-          new_indices = Enum.to_list(original_length..(original_length + total_added - 1))
-          updated_indices = socket.assigns.selected_frame_indices ++ new_indices
+      {_, ""} ->
+        Logger.info("Empty value provided")
+        {:noreply, socket}
+      
+      {frame_sequence, count_str} ->
+        try do
+          count = String.to_integer(count_str)
+          Logger.info("Parsed count: #{count}")
           
-          socket =
-            socket
-            |> assign(:frame_sequence, final_sequence)
-            |> assign(:selected_frame_indices, updated_indices)
-            |> push_frame_selection_to_url()
-            |> push_event("clear_expand_form", %{target: "expand-forward-form"})
-          
-          {:noreply, socket}
-        else
-          {:noreply, socket}
+          case count do
+            c when c >= 1 and c <= 20 ->
+              Logger.info("Expanding forward by #{count} frames")
+              Logger.info("Current sequence frames: #{length(frame_sequence.sequence_frames)}")
+              Logger.info("Current start frame: #{frame_sequence.sequence_info.start_frame_number}")
+              Logger.info("Current end frame: #{frame_sequence.sequence_info.end_frame_number}")
+              
+              # Expand forward multiple times
+              {final_sequence, total_added} = expand_forward_multiple(frame_sequence, count, 0)
+              Logger.info("Final sequence frames: #{length(final_sequence.sequence_frames)}, added: #{total_added}")
+              Logger.info("Final start frame: #{final_sequence.sequence_info.start_frame_number}")
+              Logger.info("Final end frame: #{final_sequence.sequence_info.end_frame_number}")
+              
+              if total_added > 0 do
+                # Add new indices for all added frames (they'll be at the end)
+                original_length = length(socket.assigns.frame_sequence.sequence_frames)
+                new_indices = Enum.to_list(original_length..(original_length + total_added - 1))
+                updated_indices = (socket.assigns.selected_frame_indices ++ new_indices) |> Enum.uniq() |> Enum.sort()
+                
+                socket =
+                  socket
+                  |> assign(:frame_sequence, final_sequence)
+                  |> assign(:selected_frame_indices, updated_indices)
+                  |> assign(:frame_sequence_version, socket.assigns.frame_sequence_version + 1)
+                  |> push_frame_selection_to_url()
+                  |> push_event("clear_expand_form", %{target: "expand-forward-form"})
+                
+                {:noreply, socket}
+              else
+                Logger.info("No frames were added")
+                {:noreply, socket}
+              end
+            
+            _ ->
+              Logger.info("Invalid count: #{count}")
+              {:noreply, socket}
+          end
+        rescue
+          ArgumentError ->
+            Logger.info("Failed to parse count_str: #{inspect(count_str)}")
+            {:noreply, socket}
         end
-      
-      {_, _} ->
-        # Invalid count, ignore
-        {:noreply, socket}
     end
-  rescue
-    ArgumentError ->
-      {:noreply, socket}
   end
 
   def handle_event("autocomplete_search", %{"search" => %{"term" => term}}, socket) do
@@ -904,7 +967,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
           :if={@show_sequence_modal}
           frame_sequence={@frame_sequence}
           selected_frame_indices={@selected_frame_indices}
-          animation_speed={@animation_speed}
+          frame_sequence_version={@frame_sequence_version}
           gif_generation_status={@gif_generation_status}
           generated_gif_data={@generated_gif_data}
         />

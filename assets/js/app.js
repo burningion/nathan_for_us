@@ -82,48 +82,6 @@ Hooks.MessageForm = {
   }
 }
 
-// Animation Speed Slider Hook for real-time speed control
-Hooks.AnimationSpeedSlider = {
-  mounted() {
-    // Prevent all mouse events from bubbling up to prevent modal closure
-    this.el.addEventListener('mousedown', (e) => e.stopPropagation())
-    this.el.addEventListener('mouseup', (e) => e.stopPropagation())
-    this.el.addEventListener('click', (e) => e.stopPropagation())
-    this.el.addEventListener('touchstart', (e) => e.stopPropagation())
-    this.el.addEventListener('touchend', (e) => e.stopPropagation())
-    
-    this.el.addEventListener('input', (e) => {
-      e.stopPropagation()
-      const newSpeed = parseInt(e.target.value)
-      const containerSelector = this.el.dataset.animationContainer
-      const animationContainer = document.getElementById(containerSelector)
-      
-      if (animationContainer && animationContainer.phxHook) {
-        // Update the animation speed directly in the FrameAnimator hook
-        animationContainer.phxHook.updateAnimationSpeed(newSpeed)
-      }
-      
-      // Update the display text
-      const speedDisplay = document.getElementById('speed-display')
-      if (speedDisplay) {
-        speedDisplay.textContent = `${newSpeed}ms`
-      }
-    })
-    
-    // Handle change event for when user releases the slider
-    this.el.addEventListener('change', (e) => {
-      e.stopPropagation()
-      const newSpeed = parseInt(e.target.value)
-      const containerSelector = this.el.dataset.animationContainer
-      const animationContainer = document.getElementById(containerSelector)
-      
-      if (animationContainer && animationContainer.phxHook) {
-        // Ensure the speed is set when user releases slider
-        animationContainer.phxHook.setAnimationSpeed(newSpeed)
-      }
-    })
-  }
-}
 
 Hooks.FrameAnimator = {
   mounted() {
@@ -219,35 +177,6 @@ Hooks.FrameAnimator = {
     }, this.animationSpeed)
   },
   
-  updateAnimationSpeed(newSpeed) {
-    // Update the animation speed and restart animation with new timing
-    this.animationSpeed = newSpeed
-    
-    // If animation is currently running, restart it with the new speed
-    if (this.animationTimeout) {
-      clearTimeout(this.animationTimeout)
-      
-      // Only restart if we have frames to animate
-      if (this.animationFrameCount > 1) {
-        this.scheduleNextFrame()
-      }
-    }
-  },
-  
-  setAnimationSpeed(newSpeed) {
-    // Set the animation speed and ensure it persists
-    this.animationSpeed = newSpeed
-    
-    // If animation is currently running, restart it with the new speed
-    if (this.animationTimeout) {
-      clearTimeout(this.animationTimeout)
-      
-      // Only restart if we have frames to animate
-      if (this.animationFrameCount > 1) {
-        this.scheduleNextFrame()
-      }
-    }
-  }
 }
 
 // Video Search Welcome Hook for first-time visitors
