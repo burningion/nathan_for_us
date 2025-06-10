@@ -37,7 +37,7 @@ class GifGenerator {
           width: width,
           height: height === 'auto' ? null : height,
           debug: true, // Enable debug logging
-          workerScript: '/assets/gif.worker.js' // Explicit worker path
+          workerScript: '/gif.worker.js' // Try root path first
         });
 
         // Track progress
