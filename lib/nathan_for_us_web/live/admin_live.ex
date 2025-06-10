@@ -82,6 +82,16 @@ defmodule NathanForUsWeb.AdminLive do
     end
   end
 
+  def handle_event("generate_usernames", _params, socket) do
+    case AdminService.generate_usernames_from_emails() do
+      {:ok, count} ->
+        {:noreply, put_flash(socket, :info, "Successfully generated #{count} usernames from emails!")}
+      
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to generate usernames: #{reason}")}
+    end
+  end
+
   def handle_info({ref, result}, socket) do
     cond do
       socket.assigns[:backfill_task] && socket.assigns.backfill_task.ref == ref ->
@@ -258,6 +268,23 @@ defmodule NathanForUsWeb.AdminLive do
               </div>
             </div>
           <% end %>
+        </div>
+
+        <!-- Username Generation Section -->
+        <div class="bg-white rounded-lg p-6 shadow-sm border border-zinc-200 mb-8">
+          <h2 class="text-xl font-bold text-zinc-900 mb-4">Username Generation</h2>
+          <p class="text-zinc-600 mb-6">
+            Generate usernames for all existing users who don't have one. Usernames will be created from the part of their email before the @ symbol.
+          </p>
+
+          <div class="flex items-center space-x-4">
+            <button 
+              phx-click="generate_usernames"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            >
+              Generate Usernames from Emails
+            </button>
+          </div>
         </div>
 
         <!-- Backfill Section -->

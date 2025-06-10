@@ -136,4 +136,59 @@ defmodule NathanForUs.Admin do
   """
   def is_admin?(%{is_admin: true}), do: true
   def is_admin?(_), do: false
+
+  @doc """
+  Generates usernames for all users without usernames based on their email.
+  Returns the number of users updated.
+  """
+  def generate_usernames_from_emails do
+    alias NathanForUs.Accounts.User
+    
+    # Find all users without usernames
+    users_without_usernames = 
+      from(u in User,
+        where: is_nil(u.username),
+        select: u
+      )
+      |> Repo.all()
+
+    Logger.info("Found #{length(users_without_usernames)} users without usernames")
+
+    # Generate and update usernames
+    updated_count = 
+      users_without_usernames
+      |> Enum.with_index()
+      |> Enum.reduce(0, fn {user, index}, acc ->
+        username = generate_username_from_email(user.email)
+        
+        Logger.info("Updating user #{index + 1}/#{length(users_without_usernames)}: #{user.email} -> #{username}")
+        
+        case update_user_username(user, username) do
+          {:ok, _updated_user} ->
+            acc + 1
+          {:error, reason} ->
+            Logger.warning("Failed to update username for #{user.email}: #{inspect(reason)}")
+            acc
+        end
+      end)
+
+    Logger.info("Successfully updated #{updated_count} usernames")
+    updated_count
+  end
+
+  defp generate_username_from_email(email) do
+    email
+    |> String.split("@")
+    |> List.first()
+    |> String.replace(~r/[^a-zA-Z0-9_]/, "_")
+    |> String.slice(0, 20)
+  end
+
+  defp update_user_username(user, username) do
+    alias NathanForUs.Accounts.User
+    
+    user
+    |> User.changeset(%{username: username})
+    |> Repo.update()
+  end
 end

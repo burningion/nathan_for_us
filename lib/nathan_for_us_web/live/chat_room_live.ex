@@ -522,7 +522,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
               <div class="flex items-start space-x-2">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center space-x-2">
-                    <span class="font-medium text-gray-900"><%= message.user.email %></span>
+                    <span class="font-medium text-gray-900"><%= message.user.username || message.user.email %></span>
                     <span class="text-xs text-gray-500">
                       <%= Calendar.strftime(message.inserted_at, "%I:%M %p") %>
                     </span>

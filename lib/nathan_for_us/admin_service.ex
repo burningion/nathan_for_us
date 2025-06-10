@@ -204,4 +204,18 @@ defmodule NathanForUs.AdminService do
       _ -> "Backfill failed: #{inspect(reason)}"
     end
   end
+
+  @doc """
+  Generates usernames for all users without usernames based on their email.
+  """
+  @spec generate_usernames_from_emails() :: {:ok, integer()} | {:error, String.t()}
+  def generate_usernames_from_emails do
+    try do
+      result = Admin.generate_usernames_from_emails()
+      {:ok, result}
+    rescue
+      error ->
+        {:error, Exception.message(error)}
+    end
+  end
 end
