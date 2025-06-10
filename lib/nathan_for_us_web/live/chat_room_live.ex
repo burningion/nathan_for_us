@@ -3,7 +3,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
   alias NathanForUs.Chat
 
-  on_mount {NathanForUsWeb.UserAuth, :ensure_authenticated}
+  on_mount {NathanForUsWeb.UserAuth, :mount_current_user}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -13,8 +13,12 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
     approved_words = Chat.list_approved_words()
 
-    # 1% chance for regular users to see the rejected messages button
-    show_rejected_button = socket.assigns.current_user.is_admin || :rand.uniform(100) == 1
+    # 1% chance for regular users to see the rejected messages button (only if logged in)
+    show_rejected_button = 
+      case socket.assigns.current_user do
+        nil -> false
+        user -> user.is_admin || :rand.uniform(100) == 1
+      end
 
     socket =
       socket
@@ -79,143 +83,171 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
   @impl true
   def handle_event("submit_word", %{"word" => %{"text" => text}}, socket) do
-    words =
-      text
-      |> String.trim()
-      |> String.replace(~r/[^\w\s']/, " ")
-      |> String.split()
-      |> Enum.reject(&(&1 == ""))
-      |> Enum.map(&String.downcase/1)
-      |> Enum.uniq()
-
-    case words do
-      [] ->
-        socket =
-          socket
-          |> assign(:word_form, to_form(Chat.change_word(%Chat.Word{}, %{})))
-          |> put_flash(:error, "Please enter at least one word!")
+    case socket.assigns.current_user do
+      nil ->
+        socket = put_flash(socket, :error, "You must log in to submit words!")
         {:noreply, socket}
+      
+      user ->
+        words =
+          text
+          |> String.trim()
+          |> String.replace(~r/[^\w\s']/, " ")
+          |> String.split()
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.map(&String.downcase/1)
+          |> Enum.uniq()
 
-      words ->
-        results = Enum.map(words, &Chat.submit_word(&1, socket.assigns.current_user.id))
+        case words do
+          [] ->
+            socket =
+              socket
+              |> assign(:word_form, to_form(Chat.change_word(%Chat.Word{}, %{})))
+              |> put_flash(:error, "Please enter at least one word!")
+            {:noreply, socket}
 
-        successes = Enum.count(results, fn {status, _} -> status == :ok end)
-        errors = Enum.filter(results, fn {status, _} -> status == :error end)
+          words ->
+            results = Enum.map(words, &Chat.submit_word(&1, user.id))
 
-        socket =
-          socket
-          |> assign(:pending_words, Chat.list_pending_words())
-          |> assign(:word_form, to_form(Chat.change_word(%Chat.Word{}, %{})))
+            successes = Enum.count(results, fn {status, _} -> status == :ok end)
+            errors = Enum.filter(results, fn {status, _} -> status == :error end)
 
-        socket =
-          cond do
-            successes > 0 && Enum.empty?(errors) ->
-              put_flash(socket, :info, "#{successes} word(s) submitted for approval!")
+            socket =
+              socket
+              |> assign(:pending_words, Chat.list_pending_words())
+              |> assign(:word_form, to_form(Chat.change_word(%Chat.Word{}, %{})))
 
-            successes > 0 ->
-              error_messages =
-                errors
-                |> Enum.map(fn {_, reason} -> format_error_message(reason) end)
-                |> Enum.uniq()
-                |> Enum.join(", ")
+            socket =
+              cond do
+                successes > 0 && Enum.empty?(errors) ->
+                  put_flash(socket, :info, "#{successes} word(s) submitted for approval!")
 
-              put_flash(socket, :info, "#{successes} word(s) submitted. Some errors: #{error_messages}")
+                successes > 0 ->
+                  error_messages =
+                    errors
+                    |> Enum.map(fn {_, reason} -> format_error_message(reason) end)
+                    |> Enum.uniq()
+                    |> Enum.join(", ")
 
-            true ->
-              error_messages =
-                errors
-                |> Enum.map(fn {_, reason} -> format_error_message(reason) end)
-                |> Enum.uniq()
-                |> Enum.join(", ")
+                  put_flash(socket, :info, "#{successes} word(s) submitted. Some errors: #{error_messages}")
 
-              put_flash(socket, :error, "No words submitted. Errors: #{error_messages}")
-          end
+                true ->
+                  error_messages =
+                    errors
+                    |> Enum.map(fn {_, reason} -> format_error_message(reason) end)
+                    |> Enum.uniq()
+                    |> Enum.join(", ")
 
-        {:noreply, socket}
+                  put_flash(socket, :error, "No words submitted. Errors: #{error_messages}")
+              end
+
+            {:noreply, socket}
+        end
     end
   end
 
   @impl true
   def handle_event("approve_word", %{"id" => word_id}, socket) do
-    case Chat.approve_word(String.to_integer(word_id), socket.assigns.current_user.id) do
-      {:ok, _word} ->
-        updated_approved_words = Chat.list_approved_words()
+    case socket.assigns.current_user do
+      nil ->
+        socket = put_flash(socket, :error, "You must log in to approve words!")
+        {:noreply, socket}
+      
+      user ->
+        case Chat.approve_word(String.to_integer(word_id), user.id) do
+          {:ok, _word} ->
+            updated_approved_words = Chat.list_approved_words()
 
-        filtered_words =
-          if String.trim(socket.assigns.word_search) == "" do
-            updated_approved_words
-          else
-            updated_approved_words
-            |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
+            filtered_words =
+              if String.trim(socket.assigns.word_search) == "" do
+                updated_approved_words
+              else
+                updated_approved_words
+                |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
               end
 
-        socket =
-          socket
-          |> assign(:pending_words, Chat.list_pending_words())
-          |> assign(:approved_words, updated_approved_words)
-          |> assign(:filtered_approved_words, filtered_words)
-          |> put_flash(:info, "Word approved!")
+            socket =
+              socket
+              |> assign(:pending_words, Chat.list_pending_words())
+              |> assign(:approved_words, updated_approved_words)
+              |> assign(:filtered_approved_words, filtered_words)
+              |> put_flash(:info, "Word approved!")
 
-        {:noreply, socket}
+            {:noreply, socket}
 
-      {:error, :cannot_approve_own_word} ->
-        socket = put_flash(socket, :error, "You cannot approve your own word!")
-        {:noreply, socket}
+          {:error, :cannot_approve_own_word} ->
+            socket = put_flash(socket, :error, "You cannot approve your own word!")
+            {:noreply, socket}
 
-      {:error, _} ->
-        socket = put_flash(socket, :error, "Failed to approve word!")
-        {:noreply, socket}
+          {:error, _} ->
+            socket = put_flash(socket, :error, "Failed to approve word!")
+            {:noreply, socket}
+        end
     end
   end
 
   @impl true
   def handle_event("deny_word", %{"id" => word_id}, socket) do
-    case Chat.deny_word(String.to_integer(word_id), socket.assigns.current_user.id) do
-      {:ok, _word} ->
-        socket =
-          socket
-          |> assign(:pending_words, Chat.list_pending_words())
-          |> put_flash(:info, "Word denied!")
-
+    case socket.assigns.current_user do
+      nil ->
+        socket = put_flash(socket, :error, "You must log in to deny words!")
         {:noreply, socket}
+      
+      user ->
+        case Chat.deny_word(String.to_integer(word_id), user.id) do
+          {:ok, _word} ->
+            socket =
+              socket
+              |> assign(:pending_words, Chat.list_pending_words())
+              |> put_flash(:info, "Word denied!")
 
-      {:error, :cannot_deny_own_word} ->
-        socket = put_flash(socket, :error, "You cannot deny your own word!")
-        {:noreply, socket}
+            {:noreply, socket}
 
-      {:error, _} ->
-        socket = put_flash(socket, :error, "Failed to deny word!")
-        {:noreply, socket}
+          {:error, :cannot_deny_own_word} ->
+            socket = put_flash(socket, :error, "You cannot deny your own word!")
+            {:noreply, socket}
+
+          {:error, _} ->
+            socket = put_flash(socket, :error, "Failed to deny word!")
+            {:noreply, socket}
+        end
     end
   end
 
   @impl true
   def handle_event("send_message", %{"chat_message" => %{"content" => content}}, socket) do
-    attrs = %{content: content, user_id: socket.assigns.current_user.id}
-
-    case Chat.create_chat_message(attrs) do
-      {:ok, _message, true} ->
-        # Valid message - clear form and push clear event
-        socket =
-          socket
-          |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
-          |> push_event("clear_message_form", %{})
-
+    case socket.assigns.current_user do
+      nil ->
+        socket = put_flash(socket, :error, "You must log in to send messages!")
         {:noreply, socket}
+      
+      user ->
+        attrs = %{content: content, user_id: user.id}
 
-      {:ok, _message, false} ->
-        # Invalid message - saved but not displayed, clear form and push clear event
-        socket =
-          socket
-          |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
-          |> push_event("clear_message_form", %{})
-          |> put_flash(:error, "Message saved but contains unapproved words - not displayed in chat!")
+        case Chat.create_chat_message(attrs) do
+          {:ok, _message, true} ->
+            # Valid message - clear form and push clear event
+            socket =
+              socket
+              |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
+              |> push_event("clear_message_form", %{})
 
-        {:noreply, socket}
+            {:noreply, socket}
 
-      {:error, changeset} ->
-        socket = assign(socket, :message_form, to_form(changeset))
-        {:noreply, socket}
+          {:ok, _message, false} ->
+            # Invalid message - saved but not displayed, clear form and push clear event
+            socket =
+              socket
+              |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
+              |> push_event("clear_message_form", %{})
+              |> put_flash(:error, "Message saved but contains unapproved words - not displayed in chat!")
+
+            {:noreply, socket}
+
+          {:error, changeset} ->
+            socket = assign(socket, :message_form, to_form(changeset))
+            {:noreply, socket}
+        end
     end
   end
 
@@ -378,22 +410,26 @@ defmodule NathanForUsWeb.ChatRoomLive do
                   <% end %>
                 </div>
                 <div class="flex space-x-1">
-                  <button
-                    phx-click="approve_word"
-                    phx-value-id={word.id}
-                    class="bg-white hover:bg-gray-100 text-black border border-gray-300 w-5 h-5 rounded-full text-xs flex items-center justify-center transition-colors"
-                    title="Approve word"
-                  >
-                    ✓
-                  </button>
-                  <button
-                    phx-click="deny_word"
-                    phx-value-id={word.id}
-                    class="bg-black hover:bg-gray-800 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center transition-colors"
-                    title="Deny word"
-                  >
-                    ✗
-                  </button>
+                  <%= if @current_user do %>
+                    <button
+                      phx-click="approve_word"
+                      phx-value-id={word.id}
+                      class="bg-white hover:bg-gray-100 text-black border border-gray-300 w-5 h-5 rounded-full text-xs flex items-center justify-center transition-colors"
+                      title="Approve word"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      phx-click="deny_word"
+                      phx-value-id={word.id}
+                      class="bg-black hover:bg-gray-800 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center transition-colors"
+                      title="Deny word"
+                    >
+                      ✗
+                    </button>
+                  <% else %>
+                    <span class="text-xs text-gray-400 italic">Login to vote</span>
+                  <% end %>
                 </div>
               </div>
             <% end %>
@@ -406,18 +442,28 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
         <!-- Submit Word Form -->
         <div class="p-3 border-t border-gray-200 flex-shrink-0">
-          <.form for={@word_form} phx-submit="submit_word" phx-change="validate_word" class="space-y-2">
-            <.input
-              field={@word_form[:text]}
-              type="text"
-              placeholder="Submit words..."
-              required
-              class="w-full text-sm"
-            />
-            <.button type="submit" class="w-full text-sm py-2">
-              Submit Words
-            </.button>
-          </.form>
+          <%= if @current_user do %>
+            <.form for={@word_form} phx-submit="submit_word" phx-change="validate_word" class="space-y-2">
+              <.input
+                field={@word_form[:text]}
+                type="text"
+                placeholder="Submit words..."
+                required
+                class="w-full text-sm"
+              />
+              <.button type="submit" class="w-full text-sm py-2">
+                Submit Words
+              </.button>
+            </.form>
+          <% else %>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-2">
+              <p class="text-xs text-yellow-800 font-medium">⚠️ Login Required</p>
+              <p class="text-xs text-yellow-700">You must log in to submit words for approval.</p>
+              <a href="/users/log_in" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded transition-colors">
+                Log In to Submit Words
+              </a>
+            </div>
+          <% end %>
         </div>
       </div>
 
@@ -427,7 +473,11 @@ defmodule NathanForUsWeb.ChatRoomLive do
           <div class="flex justify-between items-start">
             <div>
               <h2 class="text-base font-semibold text-gray-900">Chat Room</h2>
-              <p class="text-sm text-gray-500">Only approved words are allowed</p>
+              <%= if @current_user do %>
+                <p class="text-sm text-gray-500">Only approved words are allowed</p>
+              <% else %>
+                <p class="text-sm text-orange-600">📖 Viewing as guest - log in to participate</p>
+              <% end %>
             </div>
             <%= if @show_rejected_button do %>
               <button
@@ -468,22 +518,39 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
         <!-- Message Input -->
         <div class="p-3 border-t border-gray-200 bg-white flex-shrink-0">
-          <.form for={@message_form} phx-submit="send_message" class="space-y-2" phx-hook="MessageForm" id="message-form">
-            <.input
-              field={@message_form[:content]}
-              type="textarea"
-              placeholder="Type your message (only approved words allowed)..."
-              required
-              rows="3"
-              class="w-full resize-none text-sm"
-              id="message-textarea"
-            />
-            <div class="flex justify-end">
-              <.button type="submit" class="px-6 py-2 text-sm">
-                Send Message
-              </.button>
+          <%= if @current_user do %>
+            <.form for={@message_form} phx-submit="send_message" class="space-y-2" phx-hook="MessageForm" id="message-form">
+              <.input
+                field={@message_form[:content]}
+                type="textarea"
+                placeholder="Type your message (only approved words allowed)..."
+                required
+                rows="3"
+                class="w-full resize-none text-sm"
+                id="message-textarea"
+              />
+              <div class="flex justify-end">
+                <.button type="submit" class="px-6 py-2 text-sm">
+                  Send Message
+                </.button>
+              </div>
+            </.form>
+          <% else %>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center space-y-3">
+              <div class="space-y-1">
+                <p class="text-sm font-medium text-blue-900">👀 You're viewing the chat as a guest</p>
+                <p class="text-xs text-blue-700">You can read all messages, but you need to log in to participate in the conversation.</p>
+              </div>
+              <div class="space-y-2">
+                <a href="/users/log_in" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded transition-colors">
+                  Log In to Chat
+                </a>
+                <a href="/users/register" class="block w-full bg-gray-600 hover:bg-gray-700 text-white text-sm py-2 px-4 rounded transition-colors">
+                  Create Account
+                </a>
+              </div>
             </div>
-          </.form>
+          <% end %>
         </div>
       </div>
     </div>
