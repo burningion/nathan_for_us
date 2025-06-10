@@ -14,7 +14,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
     approved_words = Chat.list_approved_words()
 
     # 1% chance for regular users to see the rejected messages button (only if logged in)
-    show_rejected_button = 
+    show_rejected_button =
       case socket.assigns.current_user do
         nil -> false
         user -> user.is_admin || :rand.uniform(100) == 1
@@ -87,7 +87,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
       nil ->
         socket = put_flash(socket, :error, "You must log in to submit words!")
         {:noreply, socket}
-      
+
       user ->
         words =
           text
@@ -152,7 +152,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
       nil ->
         socket = put_flash(socket, :error, "You must log in to approve words!")
         {:noreply, socket}
-      
+
       user ->
         case Chat.approve_word(String.to_integer(word_id), user.id) do
           {:ok, _word} ->
@@ -192,7 +192,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
       nil ->
         socket = put_flash(socket, :error, "You must log in to deny words!")
         {:noreply, socket}
-      
+
       user ->
         case Chat.deny_word(String.to_integer(word_id), user.id) do
           {:ok, _word} ->
@@ -220,7 +220,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
       nil ->
         socket = put_flash(socket, :error, "You must log in to send messages!")
         {:noreply, socket}
-      
+
       user ->
         attrs = %{content: content, user_id: user.id}
 
@@ -265,8 +265,8 @@ defmodule NathanForUsWeb.ChatRoomLive do
   @impl true
   def handle_info({:word_approved, _word}, socket) do
     updated_approved_words = Chat.list_approved_words()
-    
-    filtered_words = 
+
+    filtered_words =
       if String.trim(socket.assigns.word_search) == "" do
         updated_approved_words
       else
@@ -274,8 +274,8 @@ defmodule NathanForUsWeb.ChatRoomLive do
         |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
       end
 
-    socket = 
-      socket 
+    socket =
+      socket
       |> assign(:pending_words, Chat.list_pending_words())
       |> assign(:approved_words, updated_approved_words)
       |> assign(:filtered_approved_words, filtered_words)
@@ -298,8 +298,8 @@ defmodule NathanForUsWeb.ChatRoomLive do
   @impl true
   def handle_info({:words_bulk_approved, _count}, socket) do
     updated_approved_words = Chat.list_approved_words()
-    
-    filtered_words = 
+
+    filtered_words =
       if String.trim(socket.assigns.word_search) == "" do
         updated_approved_words
       else
@@ -307,8 +307,8 @@ defmodule NathanForUsWeb.ChatRoomLive do
         |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
       end
 
-    socket = 
-      socket 
+    socket =
+      socket
       |> assign(:approved_words, updated_approved_words)
       |> assign(:filtered_approved_words, filtered_words)
     {:noreply, socket}
@@ -318,12 +318,12 @@ defmodule NathanForUsWeb.ChatRoomLive do
   def handle_info({:messages_revalidated, count}, socket) do
     # Refresh chat messages to include newly validated ones
     updated_messages = Chat.list_chat_messages()
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:chat_messages, updated_messages)
       |> put_flash(:info, "#{count} previously rejected message(s) are now valid and added to chat!")
-    
+
     {:noreply, socket}
   end
 
@@ -343,7 +343,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
               <p>You can see allowed words on the left and search them to compose messages.</p>
               <p class="text-blue-600 font-medium">Please have a nice time chatting with your friends who also enjoy Nathan and we can build this into an expansive, friendly chat room!</p>
             </div>
-            <button 
+            <button
               phx-click="close_welcome_dialog"
               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               phx-hook="WelcomeDialogButton"
@@ -362,10 +362,19 @@ defmodule NathanForUsWeb.ChatRoomLive do
         <!-- Approved Words Widget -->
         <div class="p-3 border-b border-gray-200 flex-shrink-0">
           <h3 class="text-sm font-semibold text-gray-900 mb-2">Approved Words (searchable)</h3>
+          <input
+            type="text"
+            value={@word_search}
+            phx-keyup="search_approved_words"
+            phx-debounce="300"
+            placeholder="Search approved words..."
+            class="w-full mb-2 text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            name="search"
+          />
           <div class="bg-gray-50 rounded-lg p-2 mb-2 max-h-60 overflow-y-auto">
             <div class="flex flex-wrap gap-1" id="approved-words-container">
               <%= for word <- @filtered_approved_words do %>
-                <span 
+                <span
                   id={"approved-word-#{word}"}
                   class="text-gray-700 text-xs px-1 py-0.5 rounded transition-all duration-200 ease-in-out hover:text-gray-900 hover:bg-gray-100"
                   style="animation: fadeIn 0.3s ease-in-out;"
@@ -379,36 +388,27 @@ defmodule NathanForUsWeb.ChatRoomLive do
                 </span>
               <% end %>
             </div>
-            
+
             <style>
               @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(-5px); }
                 to { opacity: 1; transform: translateY(0); }
               }
-              
+
               @keyframes fadeOut {
                 from { opacity: 1; transform: translateY(0); }
                 to { opacity: 0; transform: translateY(-5px); }
               }
-              
+
               .word-exit {
                 animation: fadeOut 0.2s ease-in-out forwards;
               }
             </style>
-            <input
-              type="text"
-              value={@word_search}
-              phx-keyup="search_approved_words"
-              phx-debounce="300"
-              placeholder="Search approved words..."
-              class="w-full mt-2 text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              name="search"
-            />
           </div>
         </div>
 
         <div class="p-3 border-b border-gray-200 flex-shrink-0">
-          <h2 class="text-base font-semibold text-gray-900">Word Approval</h2>
+          <h2 class="text-base font-semibold text-gray-900">Word Approval (please submit more)</h2>
         </div>
 
         <!-- Pending Words List -->
@@ -574,7 +574,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
         <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col" phx-click-away="close_rejected_modal">
           <div class="p-4 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-xl font-bold text-gray-900">Rejected Messages</h2>
-            <button 
+            <button
               phx-click="close_rejected_modal"
               class="text-gray-400 hover:text-gray-600 text-2xl"
             >
