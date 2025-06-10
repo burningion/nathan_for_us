@@ -150,7 +150,7 @@ defmodule NathanForUsWeb.SkeetsLive do
   # Post list component
   defp post_list(assigns) do
     ~H"""
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <%= for post <- @posts do %>
         <.post_card post={post} />
       <% end %>
