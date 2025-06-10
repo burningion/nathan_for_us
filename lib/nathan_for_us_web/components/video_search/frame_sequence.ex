@@ -488,17 +488,23 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
         <div class="text-xs text-zinc-400 font-mono">BACK</div>
       </div>
       <div class="w-full" onclick="event.stopPropagation()">
-        <input
-          type="number"
-          min="1"
-          max="20"
-          placeholder="# frames"
-          phx-keydown="expand_sequence_backward_multiple"
-          phx-key="Enter"
-          class="w-full h-8 text-sm text-center border-2 border-blue-300 rounded-md bg-white font-mono font-bold text-blue-600 placeholder-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-          title="Enter number of frames to add backward, then press Enter"
+        <form 
+          id="expand-backward-form"
+          phx-submit="expand_sequence_backward_multiple" 
+          phx-hook="ExpandFrameForm"
           onclick="event.stopPropagation()"
-        />
+        >
+          <input
+            name="value"
+            type="number"
+            min="1"
+            max="20"
+            placeholder="# frames"
+            class="w-full h-8 text-sm text-center border-2 border-blue-300 rounded-md bg-white font-mono font-bold text-blue-600 placeholder-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+            title="Enter number of frames to add backward, then press Enter"
+            onclick="event.stopPropagation()"
+          />
+        </form>
         <div class="text-xs text-zinc-400 font-mono text-center mt-1 pointer-events-none">PRESS ENTER</div>
       </div>
     </div>
@@ -521,17 +527,23 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
         <div class="text-xs text-zinc-400 font-mono">NEXT</div>
       </div>
       <div class="w-full" onclick="event.stopPropagation()">
-        <input
-          type="number"
-          min="1"
-          max="20"
-          placeholder="# frames"
-          phx-keydown="expand_sequence_forward_multiple"
-          phx-key="Enter"
-          class="w-full h-8 text-sm text-center border-2 border-blue-300 rounded-md bg-white font-mono font-bold text-blue-600 placeholder-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-          title="Enter number of frames to add forward, then press Enter"
+        <form 
+          id="expand-forward-form"
+          phx-submit="expand_sequence_forward_multiple" 
+          phx-hook="ExpandFrameForm"
           onclick="event.stopPropagation()"
-        />
+        >
+          <input
+            name="value"
+            type="number"
+            min="1"
+            max="20"
+            placeholder="# frames"
+            class="w-full h-8 text-sm text-center border-2 border-blue-300 rounded-md bg-white font-mono font-bold text-blue-600 placeholder-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+            title="Enter number of frames to add forward, then press Enter"
+            onclick="event.stopPropagation()"
+          />
+        </form>
         <div class="text-xs text-zinc-400 font-mono text-center mt-1 pointer-events-none">PRESS ENTER</div>
       </div>
     </div>

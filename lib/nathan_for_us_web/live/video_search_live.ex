@@ -63,6 +63,17 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   @impl true
+  def handle_params(params, _url, socket) do
+    socket = 
+      socket
+      |> assign(:current_params, params)
+      |> handle_video_selection_from_params(params)
+      |> handle_frame_selection_from_params(params)
+    
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("search", %{"search" => %{"term" => term}}, socket) when term != "" do
     send(self(), {:perform_search, term})
     
@@ -148,7 +159,12 @@ defmodule NathanForUsWeb.VideoSearchLive do
       
       new_selected_ids = Search.update_video_filter(current_selected, video_id)
 
-      {:noreply, assign(socket, :selected_video_ids, new_selected_ids)}
+      socket = 
+        socket
+        |> assign(:selected_video_ids, new_selected_ids)
+        |> push_video_selection_to_url()
+
+      {:noreply, socket}
     rescue
       ArgumentError ->
         socket = put_flash(socket, :error, "Invalid video ID")
@@ -174,6 +190,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:selected_video_ids, [])
       |> assign(:search_mode, :global)
       |> assign(:search_results, [])
+      |> push_video_selection_to_url()
 
     {:noreply, socket}
   end
@@ -236,6 +253,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
             |> assign(:frame_sequence, frame_sequence)
             |> assign(:show_sequence_modal, true)
             |> assign(:selected_frame_indices, all_frame_indices)
+            |> push_frame_selection_to_url()
           
           {:noreply, socket}
         
@@ -258,6 +276,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:selected_frame_indices, [])
       |> assign(:gif_generation_status, nil)
       |> assign(:generated_gif_data, nil)
+      |> push_frame_selection_to_url()
     
     {:noreply, socket}
   end
@@ -274,7 +293,11 @@ defmodule NathanForUsWeb.VideoSearchLive do
           [frame_index | current_selected] |> Enum.sort()
         end
       
-      socket = assign(socket, :selected_frame_indices, new_selected)
+      socket = 
+        socket
+        |> assign(:selected_frame_indices, new_selected)
+        |> push_frame_selection_to_url()
+      
       {:noreply, socket}
     rescue
       ArgumentError ->
@@ -285,12 +308,20 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   def handle_event("select_all_frames", _params, socket) do
     all_frame_indices = 0..(length(socket.assigns.frame_sequence.sequence_frames) - 1) |> Enum.to_list()
-    socket = assign(socket, :selected_frame_indices, all_frame_indices)
+    socket = 
+      socket
+      |> assign(:selected_frame_indices, all_frame_indices)
+      |> push_frame_selection_to_url()
+    
     {:noreply, socket}
   end
 
   def handle_event("deselect_all_frames", _params, socket) do
-    socket = assign(socket, :selected_frame_indices, [])
+    socket = 
+      socket
+      |> assign(:selected_frame_indices, [])
+      |> push_frame_selection_to_url()
+    
     {:noreply, socket}
   end
 
@@ -319,6 +350,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
               socket
               |> assign(:frame_sequence, expanded_sequence)
               |> assign(:selected_frame_indices, updated_indices)
+              |> push_frame_selection_to_url()
             
             {:noreply, socket}
           
@@ -354,6 +386,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
               socket
               |> assign(:frame_sequence, expanded_sequence)
               |> assign(:selected_frame_indices, updated_indices)
+              |> push_frame_selection_to_url()
+            
             {:noreply, socket}
           
           {:error, reason} ->
@@ -387,6 +421,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
             socket
             |> assign(:frame_sequence, final_sequence)
             |> assign(:selected_frame_indices, updated_indices)
+            |> push_frame_selection_to_url()
+            |> push_event("clear_expand_form", %{target: "expand-backward-form"})
           
           {:noreply, socket}
         else
@@ -425,6 +461,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
             socket
             |> assign(:frame_sequence, final_sequence)
             |> assign(:selected_frame_indices, updated_indices)
+            |> push_frame_selection_to_url()
+            |> push_event("clear_expand_form", %{target: "expand-forward-form"})
           
           {:noreply, socket}
         else
@@ -558,6 +596,126 @@ defmodule NathanForUsWeb.VideoSearchLive do
     Enum.map(search_results, fn video_result ->
       Map.put(video_result, :expanded, MapSet.member?(expanded_videos, video_result.video_id))
     end)
+  end
+
+  # Handle video selection from URL parameters
+  defp handle_video_selection_from_params(socket, params) do
+    case Map.get(params, "video") do
+      nil -> socket
+      video_id_str ->
+        try do
+          video_id = String.to_integer(video_id_str)
+          
+          # Validate video exists
+          if Enum.find(socket.assigns.videos, &(&1.id == video_id)) do
+            socket
+            |> assign(:selected_video_ids, [video_id])
+            |> assign(:search_mode, :filtered)
+          else
+            socket
+          end
+        rescue
+          ArgumentError -> socket
+        end
+    end
+  end
+
+  # Handle frame selection from URL parameters
+  defp handle_frame_selection_from_params(socket, params) do
+    case Map.get(params, "frame") do
+      nil -> socket
+      frame_id_str ->
+        try do
+          frame_id = String.to_integer(frame_id_str)
+          
+          case Video.get_frame_sequence(frame_id) do
+            {:ok, frame_sequence} ->
+              # Parse selected frames from URL
+              selected_indices = parse_selected_frames_from_params(params)
+              
+              socket
+              |> assign(:frame_sequence, frame_sequence)
+              |> assign(:show_sequence_modal, true)
+              |> assign(:selected_frame_indices, selected_indices)
+            
+            {:error, _reason} ->
+              socket
+          end
+        rescue
+          ArgumentError -> socket
+        end
+    end
+  end
+
+  # Parse selected frame indices from URL parameters
+  defp parse_selected_frames_from_params(params) do
+    case Map.get(params, "frames") do
+      nil -> []
+      frames_str ->
+        frames_str
+        |> String.split(",")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reduce([], fn frame_str, acc ->
+          try do
+            frame_index = String.to_integer(frame_str)
+            [frame_index | acc]
+          rescue
+            ArgumentError -> acc
+          end
+        end)
+        |> Enum.sort()
+    end
+  end
+
+  # Update URL with current video selection
+  defp push_video_selection_to_url(socket) do
+    current_params = get_current_url_params(socket)
+    
+    new_params = case socket.assigns.selected_video_ids do
+      [] -> Map.delete(current_params, "video")
+      [video_id] -> Map.put(current_params, "video", to_string(video_id))
+      _ -> current_params # Multiple videos not supported in URL yet
+    end
+    
+    push_patch(socket, to: build_url_with_params("/video-search", new_params))
+  end
+
+  # Update URL with current frame selection
+  defp push_frame_selection_to_url(socket) do
+    current_params = get_current_url_params(socket)
+    
+    new_params = case {socket.assigns.frame_sequence, socket.assigns.selected_frame_indices} do
+      {nil, _} -> 
+        current_params
+        |> Map.delete("frame")
+        |> Map.delete("frames")
+      
+      {frame_sequence, []} ->
+        current_params
+        |> Map.put("frame", to_string(frame_sequence.target_frame.id))
+        |> Map.delete("frames")
+      
+      {frame_sequence, selected_indices} ->
+        frames_str = selected_indices |> Enum.sort() |> Enum.join(",")
+        current_params
+        |> Map.put("frame", to_string(frame_sequence.target_frame.id))
+        |> Map.put("frames", frames_str)
+    end
+    
+    push_patch(socket, to: build_url_with_params("/video-search", new_params))
+  end
+
+  # Get current URL parameters
+  defp get_current_url_params(socket) do
+    # Extract current URL parameters from socket context
+    socket.assigns[:current_params] || %{}
+  end
+
+  # Build URL with parameters
+  defp build_url_with_params(path, params) when params == %{}, do: path
+  defp build_url_with_params(path, params) do
+    query_string = URI.encode_query(params)
+    "#{path}?#{query_string}"
   end
 
   # Helper function to expand backward multiple times

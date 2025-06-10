@@ -272,6 +272,21 @@ Hooks.VideoSearchVisited = {
   }
 }
 
+// Form clearing hook for expand frame inputs
+Hooks.ExpandFrameForm = {
+  mounted() {
+    // Listen for successful frame expansion to clear the form
+    this.handleEvent("clear_expand_form", () => {
+      const input = this.el.querySelector('input[type="number"]')
+      if (input) {
+        input.value = ''
+        input.blur()
+      }
+    })
+  }
+}
+
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
