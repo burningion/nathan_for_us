@@ -146,16 +146,21 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     end
   end
   
-  def handle_event("select_frame", %{"frame_index" => frame_index_str}, socket) do
+  def handle_event("select_frame", %{"frame_index" => frame_index_str} = params, socket) do
     try do
       frame_index = String.to_integer(frame_index_str)
+      shift_key = Map.get(params, "shift_key", "false") == "true"
       current_selected = socket.assigns.selected_frame_indices
       
       new_selected = 
-        if frame_index in current_selected do
-          List.delete(current_selected, frame_index)
-        else
-          [frame_index | current_selected] |> Enum.sort()
+        cond do
+          shift_key ->
+            # For shift-click, we'll handle it in select_frame_range
+            current_selected
+          frame_index in current_selected ->
+            List.delete(current_selected, frame_index)
+          true ->
+            [frame_index | current_selected] |> Enum.sort()
         end
       
       socket = assign(socket, :selected_frame_indices, new_selected)
@@ -164,6 +169,31 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       ArgumentError ->
         {:noreply, socket}
     end
+  end
+  
+  def handle_event("select_frame_range", %{"start_index" => _start_str, "end_index" => _end_str, "indices" => indices_list}, socket) do
+    try do
+      range_indices = Enum.map(indices_list, &String.to_integer/1)
+      
+      current_selected = socket.assigns.selected_frame_indices
+      
+      # Add range to current selection (union)
+      new_selected = 
+        (current_selected ++ range_indices)
+        |> Enum.uniq()
+        |> Enum.sort()
+      
+      socket = assign(socket, :selected_frame_indices, new_selected)
+      {:noreply, socket}
+    rescue
+      ArgumentError ->
+        {:noreply, socket}
+    end
+  end
+  
+  def handle_event("preview_frame_selection", %{"indices" => _indices_list}, socket) do
+    # This is just for preview during drag selection - don't actually update selection yet
+    {:noreply, socket}
   end
   
   def handle_event("show_frame_modal", %{"frame_id" => frame_id_str}, socket) do

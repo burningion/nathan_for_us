@@ -15,7 +15,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
   
   def frame_display(assigns) do
     ~H"""
-    <div class="flex-1 p-6">
+    <div class="flex-1 p-6" phx-hook="FrameMultiSelect" id="frame-grid-container">
       <!-- Loading State -->
       <%= if @loading_frames do %>
         <div class="flex items-center justify-center h-64">
@@ -84,7 +84,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
   def frame_card(assigns) do
     ~H"""
     <div class={[
-      "relative bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-blue-500 group",
+      "relative bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-blue-500 group frame-card",
       @selected && "ring-2 ring-blue-500 bg-blue-900/20"
     ]}>
       <!-- Selection Checkbox -->
@@ -92,10 +92,12 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
         <button
           phx-click="select_frame"
           phx-value-frame_index={@index}
+          phx-value-shift_key="false"
           class={[
-            "w-6 h-6 rounded border-2 flex items-center justify-center transition-colors",
+            "w-6 h-6 rounded border-2 flex items-center justify-center transition-colors frame-select-btn",
             @selected && "bg-blue-500 border-blue-500" || "bg-gray-700/80 border-gray-500 group-hover:border-blue-400"
           ]}
+          data-frame-index={@index}
         >
           <%= if @selected do %>
             <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -149,7 +151,21 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
       
       <!-- Hover Overlay -->
       <div class="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+      
+      <!-- Drag Selection Overlay -->
+      <div class="absolute inset-0 bg-blue-500/20 opacity-0 transition-opacity pointer-events-none drag-selection-overlay"></div>
     </div>
+    
+    <style>
+      .frame-card.drag-selecting {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 2px #3b82f6;
+      }
+      
+      .frame-card.drag-selecting .drag-selection-overlay {
+        opacity: 1 !important;
+      }
+    </style>
     """
   end
   

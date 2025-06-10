@@ -25,6 +25,7 @@ import topbar from "../vendor/topbar"
 // Import client-side GIF generator hook
 import ClientGifGenerator from './hooks/client_gif_generator.js'
 import TimelineScrubber from './hooks/timeline_scrubber.js'
+import FrameMultiSelect from './hooks/frame_multi_select.js'
 
 // Frame Animator Hook for cycling through frame sequences
 let Hooks = {}
@@ -34,6 +35,9 @@ Hooks.ClientGifGenerator = ClientGifGenerator
 
 // Timeline scrubber hook
 Hooks.TimelineScrubber = TimelineScrubber
+
+// Frame multi-select hook
+Hooks.FrameMultiSelect = FrameMultiSelect
 
 // Welcome Dialog Hook for first-time visitors
 Hooks.WelcomeDialog = {
