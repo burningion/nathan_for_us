@@ -77,10 +77,11 @@ defmodule NathanForUs.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind nathan_for_us", "esbuild nathan_for_us"],
+      "assets.build": ["tailwind nathan_for_us", "esbuild nathan_for_us", "assets.setup_worker"],
       "assets.deploy": [
         "tailwind nathan_for_us --minify",
         "esbuild nathan_for_us --minify",
+        "assets.setup_worker",
         "phx.digest"
       ]
     ]
