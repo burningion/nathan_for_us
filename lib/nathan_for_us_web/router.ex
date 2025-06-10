@@ -82,6 +82,12 @@ defmodule NathanForUsWeb.Router do
     get "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
   end
 
+  scope "/admin", NathanForUsWeb do
+    pipe_through [:browser, :require_authenticated_user, :require_admin_user]
+    
+    live "/frames", AdminFrameBrowserLive
+  end
+
   scope "/", NathanForUsWeb do
     pipe_through [:clean_browser, :require_authenticated_user]
 

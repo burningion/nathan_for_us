@@ -352,6 +352,7 @@ defmodule NathanForUs.AccountsExtendedTest do
   defp valid_user_attributes(attrs \\ %{}) do
     Enum.into(attrs, %{
       email: "user#{System.unique_integer([:positive])}@example.com",
+      username: "user#{:rand.uniform(999999)}",
       password: "hello world!"
     })
   end

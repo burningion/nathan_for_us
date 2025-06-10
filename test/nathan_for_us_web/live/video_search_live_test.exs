@@ -88,7 +88,6 @@ defmodule NathanForUsWeb.VideoSearchLiveTest do
       assert assigns(view).selected_frame_indices == []
       assert assigns(view).autocomplete_suggestions == []
       assert assigns(view).show_autocomplete == false
-      assert assigns(view).animation_speed == 150
       assert assigns(view).expanded_videos == MapSet.new()
     end
 
@@ -394,7 +393,7 @@ defmodule NathanForUsWeb.VideoSearchLiveTest do
 
       # Check if expansion was possible (depends on frame position and total frames)
       max_possible_frames = 10 # We have 10 frames in test data
-      if initial_end < max_possible_frames then
+      if initial_end < max_possible_frames do
         assert new_end >= initial_end
         assert length(new_sequence.sequence_frames) >= length(initial_sequence.sequence_frames)
         

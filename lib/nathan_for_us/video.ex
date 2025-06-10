@@ -23,6 +23,16 @@ defmodule NathanForUs.Video do
   def get_video!(id), do: Repo.get!(Video, id)
 
   @doc """
+  Gets a video by ID (returns {:ok, video} or {:error, :not_found}).
+  """
+  def get_video(id) do
+    case Repo.get(Video, id) do
+      nil -> {:error, :not_found}
+      video -> {:ok, video}
+    end
+  end
+
+  @doc """
   Gets a video by file path.
   """
   def get_video_by_path(file_path) do
@@ -52,6 +62,25 @@ defmodule NathanForUs.Video do
     Video
     |> where([v], v.status == ^status)
     |> Repo.all()
+  end
+
+  @doc """
+  Gets video frames with pagination.
+  """
+  def get_video_frames_with_pagination(video_id, offset \\ 0, limit \\ 20) do
+    frames = VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> order_by([f], f.frame_number)
+    |> offset(^offset)
+    |> limit(^limit)
+    |> Repo.all()
+    
+    total_count = VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> select([f], count(f.id))
+    |> Repo.one()
+    
+    {:ok, %{frames: frames, total_count: total_count}}
   end
 
   @doc """
@@ -576,6 +605,30 @@ defmodule NathanForUs.Video do
       end
     else
       {:error, :at_end}
+    end
+  end
+
+  @doc """
+  Gets captions for a list of frame IDs.
+  Returns a map of frame_id => [caption_texts].
+  """
+  def get_frames_captions(frame_ids) when is_list(frame_ids) do
+    if length(frame_ids) == 0 do
+      {:ok, %{}}
+    else
+      captions_map = from(fc in FrameCaption,
+        join: c in VideoCaption, on: fc.caption_id == c.id,
+        where: fc.frame_id in ^frame_ids,
+        select: %{frame_id: fc.frame_id, caption_text: c.text},
+        order_by: [fc.frame_id, c.start_time_ms]
+      )
+      |> Repo.all()
+      |> Enum.group_by(& &1.frame_id)
+      |> Enum.into(%{}, fn {frame_id, captions} ->
+        {frame_id, Enum.map(captions, & &1.caption_text)}
+      end)
+      
+      {:ok, captions_map}
     end
   end
 

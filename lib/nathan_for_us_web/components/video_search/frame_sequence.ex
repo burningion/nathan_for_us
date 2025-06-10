@@ -761,6 +761,29 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   end
 
   defp get_selected_frames_captions(frame_sequence, selected_frame_indices) do
-    NathanForUs.Video.Search.get_selected_frames_captions(frame_sequence, selected_frame_indices)
+    # Get selected frames based on indices
+    selected_frames = 
+      selected_frame_indices
+      |> Enum.map(&Enum.at(frame_sequence.sequence_frames, &1))
+      |> Enum.reject(&is_nil/1)
+    
+    if length(selected_frames) > 0 do
+      # Collect all unique captions in chronological order
+      unique_captions = 
+        selected_frames
+        |> Enum.sort_by(& &1.timestamp_ms)  # Sort by timestamp to maintain order
+        |> Enum.flat_map(fn frame ->
+          Map.get(frame_sequence.sequence_captions, frame.id, [])
+        end)
+        |> Enum.uniq()  # Remove duplicates
+        |> Enum.reject(&(&1 == "" or is_nil(&1)))  # Remove empty captions
+        
+      case unique_captions do
+        [] -> "No captions available"
+        captions -> Enum.join(captions, " ... ")
+      end
+    else
+      "No frames selected"
+    end
   end
 end
