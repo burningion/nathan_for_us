@@ -215,6 +215,27 @@ defmodule NathanForUs.Accounts do
     end
   end
 
+  def update(user, attrs) do
+    user
+    |> User.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Makes a user an admin by setting their is_admin attribute to true.
+
+  ## Examples
+
+      iex> make_user_admin(%User{is_admin: false})
+      {:ok, %User{is_admin: true}}
+
+  """
+  def make_user_admin(%User{} = user) do
+    user
+    |> User.changeset(%{is_admin: true})
+    |> Repo.update()
+  end
+
   ## Session
 
   @doc """

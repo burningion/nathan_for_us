@@ -2,6 +2,7 @@ defmodule NathanForUsWeb.AdminLive do
   use NathanForUsWeb, :live_view
 
   alias NathanForUs.AdminService
+  alias NathanForUs.Chat
 
   on_mount {NathanForUsWeb.UserAuth, :ensure_authenticated}
 
@@ -14,6 +15,8 @@ defmodule NathanForUsWeb.AdminLive do
           stats: stats,
           backfill_running: false,
           backfill_results: nil,
+          word_seed_running: false,
+          word_seed_results: nil,
           page_title: "Admin Dashboard",
           page_description: "Administrative functions for Nathan For Us"
         )}
@@ -60,50 +63,107 @@ defmodule NathanForUsWeb.AdminLive do
     {:noreply, assign(socket, stats: stats)}
   end
 
-  def handle_info({ref, result}, socket) do
-    if socket.assigns[:backfill_task] && socket.assigns.backfill_task.ref == ref do
-      Process.demonitor(ref, [:flush])
-      
-      case AdminService.handle_backfill_completion(result) do
-        {:ok, results} ->
-          stats = AdminService.get_admin_stats()
-          
-          {:noreply,
-            socket
-            |> assign(
-              backfill_running: false,
-              backfill_results: results,
-              stats: stats,
-              backfill_task: nil
-            )
-            |> put_flash(:info, "Backfill completed successfully")}
-        
-        {:error, reason} ->
-          {:noreply,
-            socket
-            |> assign(
-              backfill_running: false,
-              backfill_task: nil
-            )
-            |> put_flash(:error, reason)}
-      end
+  def handle_event("seed_common_words", _params, socket) do
+    if socket.assigns.word_seed_running do
+      {:noreply, put_flash(socket, :error, "Word seeding already in progress")}
     else
-      {:noreply, socket}
+      task = Task.async(fn ->
+        Chat.seed_common_words(socket.assigns.current_user.id)
+      end)
+
+      {:noreply, 
+        socket
+        |> assign(
+          word_seed_running: true,
+          word_seed_task: task,
+          word_seed_results: nil
+        )
+        |> put_flash(:info, "Seeding common words...")}
+    end
+  end
+
+  def handle_info({ref, result}, socket) do
+    cond do
+      socket.assigns[:backfill_task] && socket.assigns.backfill_task.ref == ref ->
+        Process.demonitor(ref, [:flush])
+        
+        case AdminService.handle_backfill_completion(result) do
+          {:ok, results} ->
+            stats = AdminService.get_admin_stats()
+            
+            {:noreply,
+              socket
+              |> assign(
+                backfill_running: false,
+                backfill_results: results,
+                stats: stats,
+                backfill_task: nil
+              )
+              |> put_flash(:info, "Backfill completed successfully")}
+          
+          {:error, reason} ->
+            {:noreply,
+              socket
+              |> assign(
+                backfill_running: false,
+                backfill_task: nil
+              )
+              |> put_flash(:error, reason)}
+        end
+
+      socket.assigns[:word_seed_task] && socket.assigns.word_seed_task.ref == ref ->
+        Process.demonitor(ref, [:flush])
+        
+        case result do
+          {:ok, count} ->
+            {:noreply,
+              socket
+              |> assign(
+                word_seed_running: false,
+                word_seed_results: %{seeded_count: count},
+                word_seed_task: nil
+              )
+              |> put_flash(:info, "Successfully seeded #{count} common words!")}
+          
+          {:error, reason} ->
+            {:noreply,
+              socket
+              |> assign(
+                word_seed_running: false,
+                word_seed_task: nil
+              )
+              |> put_flash(:error, "Failed to seed words: #{inspect(reason)}")}
+        end
+
+      true ->
+        {:noreply, socket}
     end
   end
 
   def handle_info({:DOWN, ref, :process, _pid, reason}, socket) do
-    if socket.assigns[:backfill_task] && socket.assigns.backfill_task.ref == ref do
-      # Task crashed
-      {:noreply,
-        socket
-        |> assign(
-          backfill_running: false,
-          backfill_task: nil
-        )
-        |> put_flash(:error, "Backfill task crashed: #{inspect(reason)}")}
-    else
-      {:noreply, socket}
+    cond do
+      socket.assigns[:backfill_task] && socket.assigns.backfill_task.ref == ref ->
+        # Backfill task crashed
+        {:noreply,
+          socket
+          |> assign(
+            backfill_running: false,
+            backfill_task: nil
+          )
+          |> put_flash(:error, "Backfill task crashed: #{inspect(reason)}")}
+
+      socket.assigns[:word_seed_task] && socket.assigns.word_seed_task.ref == ref ->
+        # Word seed task crashed
+        {:noreply,
+          socket
+          |> assign(
+            word_seed_running: false,
+            word_seed_task: nil
+          )
+          |> put_flash(:error, "Word seeding task crashed: #{inspect(reason)}")}
+
+      true ->
+        {:noreply, socket}
     end
   end
 
@@ -159,6 +219,45 @@ defmodule NathanForUsWeb.AdminLive do
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Word Seeding Section -->
+        <div class="bg-white rounded-lg p-6 shadow-sm border border-zinc-200 mb-8">
+          <h2 class="text-xl font-bold text-zinc-900 mb-4">Common Words Seeding</h2>
+          <p class="text-zinc-600 mb-6">
+            Seed the chat system with 100 common English words that will be automatically approved. This helps bootstrap the chat system so users can start chatting immediately.
+          </p>
+
+          <div class="flex items-center space-x-4">
+            <button 
+              phx-click="seed_common_words"
+              disabled={@word_seed_running}
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <%= if @word_seed_running do %>
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Seeding Words...
+              <% else %>
+                Seed 100 Common Words
+              <% end %>
+            </button>
+          </div>
+
+          <!-- Results -->
+          <%= if @word_seed_results do %>
+            <div class="mt-6 p-4 bg-green-50 rounded-md">
+              <h3 class="text-lg font-medium text-green-900 mb-2">Seeding Results</h3>
+              <div class="text-sm">
+                <div>
+                  <span class="font-medium text-green-600">Words Seeded:</span>
+                  <span class="ml-2 text-green-800"><%= @word_seed_results.seeded_count %></span>
+                </div>
+              </div>
+            </div>
+          <% end %>
         </div>
 
         <!-- Backfill Section -->

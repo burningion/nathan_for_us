@@ -1,0 +1,427 @@
+defmodule NathanForUsWeb.ChatRoomLive do
+  use NathanForUsWeb, :live_view
+
+  alias NathanForUs.Chat
+
+  on_mount {NathanForUsWeb.UserAuth, :ensure_authenticated}
+
+  @impl true
+  def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(NathanForUs.PubSub, "chat_room")
+    end
+
+    approved_words = Chat.list_approved_words()
+
+    socket =
+      socket
+      |> assign(:pending_words, Chat.list_pending_words())
+      |> assign(:chat_messages, Chat.list_chat_messages())
+      |> assign(:approved_words, approved_words)
+      |> assign(:filtered_approved_words, approved_words |> Enum.take(50))
+      |> assign(:word_search, "")
+      |> assign(:word_form, to_form(Chat.change_word(%Chat.Word{}, %{})))
+      |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("validate_word", %{"word" => word_params}, socket) do
+    changeset = Chat.change_word(%Chat.Word{}, word_params)
+    {:noreply, assign(socket, :word_form, to_form(changeset, action: :validate))}
+  end
+
+  @impl true
+  def handle_event("search_approved_words", %{"value" => search_term}, socket) do
+    filtered_words =
+      if String.trim(search_term) == "" do
+        socket.assigns.approved_words |> Enum.take(50)
+      else
+        socket.assigns.approved_words
+        |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(search_term)))
+        |> Enum.take(50)
+      end
+
+    socket =
+      socket
+      |> assign(:word_search, search_term)
+      |> assign(:filtered_approved_words, filtered_words)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("submit_word", %{"word" => %{"text" => text}}, socket) do
+    words =
+      text
+      |> String.trim()
+      |> String.replace(~r/[^\w\s']/, " ")
+      |> String.split()
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.map(&String.downcase/1)
+      |> Enum.uniq()
+
+    case words do
+      [] ->
+        socket =
+          socket
+          |> assign(:word_form, to_form(Chat.change_word(%Chat.Word{}, %{})))
+          |> put_flash(:error, "Please enter at least one word!")
+        {:noreply, socket}
+
+      words ->
+        results = Enum.map(words, &Chat.submit_word(&1, socket.assigns.current_user.id))
+
+        successes = Enum.count(results, fn {status, _} -> status == :ok end)
+        errors = Enum.filter(results, fn {status, _} -> status == :error end)
+
+        socket =
+          socket
+          |> assign(:pending_words, Chat.list_pending_words())
+          |> assign(:word_form, to_form(Chat.change_word(%Chat.Word{}, %{})))
+
+        socket =
+          cond do
+            successes > 0 && Enum.empty?(errors) ->
+              put_flash(socket, :info, "#{successes} word(s) submitted for approval!")
+
+            successes > 0 ->
+              error_messages =
+                errors
+                |> Enum.map(fn {_, reason} -> format_error_message(reason) end)
+                |> Enum.uniq()
+                |> Enum.join(", ")
+
+              put_flash(socket, :info, "#{successes} word(s) submitted. Some errors: #{error_messages}")
+
+            true ->
+              error_messages =
+                errors
+                |> Enum.map(fn {_, reason} -> format_error_message(reason) end)
+                |> Enum.uniq()
+                |> Enum.join(", ")
+
+              put_flash(socket, :error, "No words submitted. Errors: #{error_messages}")
+          end
+
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("approve_word", %{"id" => word_id}, socket) do
+    case Chat.approve_word(String.to_integer(word_id), socket.assigns.current_user.id) do
+      {:ok, _word} ->
+        updated_approved_words = Chat.list_approved_words()
+
+        filtered_words =
+          if String.trim(socket.assigns.word_search) == "" do
+            updated_approved_words |> Enum.take(50)
+          else
+            updated_approved_words
+            |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
+            |> Enum.take(50)
+          end
+
+        socket =
+          socket
+          |> assign(:pending_words, Chat.list_pending_words())
+          |> assign(:approved_words, updated_approved_words)
+          |> assign(:filtered_approved_words, filtered_words)
+          |> put_flash(:info, "Word approved!")
+
+        {:noreply, socket}
+
+      {:error, :cannot_approve_own_word} ->
+        socket = put_flash(socket, :error, "You cannot approve your own word!")
+        {:noreply, socket}
+
+      {:error, _} ->
+        socket = put_flash(socket, :error, "Failed to approve word!")
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("deny_word", %{"id" => word_id}, socket) do
+    case Chat.deny_word(String.to_integer(word_id), socket.assigns.current_user.id) do
+      {:ok, _word} ->
+        socket =
+          socket
+          |> assign(:pending_words, Chat.list_pending_words())
+          |> put_flash(:info, "Word denied!")
+
+        {:noreply, socket}
+
+      {:error, :cannot_deny_own_word} ->
+        socket = put_flash(socket, :error, "You cannot deny your own word!")
+        {:noreply, socket}
+
+      {:error, _} ->
+        socket = put_flash(socket, :error, "Failed to deny word!")
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("send_message", %{"chat_message" => %{"content" => content}}, socket) do
+    attrs = %{content: content, user_id: socket.assigns.current_user.id}
+
+    case Chat.create_chat_message(attrs) do
+      {:ok, _message, true} ->
+        # Valid message - clear form
+        socket =
+          socket
+          |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
+
+        {:noreply, socket}
+
+      {:ok, _message, false} ->
+        # Invalid message - saved but not displayed
+        socket =
+          socket
+          |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
+          |> put_flash(:error, "Message saved but contains unapproved words - not displayed in chat!")
+
+        {:noreply, socket}
+
+      {:error, changeset} ->
+        socket = assign(socket, :message_form, to_form(changeset))
+        {:noreply, socket}
+    end
+  end
+
+  defp format_error_message(:already_approved), do: "already approved"
+  defp format_error_message(:already_pending), do: "already pending"
+  defp format_error_message(:banned_forever), do: "banned forever"
+  defp format_error_message(_), do: "unknown error"
+
+  @impl true
+  def handle_info({:word_submitted, _word}, socket) do
+    socket = assign(socket, :pending_words, Chat.list_pending_words())
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:word_approved, _word}, socket) do
+    updated_approved_words = Chat.list_approved_words()
+    
+    filtered_words = 
+      if String.trim(socket.assigns.word_search) == "" do
+        updated_approved_words |> Enum.take(50)
+      else
+        updated_approved_words
+        |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
+        |> Enum.take(50)
+      end
+
+    socket = 
+      socket 
+      |> assign(:pending_words, Chat.list_pending_words())
+      |> assign(:approved_words, updated_approved_words)
+      |> assign(:filtered_approved_words, filtered_words)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:word_denied, _word}, socket) do
+    socket = assign(socket, :pending_words, Chat.list_pending_words())
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:new_message, message}, socket) do
+    messages = socket.assigns.chat_messages ++ [message]
+    socket = assign(socket, :chat_messages, messages)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:words_bulk_approved, _count}, socket) do
+    updated_approved_words = Chat.list_approved_words()
+    
+    filtered_words = 
+      if String.trim(socket.assigns.word_search) == "" do
+        updated_approved_words |> Enum.take(50)
+      else
+        updated_approved_words
+        |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
+        |> Enum.take(50)
+      end
+
+    socket = 
+      socket 
+      |> assign(:approved_words, updated_approved_words)
+      |> assign(:filtered_approved_words, filtered_words)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="flex bg-gray-100 p-4" style="height: calc(100vh - 80px);">
+      <!-- Left Panel - Word Voting -->
+      <div class="w-1/3 bg-white border-r border-gray-300 flex flex-col h-full rounded-l-lg">
+        <!-- Approved Words Widget -->
+        <div class="p-3 border-b border-gray-200 flex-shrink-0">
+          <h3 class="text-sm font-semibold text-gray-900 mb-2">Approved Words (searchable)</h3>
+          <div class="bg-gray-50 rounded-lg p-2 mb-2" style="height: 120px;">
+            <div class="flex flex-wrap gap-1 h-20 overflow-hidden" id="approved-words-container">
+              <%= for word <- @filtered_approved_words do %>
+                <span 
+                  id={"approved-word-#{word}"}
+                  class="text-gray-700 text-xs px-1 py-0.5 rounded transition-all duration-200 ease-in-out hover:text-gray-900 hover:bg-gray-100"
+                  style="animation: fadeIn 0.3s ease-in-out;"
+                >
+                  <%= word %>
+                </span>
+              <% end %>
+              <%= if Enum.empty?(@filtered_approved_words) do %>
+                <span class="text-gray-400 text-xs italic">
+                  <%= if @word_search != "", do: "No words match \"#{@word_search}\"", else: "No approved words yet" %>
+                </span>
+              <% end %>
+            </div>
+            
+            <style>
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-5px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              
+              @keyframes fadeOut {
+                from { opacity: 1; transform: translateY(0); }
+                to { opacity: 0; transform: translateY(-5px); }
+              }
+              
+              .word-exit {
+                animation: fadeOut 0.2s ease-in-out forwards;
+              }
+            </style>
+            <input
+              type="text"
+              value={@word_search}
+              phx-keyup="search_approved_words"
+              phx-debounce="300"
+              placeholder="Search approved words..."
+              class="w-full mt-2 text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              name="search"
+            />
+          </div>
+        </div>
+
+        <div class="p-3 border-b border-gray-200 flex-shrink-0">
+          <h2 class="text-base font-semibold text-gray-900">Word Approval</h2>
+        </div>
+
+        <!-- Pending Words List -->
+        <div class="flex-1 overflow-y-auto p-3 min-h-0">
+          <div class="flex flex-wrap gap-2">
+            <%= for word <- @pending_words do %>
+              <div class="bg-blue-100 border border-blue-200 rounded-full px-3 py-2 text-xs flex items-center space-x-2 group hover:bg-blue-200 transition-colors">
+                <div class="flex items-center min-w-0">
+                  <span class="font-medium text-blue-900 whitespace-nowrap"><%= word.text %></span>
+                  <%= if word.submission_count > 1 do %>
+                    <span class="text-blue-500 ml-1">(#<%= word.submission_count %>)</span>
+                  <% end %>
+                </div>
+                <div class="flex space-x-1">
+                  <button
+                    phx-click="approve_word"
+                    phx-value-id={word.id}
+                    class="bg-white hover:bg-gray-100 text-black border border-gray-300 w-5 h-5 rounded-full text-xs flex items-center justify-center transition-colors"
+                    title="Approve word"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    phx-click="deny_word"
+                    phx-value-id={word.id}
+                    class="bg-black hover:bg-gray-800 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center transition-colors"
+                    title="Deny word"
+                  >
+                    ✗
+                  </button>
+                </div>
+              </div>
+            <% end %>
+
+            <%= if Enum.empty?(@pending_words) do %>
+              <p class="text-gray-500 text-center py-4 text-sm w-full">No words pending approval</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Submit Word Form -->
+        <div class="p-3 border-t border-gray-200 flex-shrink-0">
+          <.form for={@word_form} phx-submit="submit_word" phx-change="validate_word" class="space-y-2">
+            <.input
+              field={@word_form[:text]}
+              type="text"
+              placeholder="Submit words..."
+              required
+              class="w-full text-sm"
+            />
+            <.button type="submit" class="w-full text-sm py-2">
+              Submit Words
+            </.button>
+          </.form>
+        </div>
+      </div>
+
+      <!-- Right Panel - Chat -->
+      <div class="flex-1 flex flex-col h-full bg-white rounded-r-lg">
+        <div class="p-3 border-b border-gray-200 bg-white flex-shrink-0">
+          <h2 class="text-base font-semibold text-gray-900">Chat Room</h2>
+          <p class="text-sm text-gray-500">Only approved words are allowed</p>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="flex-1 overflow-y-auto p-3 space-y-2 min-h-0 bg-gray-50">
+          <%= for message <- @chat_messages do %>
+            <div class="bg-white rounded p-3 border text-sm">
+              <div class="flex items-start space-x-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-medium text-gray-900"><%= message.user.email %></span>
+                    <span class="text-xs text-gray-500">
+                      <%= Calendar.strftime(message.inserted_at, "%I:%M %p") %>
+                    </span>
+                  </div>
+                  <p class="text-gray-700 mt-1 break-words"><%= message.content %></p>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+          <%= if Enum.empty?(@chat_messages) do %>
+            <div class="text-center py-8">
+              <p class="text-gray-500 text-sm">No messages yet. Start the conversation!</p>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Message Input -->
+        <div class="p-3 border-t border-gray-200 bg-white flex-shrink-0">
+          <.form for={@message_form} phx-submit="send_message" class="space-y-2">
+            <.input
+              field={@message_form[:content]}
+              type="textarea"
+              placeholder="Type your message (only approved words allowed)..."
+              required
+              rows="3"
+              class="w-full resize-none text-sm"
+            />
+            <div class="flex justify-end">
+              <.button type="submit" class="px-6 py-2 text-sm">
+                Send Message
+              </.button>
+            </div>
+          </.form>
+        </div>
+      </div>
+    </div>
+    """
+  end
+end

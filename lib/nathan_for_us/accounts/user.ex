@@ -122,7 +122,7 @@ defmodule NathanForUs.Accounts.User do
     |> validate_confirmation(:password, message: "does not match password")
     |> maybe_validate_password(attrs, opts)
   end
-  
+
   defp maybe_validate_password(changeset, attrs, opts) do
     # Only validate password requirements if password is provided
     if Map.get(attrs, "password") || Map.get(attrs, :password) do
@@ -134,12 +134,34 @@ defmodule NathanForUs.Accounts.User do
     end
   end
 
+  @spec confirm_changeset(
+          {map(),
+           %{
+             optional(atom()) =>
+               atom()
+               | {:array | :assoc | :embed | :in | :map | :parameterized | :supertype | :try,
+                  any()}
+           }}
+          | %{
+              :__struct__ => atom() | %{:__changeset__ => any(), optional(any()) => any()},
+              optional(atom()) => any()
+            }
+        ) :: Ecto.Changeset.t()
   @doc """
   Confirms the account by setting `confirmed_at`.
   """
   def confirm_changeset(user) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
     change(user, confirmed_at: now)
+  end
+
+  @doc """
+  A general changeset for updating user attributes.
+  """
+  def changeset(user, attrs) do
+    user
+    # TODO make this on all fields
+    |> cast(attrs, [:is_admin])
   end
 
   @doc """
