@@ -4,7 +4,7 @@
   "description": "Assets for Nathan For Us Phoenix app",
   "main": "js/app.js",
   "scripts": {
-    "build": "echo '🎬 Starting build process...' && node copy-gif-worker.js && esbuild js/app.js --bundle --outdir=../priv/static/assets --external:/fonts/* --external:/images/* --external:phoenix_html --external:phoenix --external:phoenix_live_view --external:topbar && echo '🎬 Build complete!'",
+    "build": "echo '🎬 Starting build process...' && node copy-gif-worker.js && esbuild js/app.js --bundle --outdir=../priv/static/assets --external:/fonts/* --external:/images/* --external:phoenix_html --external:phoenix --external:phoenix_live_view --external:topbar && cp js/gif.worker.js ../priv/static/gif.worker.js && echo '🎬 Build complete!'",
     "watch": "node copy-gif-worker.js && esbuild js/app.js --bundle --outdir=../priv/static/assets --external:/fonts/* --external:/images/* --external:phoenix_html --external:phoenix --external:phoenix_live_view --external:topbar --watch",
     "copy-gif-worker": "node copy-gif-worker.js"
   },
