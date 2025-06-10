@@ -20,6 +20,8 @@ defmodule NathanForUsWeb.ChatRoomLive do
         user -> user.is_admin || :rand.uniform(100) == 1
       end
 
+    total_messages = Chat.get_total_message_count()
+
     socket =
       socket
       |> assign(:pending_words, Chat.list_pending_words())
@@ -33,6 +35,8 @@ defmodule NathanForUsWeb.ChatRoomLive do
       |> assign(:show_rejected_button, show_rejected_button)
       |> assign(:show_rejected_modal, false)
       |> assign(:rejected_messages, [])
+      |> assign(:total_messages, total_messages)
+      |> assign(:show_link_feature, total_messages >= 250)
 
     {:ok, socket}
   end
@@ -290,8 +294,15 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
   @impl true
   def handle_info({:new_message, message}, socket) do
-    messages = socket.assigns.chat_messages ++ [message]
-    socket = assign(socket, :chat_messages, messages)
+    messages = [message | socket.assigns.chat_messages]
+    new_total = socket.assigns.total_messages + 1
+    
+    socket = 
+      socket
+      |> assign(:chat_messages, messages)
+      |> assign(:total_messages, new_total)
+      |> assign(:show_link_feature, new_total >= 250)
+    
     {:noreply, socket}
   end
 
@@ -516,7 +527,15 @@ defmodule NathanForUsWeb.ChatRoomLive do
                       <%= Calendar.strftime(message.inserted_at, "%I:%M %p") %>
                     </span>
                   </div>
-                  <p class="text-gray-700 mt-1 break-words"><%= message.content %></p>
+                  <p class="text-gray-700 mt-1 break-words">
+                    <%= for {word, index} <- message.content |> String.split() |> Enum.with_index() do %>
+                      <%= if index > 0, do: " " %><%= if Chat.is_url?(word) do %>
+                        <a href={word} target="_blank" class="text-blue-600 hover:text-blue-800 underline">surprise me</a>
+                      <% else %>
+                        <%= word %>
+                      <% end %>
+                    <% end %>
+                  </p>
                 </div>
               </div>
             </div>
@@ -536,7 +555,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
               <.input
                 field={@message_form[:content]}
                 type="textarea"
-                placeholder="Type your message (only approved words allowed)..."
+                placeholder={if @show_link_feature, do: "Type your message (only approved words + links allowed)...", else: "Type your message (only approved words allowed)..."}
                 required
                 rows="3"
                 class="w-full resize-none text-sm"

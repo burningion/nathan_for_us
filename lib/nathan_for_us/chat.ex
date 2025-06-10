@@ -155,6 +155,7 @@ defmodule NathanForUs.Chat do
 
   @doc """
   Validates if a message contains only approved words.
+  Links are allowed and will be replaced with "surprise me" in display.
   """
   def validate_message_words(content) do
     approved_words =
@@ -162,12 +163,27 @@ defmodule NathanForUs.Chat do
       |> Enum.map(&String.downcase/1)
       |> MapSet.new()
 
-    content
+    # Extract and remove URLs from validation
+    words = String.split(content)
+    
+    text_words = 
+      words
+      |> Enum.reject(&is_url?/1)
+      |> Enum.join(" ")
+
+    text_words
     |> String.downcase()
     |> String.replace(~r/[^\w\s']/, " ")
     |> String.split()
     |> Enum.reject(&(&1 == ""))
     |> Enum.all?(&MapSet.member?(approved_words, &1))
+  end
+
+  def is_url?(word) do
+    case URI.parse(word) do
+      %URI{scheme: scheme} when scheme in ["http", "https"] -> true
+      _ -> false
+    end
   end
 
   @doc """
@@ -178,11 +194,40 @@ defmodule NathanForUs.Chat do
 
     from(cm in ChatMessage,
       where: cm.valid == true,
-      order_by: [asc: cm.inserted_at],
+      order_by: [desc: cm.inserted_at],
       limit: ^limit,
       preload: [:user]
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Gets the total count of all valid chat messages.
+  """
+  def get_total_message_count do
+    from(cm in ChatMessage,
+      where: cm.valid == true,
+      select: count(cm.id)
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  Processes message content for display, replacing URLs with "surprise me" links.
+  """
+  def process_message_for_display(content) do
+    content
+    |> String.split()
+    |> Enum.map(&process_word/1)
+    |> Enum.join(" ")
+  end
+
+  defp process_word(word) do
+    if is_url?(word) do
+      "surprise me"
+    else
+      word
+    end
   end
 
   @doc """
