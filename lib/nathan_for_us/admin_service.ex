@@ -218,4 +218,32 @@ defmodule NathanForUs.AdminService do
         {:error, Exception.message(error)}
     end
   end
+
+  @doc """
+  Tests if FFMPEG is available and accessible in the system PATH.
+  """
+  @spec test_ffmpeg_availability() :: {:ok, String.t()} | {:error, String.t()}
+  def test_ffmpeg_availability do
+    try do
+      case System.cmd("which", ["ffmpeg"]) do
+        {path, 0} ->
+          path = String.trim(path)
+          case System.cmd("ffmpeg", ["-version"]) do
+            {version_output, 0} ->
+              # Extract version from first line
+              version_line = version_output |> String.split("\n") |> List.first()
+              {:ok, "FFMPEG found at #{path}. #{version_line}"}
+            
+            {error_output, _exit_code} ->
+              {:error, "FFMPEG found at #{path} but failed to get version: #{error_output}"}
+          end
+        
+        {_output, _exit_code} ->
+          {:error, "FFMPEG not found in system PATH"}
+      end
+    rescue
+      error ->
+        {:error, "Error testing FFMPEG: #{Exception.message(error)}"}
+    end
+  end
 end
