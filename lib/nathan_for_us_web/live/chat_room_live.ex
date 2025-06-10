@@ -13,17 +13,44 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
     approved_words = Chat.list_approved_words()
 
+    # 1% chance for regular users to see the rejected messages button
+    show_rejected_button = socket.assigns.current_user.is_admin || :rand.uniform(100) == 1
+
     socket =
       socket
       |> assign(:pending_words, Chat.list_pending_words())
       |> assign(:chat_messages, Chat.list_chat_messages())
       |> assign(:approved_words, approved_words)
-      |> assign(:filtered_approved_words, approved_words |> Enum.take(50))
+      |> assign(:filtered_approved_words, approved_words)
       |> assign(:word_search, "")
       |> assign(:word_form, to_form(Chat.change_word(%Chat.Word{}, %{})))
       |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
+      |> assign(:show_welcome_dialog, true)
+      |> assign(:show_rejected_button, show_rejected_button)
+      |> assign(:show_rejected_modal, false)
+      |> assign(:rejected_messages, [])
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("close_welcome_dialog", _params, socket) do
+    {:noreply, assign(socket, :show_welcome_dialog, false)}
+  end
+
+  @impl true
+  def handle_event("open_rejected_modal", _params, socket) do
+    rejected_messages = Chat.list_rejected_messages()
+    socket =
+      socket
+      |> assign(:show_rejected_modal, true)
+      |> assign(:rejected_messages, rejected_messages)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("close_rejected_modal", _params, socket) do
+    {:noreply, assign(socket, :show_rejected_modal, false)}
   end
 
   @impl true
@@ -36,11 +63,10 @@ defmodule NathanForUsWeb.ChatRoomLive do
   def handle_event("search_approved_words", %{"value" => search_term}, socket) do
     filtered_words =
       if String.trim(search_term) == "" do
-        socket.assigns.approved_words |> Enum.take(50)
+        socket.assigns.approved_words
       else
         socket.assigns.approved_words
         |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(search_term)))
-        |> Enum.take(50)
       end
 
     socket =
@@ -117,12 +143,11 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
         filtered_words =
           if String.trim(socket.assigns.word_search) == "" do
-            updated_approved_words |> Enum.take(50)
+            updated_approved_words
           else
             updated_approved_words
             |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
-            |> Enum.take(50)
-          end
+              end
 
         socket =
           socket
@@ -170,18 +195,20 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
     case Chat.create_chat_message(attrs) do
       {:ok, _message, true} ->
-        # Valid message - clear form
+        # Valid message - clear form and push clear event
         socket =
           socket
           |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
+          |> push_event("clear_message_form", %{})
 
         {:noreply, socket}
 
       {:ok, _message, false} ->
-        # Invalid message - saved but not displayed
+        # Invalid message - saved but not displayed, clear form and push clear event
         socket =
           socket
           |> assign(:message_form, to_form(Chat.change_chat_message(%Chat.ChatMessage{})))
+          |> push_event("clear_message_form", %{})
           |> put_flash(:error, "Message saved but contains unapproved words - not displayed in chat!")
 
         {:noreply, socket}
@@ -209,11 +236,10 @@ defmodule NathanForUsWeb.ChatRoomLive do
     
     filtered_words = 
       if String.trim(socket.assigns.word_search) == "" do
-        updated_approved_words |> Enum.take(50)
+        updated_approved_words
       else
         updated_approved_words
         |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
-        |> Enum.take(50)
       end
 
     socket = 
@@ -243,11 +269,10 @@ defmodule NathanForUsWeb.ChatRoomLive do
     
     filtered_words = 
       if String.trim(socket.assigns.word_search) == "" do
-        updated_approved_words |> Enum.take(50)
+        updated_approved_words
       else
         updated_approved_words
         |> Enum.filter(&String.contains?(String.downcase(&1), String.downcase(socket.assigns.word_search)))
-        |> Enum.take(50)
       end
 
     socket = 
@@ -260,14 +285,40 @@ defmodule NathanForUsWeb.ChatRoomLive do
   @impl true
   def render(assigns) do
     ~H"""
+    <!-- Welcome Dialog -->
+    <%= if @show_welcome_dialog do %>
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" phx-hook="WelcomeDialog" id="welcome-dialog">
+        <div class="bg-white rounded-lg shadow-xl max-w-md mx-4 p-6">
+          <div class="text-center">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Welcome to Nathan For Us Chat!</h2>
+            <div class="text-left space-y-3 text-sm text-gray-700 mb-6">
+              <p><strong>In order to keep chat friendly we banned every word by default.</strong></p>
+              <p>To submit a word to be campaigned for allowance, type it in the left.</p>
+              <p>If another user votes yes, it will become allowed.</p>
+              <p>You can see allowed words on the left and search them to compose messages.</p>
+              <p class="text-blue-600 font-medium">Please have a nice time chatting with your friends who also enjoy Nathan and we can build this into an expansive, friendly chat room!</p>
+            </div>
+            <button 
+              phx-click="close_welcome_dialog"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              phx-hook="WelcomeDialogButton"
+              id="welcome-dialog-button"
+            >
+              Got it, let's chat!
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
     <div class="flex bg-gray-100 p-4" style="height: calc(100vh - 80px);">
       <!-- Left Panel - Word Voting -->
       <div class="w-1/3 bg-white border-r border-gray-300 flex flex-col h-full rounded-l-lg">
         <!-- Approved Words Widget -->
         <div class="p-3 border-b border-gray-200 flex-shrink-0">
           <h3 class="text-sm font-semibold text-gray-900 mb-2">Approved Words (searchable)</h3>
-          <div class="bg-gray-50 rounded-lg p-2 mb-2" style="height: 120px;">
-            <div class="flex flex-wrap gap-1 h-20 overflow-hidden" id="approved-words-container">
+          <div class="bg-gray-50 rounded-lg p-2 mb-2 max-h-60 overflow-y-auto">
+            <div class="flex flex-wrap gap-1" id="approved-words-container">
               <%= for word <- @filtered_approved_words do %>
                 <span 
                   id={"approved-word-#{word}"}
@@ -373,8 +424,21 @@ defmodule NathanForUsWeb.ChatRoomLive do
       <!-- Right Panel - Chat -->
       <div class="flex-1 flex flex-col h-full bg-white rounded-r-lg">
         <div class="p-3 border-b border-gray-200 bg-white flex-shrink-0">
-          <h2 class="text-base font-semibold text-gray-900">Chat Room</h2>
-          <p class="text-sm text-gray-500">Only approved words are allowed</p>
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-base font-semibold text-gray-900">Chat Room</h2>
+              <p class="text-sm text-gray-500">Only approved words are allowed</p>
+            </div>
+            <%= if @show_rejected_button do %>
+              <button
+                phx-click="open_rejected_modal"
+                class="text-xs bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded border border-red-300 transition-colors"
+                title="View rejected messages"
+              >
+                SEE REJECTED MESSAGES
+              </button>
+            <% end %>
+          </div>
         </div>
 
         <!-- Chat Messages -->
@@ -404,7 +468,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
 
         <!-- Message Input -->
         <div class="p-3 border-t border-gray-200 bg-white flex-shrink-0">
-          <.form for={@message_form} phx-submit="send_message" class="space-y-2">
+          <.form for={@message_form} phx-submit="send_message" class="space-y-2" phx-hook="MessageForm" id="message-form">
             <.input
               field={@message_form[:content]}
               type="textarea"
@@ -412,6 +476,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
               required
               rows="3"
               class="w-full resize-none text-sm"
+              id="message-textarea"
             />
             <div class="flex justify-end">
               <.button type="submit" class="px-6 py-2 text-sm">
@@ -422,6 +487,54 @@ defmodule NathanForUsWeb.ChatRoomLive do
         </div>
       </div>
     </div>
+
+    <!-- Rejected Messages Modal -->
+    <%= if @show_rejected_modal do %>
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" phx-click="close_rejected_modal">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col" phx-click-away="close_rejected_modal">
+          <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-gray-900">Rejected Messages</h2>
+            <button 
+              phx-click="close_rejected_modal"
+              class="text-gray-400 hover:text-gray-600 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto p-4">
+            <%= if Enum.empty?(@rejected_messages) do %>
+              <div class="text-center py-8">
+                <p class="text-gray-500">No rejected messages yet!</p>
+              </div>
+            <% else %>
+              <div class="space-y-3">
+                <%= for message <- @rejected_messages do %>
+                  <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <div class="flex items-center space-x-2 mb-1">
+                          <span class="font-medium text-red-900"><%= message.user.email %></span>
+                          <span class="text-xs text-red-600">
+                            <%= Calendar.strftime(message.inserted_at, "%m/%d/%y %I:%M %p") %>
+                          </span>
+                        </div>
+                        <p class="text-red-800 break-words"><%= message.content %></p>
+                      </div>
+                      <span class="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full ml-2">REJECTED</span>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          <div class="p-4 border-t border-gray-200 text-center">
+            <p class="text-xs text-gray-500">
+              These messages contain unapproved words and are not visible in the main chat.
+            </p>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 end

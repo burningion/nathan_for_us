@@ -25,6 +25,63 @@ import topbar from "../vendor/topbar"
 // Frame Animator Hook for cycling through frame sequences
 let Hooks = {}
 
+// Welcome Dialog Hook for first-time visitors
+Hooks.WelcomeDialog = {
+  mounted() {
+    // Check if this is the first visit to the chat room
+    const hasVisited = localStorage.getItem('nathan-chat-visited')
+    
+    if (hasVisited) {
+      // User has visited before, close the dialog immediately
+      this.pushEvent('close_welcome_dialog', {})
+    } else {
+      // First-time visitor, allow clicking backdrop to close
+      this.el.addEventListener('click', (e) => {
+        // Only close if clicking the backdrop (not the dialog content)
+        if (e.target === this.el) {
+          localStorage.setItem('nathan-chat-visited', 'true')
+          this.pushEvent('close_welcome_dialog', {})
+        }
+      })
+    }
+  }
+}
+
+// Welcome Dialog Button Hook to mark user as visited
+Hooks.WelcomeDialogButton = {
+  mounted() {
+    this.el.addEventListener('click', () => {
+      localStorage.setItem('nathan-chat-visited', 'true')
+    })
+  }
+}
+
+// Message Form Hook to handle clearing the textarea after sending
+Hooks.MessageForm = {
+  mounted() {
+    this.textarea = this.el.querySelector('#message-textarea')
+    
+    // Listen for the clear event from the server
+    this.handleEvent("clear_message_form", () => {
+      if (this.textarea) {
+        this.textarea.value = ''
+        this.textarea.focus()
+      }
+    })
+  },
+  
+  updated() {
+    // Ensure textarea is cleared when form is reset
+    if (this.textarea) {
+      const formData = new FormData(this.el)
+      const content = formData.get('chat_message[content]') || ''
+      if (content.trim() === '') {
+        this.textarea.value = ''
+      }
+    }
+  }
+}
+
 // Animation Speed Slider Hook for real-time speed control
 Hooks.AnimationSpeedSlider = {
   mounted() {

@@ -188,6 +188,21 @@ defmodule NathanForUs.Chat do
   end
 
   @doc """
+  Returns only rejected (invalid) chat messages.
+  """
+  def list_rejected_messages(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 100)
+
+    from(cm in ChatMessage,
+      where: cm.valid == false,
+      order_by: [desc: cm.inserted_at],
+      limit: ^limit,
+      preload: [:user]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single chat message.
   """
   def get_chat_message!(id), do: Repo.get!(ChatMessage, id)
