@@ -58,6 +58,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:show_welcome_modal, show_welcome_modal)
       |> assign(:gif_generation_status, nil)
       |> assign(:generated_gif_data, nil)
+      |> assign(:ffmpeg_status, nil)
+      |> assign(:client_download_url, nil)
 
     {:ok, socket}
   end
@@ -285,6 +287,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:selected_frame_indices, [])
       |> assign(:gif_generation_status, nil)
       |> assign(:generated_gif_data, nil)
+      |> assign(:ffmpeg_status, nil)
+      |> assign(:client_download_url, nil)
       |> push_frame_selection_to_url()
     
     {:noreply, socket}
@@ -624,6 +628,81 @@ defmodule NathanForUsWeb.VideoSearchLive do
         socket = put_flash(socket, :error, "No frames selected for GIF generation")
         {:noreply, socket}
     end
+  end
+
+  def handle_event("generate_gif_client", _params, socket) do
+    case {socket.assigns.frame_sequence, socket.assigns.selected_frame_indices} do
+      {frame_sequence, selected_indices} when not is_nil(frame_sequence) and length(selected_indices) > 0 ->
+        # Get selected frames based on indices
+        selected_frames = 
+          selected_indices
+          |> Enum.map(&Enum.at(frame_sequence.sequence_frames, &1))
+          |> Enum.reject(&is_nil/1)
+        
+        # Convert frame data to the format expected by JavaScript
+        frame_data = Enum.map(selected_frames, fn frame ->
+          %{
+            id: frame.id,
+            image_data: if Map.get(frame, :image_data) do
+              case String.starts_with?(frame.image_data, "\\x") do
+                true ->
+                  # Remove the \x prefix and decode from hex
+                  hex_string = String.slice(frame.image_data, 2..-1//1)
+                  case Base.decode16(hex_string, case: :lower) do
+                    {:ok, binary_data} -> Base.encode64(binary_data)
+                    :error -> ""
+                  end
+                false ->
+                  # Already binary data, encode directly
+                  Base.encode64(frame.image_data)
+              end
+            else
+              ""
+            end,
+            frame_number: frame.frame_number,
+            timestamp_ms: frame.timestamp_ms
+          }
+        end)
+        
+        socket = 
+          socket
+          |> assign(:gif_generation_status, :generating)
+          |> assign(:generated_gif_data, nil)
+          |> assign(:client_download_url, nil)
+          |> push_event("start_gif_generation", %{frames: frame_data, fps: 6})
+        
+        {:noreply, socket}
+      
+      {nil, _} ->
+        socket = put_flash(socket, :error, "No frame sequence available")
+        {:noreply, socket}
+      
+      {_, []} ->
+        socket = put_flash(socket, :error, "No frames selected for GIF generation")
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("generate_gif_server", _params, socket) do
+    # This is the same as the original generate_gif but with explicit naming
+    handle_event("generate_gif", %{}, socket)
+  end
+
+  def handle_event("gif_status_update", %{"status" => status, "message" => message}, socket) do
+    ffmpeg_status = %{status: status, message: message}
+    socket = assign(socket, :ffmpeg_status, ffmpeg_status)
+    {:noreply, socket}
+  end
+
+  def handle_event("gif_generation_complete", %{"download_url" => download_url}, socket) do
+    socket = 
+      socket
+      |> assign(:gif_generation_status, :completed)
+      |> assign(:client_download_url, download_url)
+      |> assign(:ffmpeg_status, nil)
+      |> put_flash(:info, "GIF generated successfully on client!")
+    
+    {:noreply, socket}
   end
 
   def handle_event("toggle_video_expansion", %{"video_id" => video_id_str}, socket) do
@@ -987,6 +1066,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
           frame_sequence_version={@frame_sequence_version}
           gif_generation_status={@gif_generation_status}
           generated_gif_data={@generated_gif_data}
+          ffmpeg_status={@ffmpeg_status}
+          client_download_url={@client_download_url}
         />
       </div>
     </div>

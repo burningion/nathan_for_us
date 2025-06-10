@@ -22,8 +22,14 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
+// Import client-side GIF generator hook
+import ClientGifGenerator from './hooks/client_gif_generator.js'
+
 // Frame Animator Hook for cycling through frame sequences
 let Hooks = {}
+
+// Client-side GIF generator hook
+Hooks.ClientGifGenerator = ClientGifGenerator
 
 // Welcome Dialog Hook for first-time visitors
 Hooks.WelcomeDialog = {
