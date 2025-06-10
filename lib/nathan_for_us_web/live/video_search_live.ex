@@ -30,10 +30,13 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     videos = Video.list_videos()
 
     search_form = %{"term" => ""}
+    
+    # Show welcome modal if explicitly set in session (for new users)
+    show_welcome_modal = Map.get(session, "show_welcome_modal", false)
     
     socket =
       socket
@@ -52,6 +55,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:show_autocomplete, false)
       |> assign(:animation_speed, 150)
       |> assign(:expanded_videos, MapSet.new())  # Track which videos are expanded
+      |> assign(:show_welcome_modal, show_welcome_modal)
 
     {:ok, socket}
   end
@@ -392,6 +396,15 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("close_welcome_modal", _params, socket) do
+    {:noreply, assign(socket, :show_welcome_modal, false)}
+  end
+
+  def handle_event("show_welcome_for_first_visit", _params, socket) do
+    # Client-side determined this is a first visit, show the modal
+    {:noreply, assign(socket, :show_welcome_modal, true)}
+  end
+
   def handle_event("ignore", _params, socket) do
     # Ignore events (e.g. from animation speed slider)
     {:noreply, socket}
@@ -478,7 +491,34 @@ defmodule NathanForUsWeb.VideoSearchLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-zinc-50 text-zinc-900 p-4 md:p-6 font-mono">
+    <!-- Welcome Modal for New Users -->
+    <%= if @show_welcome_modal do %>
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg mx-4 p-6">
+          <div class="text-center">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Welcome to Nathan For Us!</h2>
+            <div class="text-left space-y-3 text-sm text-gray-700 mb-6">
+              <p><strong>🎬 Search for any Nathan quote and find the exact frame!</strong></p>
+              <p>• Type in quotes like <code class="bg-gray-100 px-1 rounded">"I graduated from business school"</code></p>
+              <p>• Click frames to create animated GIFs</p>
+              <p>• Use the video filter to search specific interviews</p>
+              <p>• Expand frame sequences to get more context</p>
+              <p class="text-blue-600 font-medium">Start by searching for something Nathan said in any of his interviews!</p>
+            </div>
+            <button 
+              id="welcome-close-button"
+              phx-click="close_welcome_modal"
+              phx-hook="VideoSearchVisited"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            >
+              Got it, let's search!
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <div id="video-search" phx-hook="VideoSearchWelcome" class="min-h-screen bg-zinc-50 text-zinc-900 p-4 md:p-6 font-mono">
       <div class="max-w-5xl mx-auto">
         <SearchHeader.search_header search_term={@search_term} results_count={length(@search_results)} />
         
@@ -517,6 +557,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
         />
       </div>
     </div>
+
     """
   end
 

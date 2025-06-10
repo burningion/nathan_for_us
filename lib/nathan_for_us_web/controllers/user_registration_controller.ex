@@ -24,9 +24,10 @@ defmodule NathanForUsWeb.UserRegistrationController do
           )
 
         conn
-        |> put_flash(:info, "User created successfully.")
+        |> put_flash(:info, "Welcome! Let's start by finding some Nathan quotes to make GIFs.")
+        |> put_session(:show_welcome_modal, true)
         |> UserAuth.log_in_user(user)
-        |> redirect(to: ~p"/stay-tuned")
+        |> redirect(to: ~p"/video-search")
 
       {:error, %Ecto.Changeset{} = changeset} ->
         conn

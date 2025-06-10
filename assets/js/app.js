@@ -250,6 +250,28 @@ Hooks.FrameAnimator = {
   }
 }
 
+// Video Search Welcome Hook for first-time visitors
+Hooks.VideoSearchWelcome = {
+  mounted() {
+    // Check if this is the first visit to video search
+    const hasVisited = localStorage.getItem('video-search-visited')
+    
+    if (!hasVisited) {
+      // First-time visitor, show the modal
+      this.pushEvent('show_welcome_for_first_visit', {})
+    }
+  }
+}
+
+// Mark video search as visited
+Hooks.VideoSearchVisited = {
+  mounted() {
+    this.el.addEventListener('click', () => {
+      localStorage.setItem('video-search-visited', 'true')
+    })
+  }
+}
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,

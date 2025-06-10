@@ -118,7 +118,7 @@ defmodule NathanForUs.Chat do
           
           # Check if any previously rejected messages can now be validated
           case revalidate_rejected_messages() do
-            {:ok, newly_valid_messages} when length(newly_valid_messages) > 0 ->
+            {:ok, [_ | _] = newly_valid_messages} ->
               # Broadcast that messages were retroactively validated
               Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:messages_revalidated, length(newly_valid_messages)})
             
@@ -287,7 +287,7 @@ defmodule NathanForUs.Chat do
         message_ids = Enum.map(messages, & &1.id)
         
         # Update all newly valid messages in one query
-        {updated_count, _} = 
+        {_updated_count, _} = 
           from(cm in ChatMessage,
             where: cm.id in ^message_ids
           )
