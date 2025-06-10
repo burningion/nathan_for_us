@@ -206,7 +206,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.VideoFilter do
   defp format_frame_count(count) when is_integer(count), do: "#{count} frames"
   defp format_frame_count(_), do: "Processing..."
   
-  defp truncate_title(title, max_length \\ 25) when byte_size(title) > max_length do
+  defp truncate_title(title, max_length) when byte_size(title) > max_length do
     String.slice(title, 0..(max_length - 3)) <> "..."
   end
   defp truncate_title(title, _max_length), do: title

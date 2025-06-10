@@ -38,7 +38,7 @@ defmodule NathanForUsWeb.SkeetsLive do
       <div class="max-w-5xl mx-auto">
         <.page_header posts_count={length(@bluesky_posts)} />
         
-        <div class="space-y-4">
+        <div>
           <.post_list posts={@bluesky_posts} />
           <.empty_state :if={@bluesky_posts == []} />
         </div>
@@ -67,16 +67,18 @@ defmodule NathanForUsWeb.SkeetsLive do
   # Post list component
   defp post_list(assigns) do
     ~H"""
-    <%= for post <- @posts do %>
-      <.post_card post={post} />
-    <% end %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <%= for post <- @posts do %>
+        <.post_card post={post} />
+      <% end %>
+    </div>
     """
   end
 
   # Individual post card component
   defp post_card(assigns) do
     ~H"""
-    <div class="bg-white border border-zinc-300 rounded-lg p-4 hover:bg-zinc-50 transition-colors shadow-sm">
+    <div class="bg-white border border-zinc-300 rounded-lg p-3 hover:bg-zinc-50 transition-colors shadow-sm h-fit">
       <.post_header post={@post} />
       <.post_content :if={@post.record_text} text={@post.record_text} />
       <.post_embed :if={@post.embed_type} post={@post} />
@@ -88,11 +90,11 @@ defmodule NathanForUsWeb.SkeetsLive do
   # Post header with timestamp and user info
   defp post_header(assigns) do
     ~H"""
-    <div class="flex items-start justify-between mb-3">
-      <div class="text-zinc-500 text-xs">
-        STARDATE: <.timestamp post={@post} />
-      </div>
+    <div class="mb-2">
       <.user_info :if={@post.bluesky_user} user={@post.bluesky_user} />
+      <div class="text-zinc-500 text-xs mt-1">
+        <.timestamp post={@post} />
+      </div>
     </div>
     """
   end
@@ -113,7 +115,7 @@ defmodule NathanForUsWeb.SkeetsLive do
     ~H"""
     <div class="flex items-center space-x-2">
       <.avatar :if={@user.avatar_url} url={@user.avatar_url} />
-      <div class="text-xs text-zinc-600">
+      <div class="text-xs text-zinc-600 font-medium truncate">
         <%= @user.display_name || @user.handle || "UNKNOWN" %>
       </div>
     </div>
@@ -130,7 +132,7 @@ defmodule NathanForUsWeb.SkeetsLive do
   # Post content component
   defp post_content(assigns) do
     ~H"""
-    <div class="text-zinc-800 leading-relaxed text-sm mb-3 pl-4 border-l-2 border-blue-600">
+    <div class="text-zinc-800 leading-relaxed text-sm mb-3 pl-2 border-l-2 border-blue-600 line-clamp-4">
       <%= @text %>
     </div>
     """
@@ -139,8 +141,8 @@ defmodule NathanForUsWeb.SkeetsLive do
   # Post embed component
   defp post_embed(assigns) do
     ~H"""
-    <div class="mt-3 p-3 bg-zinc-100 border border-zinc-200 rounded">
-      <div class="text-xs text-blue-600 uppercase mb-2">ATTACHMENT: <%= @post.embed_type %></div>
+    <div class="mt-2 p-2 bg-zinc-100 border border-zinc-200 rounded">
+      <div class="text-xs text-blue-600 uppercase mb-1">ATTACHMENT: <%= @post.embed_type %></div>
       <.embed_content post={@post} />
     </div>
     """
@@ -170,7 +172,7 @@ defmodule NathanForUsWeb.SkeetsLive do
   # External link embed component
   defp external_embed(assigns) do
     ~H"""
-    <div class="border-l-2 border-blue-600 pl-3">
+    <div class="border-l-2 border-blue-600 pl-2">
       <.embed_title :if={@post.embed_title} post={@post} />
       <.embed_description :if={@post.embed_description} description={@post.embed_description} />
       <.embed_url :if={@post.embed_uri} uri={@post.embed_uri} />
@@ -182,7 +184,7 @@ defmodule NathanForUsWeb.SkeetsLive do
   defp images_embed(assigns) do
     ~H"""
     <div :if={@post.embed_uri} class="flex items-center space-x-2">
-      <img src={convert_thumb_url(@post.embed_uri)} alt={@post.embed_title || "Image"} class="w-20 h-16 object-cover rounded border border-zinc-300" />
+      <img src={convert_thumb_url(@post.embed_uri)} alt={@post.embed_title || "Image"} class="w-16 h-12 object-cover rounded border border-zinc-300" />
       <.embed_caption :if={@post.embed_title} title={@post.embed_title} />
     </div>
     """
@@ -202,7 +204,7 @@ defmodule NathanForUsWeb.SkeetsLive do
   defp video_thumbnail(assigns) do
     ~H"""
     <div class="relative">
-      <img src={convert_thumb_url(@thumb)} alt={@title || "Video"} class="w-20 h-16 object-cover rounded border border-zinc-300" />
+      <img src={convert_thumb_url(@thumb)} alt={@title || "Video"} class="w-16 h-12 object-cover rounded border border-zinc-300" />
       <div class="absolute inset-0 flex items-center justify-center">
         <div class="bg-black bg-opacity-70 rounded-full p-1">
           <svg class="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -252,7 +254,7 @@ defmodule NathanForUsWeb.SkeetsLive do
   # Post footer with metadata and source link
   defp post_footer(assigns) do
     ~H"""
-    <div class="flex items-center justify-between mt-3 pt-3 border-t border-zinc-200">
+    <div class="flex items-center justify-between mt-2 pt-2 border-t border-zinc-200">
       <.post_metadata post={@post} />
       <.source_link post={@post} />
     </div>
@@ -262,8 +264,8 @@ defmodule NathanForUsWeb.SkeetsLive do
   # Post metadata component
   defp post_metadata(assigns) do
     ~H"""
-    <div class="flex items-center space-x-4 text-xs text-zinc-500">
-      <span>ID: <%= String.slice(@post.cid, 0, 8) %></span>
+    <div class="flex flex-col space-y-1 text-xs text-zinc-500">
+      <span>ID: <%= String.slice(@post.cid, 0, 6) %></span>
       <span :if={@post.record_langs}>LANG: <%= Enum.join(@post.record_langs, ",") %></span>
     </div>
     """

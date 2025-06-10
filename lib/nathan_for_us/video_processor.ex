@@ -67,8 +67,8 @@ defmodule NathanForUs.VideoProcessor do
         Logger.error("ffmpeg failed with exit code #{exit_code}: #{output}")
         {:error, "ffmpeg extraction failed: #{output}"}
 
-      {:error, reason} ->
-        {:error, reason}
+      error ->
+        {:error, error}
     end
   end
 
