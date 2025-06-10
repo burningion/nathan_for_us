@@ -311,8 +311,9 @@ defmodule NathanForUsWeb.VideoSearchLive do
             Logger.info("Expanded sequence: #{expanded_sequence.sequence_info.start_frame_number}-#{expanded_sequence.sequence_info.end_frame_number}")
             
             # Update selected indices to account for the new frame at the beginning
-            updated_indices = Enum.map(socket.assigns.selected_frame_indices, fn index -> index + 1 end)
-            Logger.info("Updated selected indices: #{inspect(updated_indices)}")
+            # and automatically select the new frame (index 0)
+            updated_indices = [0 | Enum.map(socket.assigns.selected_frame_indices, fn index -> index + 1 end)]
+            Logger.info("Updated selected indices with new frame: #{inspect(updated_indices)}")
             
             socket =
               socket
@@ -345,7 +346,14 @@ defmodule NathanForUsWeb.VideoSearchLive do
             Logger.info("Expanded sequence: #{expanded_sequence.sequence_info.start_frame_number}-#{expanded_sequence.sequence_info.end_frame_number}")
             
             # Selected indices stay the same since we're adding at the end
-            socket = assign(socket, :frame_sequence, expanded_sequence)
+            # but also automatically select the new frame (last index)
+            new_frame_index = length(expanded_sequence.sequence_frames) - 1
+            updated_indices = socket.assigns.selected_frame_indices ++ [new_frame_index]
+            
+            socket = 
+              socket
+              |> assign(:frame_sequence, expanded_sequence)
+              |> assign(:selected_frame_indices, updated_indices)
             {:noreply, socket}
           
           {:error, reason} ->

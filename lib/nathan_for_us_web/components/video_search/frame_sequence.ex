@@ -25,6 +25,8 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
             frame_sequence={@frame_sequence}
             selected_frame_indices={@selected_frame_indices}
             animation_speed={@animation_speed}
+            gif_generation_status={@gif_generation_status}
+            generated_gif_data={@generated_gif_data}
           />
 
           <.gif_generation_section 
@@ -96,7 +98,11 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
         </div>
         <div class="text-white text-xs font-mono text-right">
           <div>FRAMES: <%= length(@selected_frame_indices) %></div>
-          <div class="text-purple-200">READY TO EXPORT</div>
+          <%= if @gif_generation_status == :completed do %>
+            <div class="text-green-300">✅ GIF READY</div>
+          <% else %>
+            <div class="text-purple-200">READY TO EXPORT</div>
+          <% end %>
         </div>
       </div>
       
@@ -117,14 +123,14 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           <% else %>
             <button 
               phx-click="generate_gif"
-              disabled={length(@selected_frame_indices) == 0}
+              disabled={length(@selected_frame_indices) == 0 or @gif_generation_status == :completed}
               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h3a1 1 0 110 2h-1v11a3 3 0 01-3 3H7a3 3 0 01-3-3V6H3a1 1 0 110-2h4zM6 6v11a1 1 0 001 1h10a1 1 0 001-1V6H6z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11v6M14 11v6"></path>
               </svg>
-              Create GIF
+              <%= if @gif_generation_status == :completed, do: "GIF Created", else: "Create GIF" %>
             </button>
           <% end %>
           
@@ -135,41 +141,16 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           <% end %>
         </div>
         
-        <!-- Status indicator -->
-        <%= if @gif_generation_status == :completed and @generated_gif_data do %>
-          <div class="text-green-300 text-xs font-mono">
-            ✅ GIF READY • Click below to view
-          </div>
+        <!-- Reset button when GIF is completed -->
+        <%= if @gif_generation_status == :completed do %>
+          <button 
+            phx-click="close_sequence_modal"
+            class="text-purple-200 hover:text-white text-xs underline"
+          >
+            Create New GIF
+          </button>
         <% end %>
       </div>
-      
-      <!-- Generated GIF display -->
-      <%= if @gif_generation_status == :completed and @generated_gif_data do %>
-        <div class="mt-4 p-3 bg-black/50 rounded border border-purple-500">
-          <div class="text-purple-200 text-xs uppercase mb-2 font-mono">🎬 Generated GIF</div>
-          <div class="flex justify-center">
-            <img 
-              src={"data:image/gif;base64,#{@generated_gif_data}"}
-              alt="Generated GIF from selected frames"
-              class="max-w-full max-h-64 rounded border border-purple-400"
-            />
-          </div>
-          <div class="mt-2 flex items-center justify-between text-xs">
-            <div class="text-purple-300 font-mono">
-              Frames: <%= length(@selected_frame_indices) %> • Optimized for web
-            </div>
-            <div class="flex gap-2">
-              <a 
-                href={"data:image/gif;base64,#{@generated_gif_data}"}
-                download="nathan_for_us_gif.gif"
-                class="text-blue-300 hover:text-blue-200 underline"
-              >
-                Download
-              </a>
-            </div>
-          </div>
-        </div>
-      <% end %>
     </div>
     """
   end
@@ -201,6 +182,8 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
   attr :animation_speed, :integer, default: 150
+  attr :gif_generation_status, :atom, default: nil
+  attr :generated_gif_data, :string, default: nil
   
   def compact_animation_section(assigns) do
     ~H"""
@@ -263,12 +246,40 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
         </div>
       </div>
       
-      <!-- Animation container -->
-      <.animation_container 
-        frame_sequence={@frame_sequence}
-        selected_frame_indices={@selected_frame_indices}
-        animation_speed={@animation_speed}
-      />
+      <!-- Animation container or Generated GIF (replaces animation when GIF is ready) -->
+      <%= if @gif_generation_status == :completed and @generated_gif_data do %>
+        <div class="flex justify-center">
+          <div class="relative bg-black rounded-lg overflow-hidden">
+            <img 
+              src={"data:image/gif;base64,#{@generated_gif_data}"}
+              alt="Generated GIF from selected frames"
+              class="max-w-full max-h-80 rounded"
+              style="width: 600px; height: auto;"
+            />
+            <!-- GIF overlay info -->
+            <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
+              GIF • <%= length(@selected_frame_indices) %> FRAMES
+            </div>
+            
+            <!-- Download button overlay -->
+            <div class="absolute bottom-2 right-2">
+              <a 
+                href={"data:image/gif;base64,#{@generated_gif_data}"}
+                download="nathan_for_us_gif.gif"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-mono transition-colors"
+              >
+                ⬇ DOWNLOAD
+              </a>
+            </div>
+          </div>
+        </div>
+      <% else %>
+        <.animation_container 
+          frame_sequence={@frame_sequence}
+          selected_frame_indices={@selected_frame_indices}
+          animation_speed={@animation_speed}
+        />
+      <% end %>
     </div>
     """
   end
