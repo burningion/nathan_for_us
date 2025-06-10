@@ -363,6 +363,83 @@ defmodule NathanForUsWeb.VideoSearchLive do
     end
   end
 
+  def handle_event("expand_sequence_backward_multiple", %{"value" => count_str}, socket) do
+    require Logger
+    
+    case {socket.assigns.frame_sequence, String.to_integer(count_str)} do
+      {nil, _} -> 
+        {:noreply, socket}
+      
+      {frame_sequence, count} when count >= 1 and count <= 20 ->
+        Logger.info("Expanding backward by #{count} frames")
+        
+        # Expand backward multiple times
+        {final_sequence, total_added} = expand_backward_multiple(frame_sequence, count, 0)
+        
+        if total_added > 0 do
+          # Add new indices for all added frames (they'll be at indices 0 to total_added-1)
+          new_indices = Enum.to_list(0..(total_added-1))
+          # Shift existing indices by total_added
+          shifted_existing = Enum.map(socket.assigns.selected_frame_indices, &(&1 + total_added))
+          updated_indices = new_indices ++ shifted_existing
+          
+          socket =
+            socket
+            |> assign(:frame_sequence, final_sequence)
+            |> assign(:selected_frame_indices, updated_indices)
+          
+          {:noreply, socket}
+        else
+          {:noreply, socket}
+        end
+      
+      {_, _} ->
+        # Invalid count, ignore
+        {:noreply, socket}
+    end
+  rescue
+    ArgumentError ->
+      {:noreply, socket}
+  end
+
+  def handle_event("expand_sequence_forward_multiple", %{"value" => count_str}, socket) do
+    require Logger
+    
+    case {socket.assigns.frame_sequence, String.to_integer(count_str)} do
+      {nil, _} -> 
+        {:noreply, socket}
+      
+      {frame_sequence, count} when count >= 1 and count <= 20 ->
+        Logger.info("Expanding forward by #{count} frames")
+        
+        # Expand forward multiple times
+        {final_sequence, total_added} = expand_forward_multiple(frame_sequence, count, 0)
+        
+        if total_added > 0 do
+          # Add new indices for all added frames (they'll be at the end)
+          original_length = length(socket.assigns.frame_sequence.sequence_frames)
+          new_indices = Enum.to_list(original_length..(original_length + total_added - 1))
+          updated_indices = socket.assigns.selected_frame_indices ++ new_indices
+          
+          socket =
+            socket
+            |> assign(:frame_sequence, final_sequence)
+            |> assign(:selected_frame_indices, updated_indices)
+          
+          {:noreply, socket}
+        else
+          {:noreply, socket}
+        end
+      
+      {_, _} ->
+        # Invalid count, ignore
+        {:noreply, socket}
+    end
+  rescue
+    ArgumentError ->
+      {:noreply, socket}
+  end
+
   def handle_event("autocomplete_search", %{"search" => %{"term" => term}}, socket) do
     search_form = %{"term" => term}
     
@@ -481,6 +558,36 @@ defmodule NathanForUsWeb.VideoSearchLive do
     Enum.map(search_results, fn video_result ->
       Map.put(video_result, :expanded, MapSet.member?(expanded_videos, video_result.video_id))
     end)
+  end
+
+  # Helper function to expand backward multiple times
+  defp expand_backward_multiple(frame_sequence, count, added_so_far) when count > 0 do
+    case Search.expand_frame_sequence_backward(frame_sequence) do
+      {:ok, expanded_sequence} ->
+        expand_backward_multiple(expanded_sequence, count - 1, added_so_far + 1)
+      
+      {:error, _reason} ->
+        {frame_sequence, added_so_far}
+    end
+  end
+  
+  defp expand_backward_multiple(frame_sequence, 0, added_so_far) do
+    {frame_sequence, added_so_far}
+  end
+
+  # Helper function to expand forward multiple times  
+  defp expand_forward_multiple(frame_sequence, count, added_so_far) when count > 0 do
+    case Search.expand_frame_sequence_forward(frame_sequence) do
+      {:ok, expanded_sequence} ->
+        expand_forward_multiple(expanded_sequence, count - 1, added_so_far + 1)
+      
+      {:error, _reason} ->
+        {frame_sequence, added_so_far}
+    end
+  end
+  
+  defp expand_forward_multiple(frame_sequence, 0, added_so_far) do
+    {frame_sequence, added_so_far}
   end
 
   @impl true

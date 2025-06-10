@@ -477,13 +477,29 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   def expand_backward_button(assigns) do
     ~H"""
-    <div class="border-2 border-dashed border-zinc-300 rounded-lg overflow-hidden cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all aspect-video bg-zinc-50 flex items-center justify-center"
+    <div class="border-2 border-dashed border-zinc-300 rounded-lg overflow-hidden bg-zinc-50 flex flex-col items-center justify-center aspect-video p-3 hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer"
          phx-click="expand_sequence_backward"
-         title="Add previous frame to sequence">
-      <div class="text-center">
-        <div class="text-2xl text-zinc-400 hover:text-blue-500 mb-1">−</div>
-        <div class="text-xs text-zinc-500 font-mono">EXPAND</div>
+         title="Click anywhere to add 1 previous frame">
+      <div class="text-center mb-3 pointer-events-none">
+        <div class="text-3xl text-zinc-400 hover:text-blue-500 mb-2 block">
+          −
+        </div>
+        <div class="text-xs text-zinc-500 font-mono font-bold">EXPAND</div>
         <div class="text-xs text-zinc-400 font-mono">BACK</div>
+      </div>
+      <div class="w-full" onclick="event.stopPropagation()">
+        <input
+          type="number"
+          min="1"
+          max="20"
+          placeholder="# frames"
+          phx-keydown="expand_sequence_backward_multiple"
+          phx-key="Enter"
+          class="w-full h-8 text-sm text-center border-2 border-blue-300 rounded-md bg-white font-mono font-bold text-blue-600 placeholder-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+          title="Enter number of frames to add backward, then press Enter"
+          onclick="event.stopPropagation()"
+        />
+        <div class="text-xs text-zinc-400 font-mono text-center mt-1 pointer-events-none">PRESS ENTER</div>
       </div>
     </div>
     """
@@ -494,13 +510,29 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   """
   def expand_forward_button(assigns) do
     ~H"""
-    <div class="border-2 border-dashed border-zinc-300 rounded-lg overflow-hidden cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all aspect-video bg-zinc-50 flex items-center justify-center"
+    <div class="border-2 border-dashed border-zinc-300 rounded-lg overflow-hidden bg-zinc-50 flex flex-col items-center justify-center aspect-video p-3 hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer"
          phx-click="expand_sequence_forward"
-         title="Add next frame to sequence">
-      <div class="text-center">
-        <div class="text-2xl text-zinc-400 hover:text-blue-500 mb-1">+</div>
-        <div class="text-xs text-zinc-500 font-mono">EXPAND</div>
+         title="Click anywhere to add 1 next frame">
+      <div class="text-center mb-3 pointer-events-none">
+        <div class="text-3xl text-zinc-400 hover:text-blue-500 mb-2 block">
+          +
+        </div>
+        <div class="text-xs text-zinc-500 font-mono font-bold">EXPAND</div>
         <div class="text-xs text-zinc-400 font-mono">NEXT</div>
+      </div>
+      <div class="w-full" onclick="event.stopPropagation()">
+        <input
+          type="number"
+          min="1"
+          max="20"
+          placeholder="# frames"
+          phx-keydown="expand_sequence_forward_multiple"
+          phx-key="Enter"
+          class="w-full h-8 text-sm text-center border-2 border-blue-300 rounded-md bg-white font-mono font-bold text-blue-600 placeholder-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+          title="Enter number of frames to add forward, then press Enter"
+          onclick="event.stopPropagation()"
+        />
+        <div class="text-xs text-zinc-400 font-mono text-center mt-1 pointer-events-none">PRESS ENTER</div>
       </div>
     </div>
     """
