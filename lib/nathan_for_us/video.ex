@@ -705,4 +705,40 @@ defmodule NathanForUs.Video do
 
     {:ok, migrated_count}
   end
+
+  @doc """
+  Gets the total frame count for a video.
+  """
+  def get_video_frame_count(video_id) do
+    VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> select([f], count(f.id))
+    |> Repo.one()
+    |> case do
+      nil -> 0
+      count -> count
+    end
+  end
+
+  @doc """
+  Gets the video duration in milliseconds based on the last frame timestamp.
+  """
+  def get_video_duration_ms(video_id) do
+    VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> select([f], max(f.timestamp_ms))
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets video frames within a specific frame number range.
+  """
+  def get_video_frames_in_range(video_id, start_frame, end_frame) do
+    VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
+    |> order_by([f], f.frame_number)
+    |> Repo.all()
+  end
+
 end

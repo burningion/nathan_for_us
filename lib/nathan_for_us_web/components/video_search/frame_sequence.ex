@@ -30,6 +30,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
             generated_gif_data={@generated_gif_data}
             ffmpeg_status={@ffmpeg_status}
             client_download_url={@client_download_url}
+            client_gif_enabled={System.get_env("ACTIVATE_CLIENTSIDE_GIF_GENERATION") == "true"}
           />
 
           <.gif_generation_section
@@ -90,38 +91,12 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   attr :client_download_url, :string, default: nil
 
   def gif_generation_section(assigns) do
+    # Check if client-side GIF generation is enabled
+    client_gif_enabled = System.get_env("ACTIVATE_CLIENTSIDE_GIF_GENERATION") == "true"
+    assigns = assign(assigns, :client_gif_enabled, client_gif_enabled)
+
     ~H"""
     <div class="mb-4 rounded-lg p-4" phx-hook="ClientGifGenerator" id="gif-generator-video-search">
-      <!-- FFmpeg Status -->
-      <%= if @ffmpeg_status do %>
-        <div class="mb-3 p-2 rounded text-sm">
-          <%= case @ffmpeg_status.status do %>
-            <% "loading_ffmpeg" -> %>
-              <div class="text-blue-600 flex items-center gap-2">
-                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <%= @ffmpeg_status.message %>
-              </div>
-            <% "ffmpeg_ready" -> %>
-              <div class="text-green-600">✅ <%= @ffmpeg_status.message %></div>
-            <% "generating" -> %>
-              <div class="text-purple-600 flex items-center gap-2">
-                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <%= @ffmpeg_status.message %>
-              </div>
-            <% "ffmpeg_error" -> %>
-              <div class="text-red-600">❌ <%= @ffmpeg_status.message %></div>
-            <% _ -> %>
-              <div class="text-gray-600"><%= @ffmpeg_status.message %></div>
-          <% end %>
-        </div>
-      <% end %>
-
       <!-- Header with GIF icon and title -->
       <div class="flex items-center gap-3 flex-wrap">
         <%= if @gif_generation_status == :generating do %>
@@ -136,34 +111,42 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
             Generating GIF...
           </button>
         <% else %>
-          <!-- Client-side generation (primary) -->
-          <button
-            phx-click="generate_gif_client"
-            disabled={length(@selected_frame_indices) == 0 or @gif_generation_status == :completed}
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h3a1 1 0 110 2h-1v11a3 3 0 01-3 3H7a3 3 0 01-3-3V6H3a1 1 0 110-2h4zM6 6v11a1 1 0 001 1h10a1 1 0 001-1V6H6z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11v6M14 11v6"></path>
-            </svg>
-            <%= if @gif_generation_status == :completed, do: "GIF Created", else: "🚀 Create GIF (Client-side)" %>
-          </button>
-          
-          <!-- Server-side fallback -->
+          <%= if @client_gif_enabled do %>
+            <!-- Client-side generation (primary) -->
+            <button
+              phx-click="generate_gif_client"
+              disabled={length(@selected_frame_indices) == 0 or @gif_generation_status == :completed}
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h3a1 1 0 110 2h-1v11a3 3 0 01-3 3H7a3 3 0 01-3-3V6H3a1 1 0 110-2h4zM6 6v11a1 1 0 001 1h10a1 1 0 001-1V6H6z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11v6M14 11v6"></path>
+              </svg>
+              <%= if @gif_generation_status == :completed, do: "GIF Created", else: "🚀 Create GIF (Client-side)" %>
+            </button>
+          <% end %>
+
+          <!-- Server-side generation (now primary when client-side is disabled) -->
           <button
             phx-click="generate_gif_server"
             disabled={length(@selected_frame_indices) == 0 or @gif_generation_status == :completed}
-            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            class={[
+              "inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
+              if(@client_gif_enabled,
+                do: "border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-purple-500",
+                else: "border-transparent text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+              )
+            ]}
           >
             <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12l7-7m-7 7l7 7"></path>
             </svg>
-            Server Fallback
+            <%= if @client_gif_enabled, do: "Server Fallback", else: "🚀 Create GIF" %>
           </button>
         <% end %>
 
-        <%= if @gif_generation_status == :completed and (@generated_gif_data != nil or @client_download_url != nil) do %>
-          <%= if @client_download_url do %>
+        <%= if @gif_generation_status == :completed and (@generated_gif_data != nil or (@client_gif_enabled and @client_download_url != nil)) do %>
+          <%= if @client_gif_enabled and @client_download_url do %>
             <!-- Client-generated GIF download -->
             <a
               href={@client_download_url}
@@ -175,19 +158,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3"></path>
               </svg>
               💻 Download GIF
-            </a>
-          <% else %>
-            <!-- Server-generated GIF download -->
-            <a
-              href={"data:image/gif;base64,#{@generated_gif_data}"}
-              download={"nathan_#{@selected_frame_indices |> length()}frames.gif"}
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg flex items-center gap-2"
-              title="Download Server-generated GIF"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3"></path>
-              </svg>
-              🖥️ Download GIF
             </a>
           <% end %>
         <% end %>
@@ -232,6 +202,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   attr :generated_gif_data, :string, default: nil
   attr :ffmpeg_status, :map, default: nil
   attr :client_download_url, :string, default: nil
+  attr :client_gif_enabled, :boolean, default: false
 
   def compact_animation_section(assigns) do
     ~H"""
@@ -255,10 +226,10 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
 
       <!-- Animation container or Generated GIF (replaces animation when GIF is ready) -->
       <div class="flex justify-center">
-        <%= if @gif_generation_status == :completed and (@generated_gif_data != nil or @client_download_url != nil) do %>
+        <%= if @gif_generation_status == :completed and (@generated_gif_data != nil or (@client_gif_enabled and @client_download_url != nil)) do %>
           <div class="text-center">
             <div class="relative bg-black rounded-lg overflow-hidden mb-4">
-              <%= if @client_download_url do %>
+              <%= if @client_gif_enabled and @client_download_url do %>
                 <!-- Client-generated GIF (blob URL) -->
                 <img
                   src={@client_download_url}
@@ -282,7 +253,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
 
               <!-- Download button overlay -->
               <div class="absolute bottom-2 right-2">
-                <%= if @client_download_url do %>
+                <%= if @client_gif_enabled and @client_download_url do %>
                   <!-- Client-generated GIF download -->
                   <a
                     href={@client_download_url}
@@ -874,14 +845,14 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
 
   defp get_selected_frames_captions(frame_sequence, selected_frame_indices) do
     # Get selected frames based on indices
-    selected_frames = 
+    selected_frames =
       selected_frame_indices
       |> Enum.map(&Enum.at(frame_sequence.sequence_frames, &1))
       |> Enum.reject(&is_nil/1)
-    
+
     if length(selected_frames) > 0 do
       # Collect all unique captions in chronological order
-      unique_captions = 
+      unique_captions =
         selected_frames
         |> Enum.sort_by(& &1.timestamp_ms)  # Sort by timestamp to maintain order
         |> Enum.flat_map(fn frame ->
@@ -889,7 +860,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
         end)
         |> Enum.uniq()  # Remove duplicates
         |> Enum.reject(&(&1 == "" or is_nil(&1)))  # Remove empty captions
-        
+
       case unique_captions do
         [] -> "No captions available"
         captions -> Enum.join(captions, " ... ")

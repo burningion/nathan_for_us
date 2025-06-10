@@ -64,8 +64,23 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
               </p>
             </div>
           </div>
-          <div class="text-xs text-zinc-400 font-mono">
-            <%= if @video_result.expanded, do: "COLLAPSE", else: "EXPAND" %>
+          
+          <div class="flex items-center gap-3">
+            <!-- Timeline Browser Button -->
+            <.link 
+              navigate={~p"/video-timeline/#{@video_result.video_id}"}
+              class="inline-flex items-center gap-1 px-3 py-1 text-xs font-mono text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
+              title="Browse entire video on timeline"
+            >
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              Timeline
+            </.link>
+            
+            <div class="text-xs text-zinc-400 font-mono">
+              <%= if @video_result.expanded, do: "COLLAPSE", else: "EXPAND" %>
+            </div>
           </div>
         </div>
       </div>

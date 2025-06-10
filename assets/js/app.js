@@ -24,12 +24,16 @@ import topbar from "../vendor/topbar"
 
 // Import client-side GIF generator hook
 import ClientGifGenerator from './hooks/client_gif_generator.js'
+import TimelineScrubber from './hooks/timeline_scrubber.js'
 
 // Frame Animator Hook for cycling through frame sequences
 let Hooks = {}
 
 // Client-side GIF generator hook
 Hooks.ClientGifGenerator = ClientGifGenerator
+
+// Timeline scrubber hook
+Hooks.TimelineScrubber = TimelineScrubber
 
 // Welcome Dialog Hook for first-time visitors
 Hooks.WelcomeDialog = {
