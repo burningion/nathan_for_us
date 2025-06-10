@@ -29,7 +29,7 @@ defmodule NathanForUsWeb.FeedLive do
           navigate={~p"/users/register"}
           class="inline-block bg-gray-900 text-white px-12 py-4 text-xl font-medium rounded-lg hover:bg-gray-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
         >
-          Yes
+          Yes, I do
         </.link>
       </div>
     </div>
