@@ -315,6 +315,19 @@ defmodule NathanForUsWeb.ChatRoomLive do
   end
 
   @impl true
+  def handle_info({:messages_revalidated, count}, socket) do
+    # Refresh chat messages to include newly validated ones
+    updated_messages = Chat.list_chat_messages()
+    
+    socket = 
+      socket
+      |> assign(:chat_messages, updated_messages)
+      |> put_flash(:info, "#{count} previously rejected message(s) are now valid and added to chat!")
+    
+    {:noreply, socket}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <!-- Welcome Dialog -->

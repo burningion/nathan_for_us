@@ -113,7 +113,19 @@ defmodule NathanForUs.Chat do
       |> Repo.update()
       |> case do
         {:ok, updated_word} ->
+          # Broadcast word approval
           Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:word_approved, updated_word})
+          
+          # Check if any previously rejected messages can now be validated
+          case revalidate_rejected_messages() do
+            {:ok, newly_valid_messages} when length(newly_valid_messages) > 0 ->
+              # Broadcast that messages were retroactively validated
+              Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:messages_revalidated, length(newly_valid_messages)})
+            
+            {:ok, []} ->
+              :ok
+          end
+          
           {:ok, updated_word}
         error -> error
       end
@@ -200,6 +212,51 @@ defmodule NathanForUs.Chat do
       preload: [:user]
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Checks all invalid messages and marks them as valid if they now contain only approved words.
+  Returns a list of newly validated messages that should be broadcast to the chat.
+  """
+  def revalidate_rejected_messages do
+    # Get all currently invalid messages
+    invalid_messages = 
+      from(cm in ChatMessage,
+        where: cm.valid == false,
+        preload: [:user]
+      )
+      |> Repo.all()
+
+    # Check each message against current approved words
+    newly_valid_messages = 
+      Enum.filter(invalid_messages, fn message ->
+        validate_message_words(message.content)
+      end)
+
+    # Update the newly valid messages in the database
+    case newly_valid_messages do
+      [] -> 
+        {:ok, []}
+      
+      messages ->
+        message_ids = Enum.map(messages, & &1.id)
+        
+        # Update all newly valid messages in one query
+        {updated_count, _} = 
+          from(cm in ChatMessage,
+            where: cm.id in ^message_ids
+          )
+          |> Repo.update_all(set: [valid: true, updated_at: DateTime.utc_now()])
+
+        # Broadcast each newly valid message to the chat
+        Enum.each(messages, fn message ->
+          # Update the message struct to reflect the new valid status
+          updated_message = %{message | valid: true}
+          Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:new_message, updated_message})
+        end)
+
+        {:ok, messages}
+    end
   end
 
   @doc """
