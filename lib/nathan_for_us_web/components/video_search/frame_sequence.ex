@@ -11,6 +11,8 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
   attr :frame_sequence, :map, required: true
   attr :selected_frame_indices, :list, required: true
   attr :animation_speed, :integer, default: 150
+  attr :gif_generation_status, :atom, default: nil
+  attr :generated_gif_data, :string, default: nil
   
   def frame_sequence_modal(assigns) do
     ~H"""
@@ -23,6 +25,12 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
             frame_sequence={@frame_sequence}
             selected_frame_indices={@selected_frame_indices}
             animation_speed={@animation_speed}
+          />
+
+          <.gif_generation_section 
+            selected_frame_indices={@selected_frame_indices}
+            gif_generation_status={@gif_generation_status}
+            generated_gif_data={@generated_gif_data}
           />
           
           <.frame_sequence_grid 
@@ -61,6 +69,107 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
       >
         <.icon name="hero-x-mark" class="w-5 h-5" />
       </button>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the GIF generation section.
+  """
+  attr :selected_frame_indices, :list, required: true
+  attr :gif_generation_status, :atom, default: nil
+  attr :generated_gif_data, :string, default: nil
+  
+  def gif_generation_section(assigns) do
+    ~H"""
+    <div class="mb-4 bg-gradient-to-r from-purple-900 to-blue-900 rounded-lg p-4">
+      <!-- Header with GIF icon and title -->
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-white text-sm font-mono">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-lg">🎬</div>
+            <span class="uppercase font-bold">GIF GENERATION</span>
+          </div>
+          <div class="text-purple-200 text-xs">
+            Create animated GIF from selected frames • FFMPEG powered
+          </div>
+        </div>
+        <div class="text-white text-xs font-mono text-right">
+          <div>FRAMES: <%= length(@selected_frame_indices) %></div>
+          <div class="text-purple-200">READY TO EXPORT</div>
+        </div>
+      </div>
+      
+      <!-- Generation controls and status -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <%= if @gif_generation_status == :generating do %>
+            <button 
+              disabled
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-700 opacity-50 cursor-not-allowed"
+            >
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Generating GIF...
+            </button>
+          <% else %>
+            <button 
+              phx-click="generate_gif"
+              disabled={length(@selected_frame_indices) == 0}
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h3a1 1 0 110 2h-1v11a3 3 0 01-3 3H7a3 3 0 01-3-3V6H3a1 1 0 110-2h4zM6 6v11a1 1 0 001 1h10a1 1 0 001-1V6H6z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11v6M14 11v6"></path>
+              </svg>
+              Create GIF
+            </button>
+          <% end %>
+          
+          <%= if length(@selected_frame_indices) == 0 do %>
+            <div class="text-purple-200 text-xs">
+              ⚠️ Select frames to enable GIF generation
+            </div>
+          <% end %>
+        </div>
+        
+        <!-- Status indicator -->
+        <%= if @gif_generation_status == :completed and @generated_gif_data do %>
+          <div class="text-green-300 text-xs font-mono">
+            ✅ GIF READY • Click below to view
+          </div>
+        <% end %>
+      </div>
+      
+      <!-- Generated GIF display -->
+      <%= if @gif_generation_status == :completed and @generated_gif_data do %>
+        <div class="mt-4 p-3 bg-black/50 rounded border border-purple-500">
+          <div class="text-purple-200 text-xs uppercase mb-2 font-mono">🎬 Generated GIF</div>
+          <div class="flex justify-center">
+            <img 
+              src={"data:image/gif;base64,#{@generated_gif_data}"}
+              alt="Generated GIF from selected frames"
+              class="max-w-full max-h-64 rounded border border-purple-400"
+            />
+          </div>
+          <div class="mt-2 flex items-center justify-between text-xs">
+            <div class="text-purple-300 font-mono">
+              Frames: <%= length(@selected_frame_indices) %> • Optimized for web
+            </div>
+            <div class="flex gap-2">
+              <a 
+                href={"data:image/gif;base64,#{@generated_gif_data}"}
+                download="nathan_for_us_gif.gif"
+                class="text-blue-300 hover:text-blue-200 underline"
+              >
+                Download
+              </a>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end

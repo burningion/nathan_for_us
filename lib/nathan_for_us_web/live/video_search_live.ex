@@ -56,6 +56,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:animation_speed, 150)
       |> assign(:expanded_videos, MapSet.new())  # Track which videos are expanded
       |> assign(:show_welcome_modal, show_welcome_modal)
+      |> assign(:gif_generation_status, nil)
+      |> assign(:generated_gif_data, nil)
 
     {:ok, socket}
   end
@@ -254,6 +256,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:show_sequence_modal, false)
       |> assign(:frame_sequence, nil)
       |> assign(:selected_frame_indices, [])
+      |> assign(:gif_generation_status, nil)
+      |> assign(:generated_gif_data, nil)
     
     {:noreply, socket}
   end
@@ -410,6 +414,32 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("generate_gif", _params, socket) do
+    case {socket.assigns.frame_sequence, socket.assigns.selected_frame_indices} do
+      {frame_sequence, selected_indices} when not is_nil(frame_sequence) and length(selected_indices) > 0 ->
+        # Start async GIF generation
+        task = Task.async(fn ->
+          NathanForUs.AdminService.generate_gif_from_frames(frame_sequence, selected_indices)
+        end)
+        
+        socket = 
+          socket
+          |> assign(:gif_generation_status, :generating)
+          |> assign(:gif_generation_task, task)
+          |> assign(:generated_gif_data, nil)
+        
+        {:noreply, socket}
+      
+      {nil, _} ->
+        socket = put_flash(socket, :error, "No frame sequence available")
+        {:noreply, socket}
+      
+      {_, []} ->
+        socket = put_flash(socket, :error, "No frames selected for GIF generation")
+        {:noreply, socket}
+    end
+  end
+
   def handle_event("toggle_video_expansion", %{"video_id" => video_id_str}, socket) do
     try do
       video_id = String.to_integer(video_id_str)
@@ -488,6 +518,54 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_info({ref, result}, socket) do
+    # Handle GIF generation task completion
+    if socket.assigns[:gif_generation_task] && socket.assigns.gif_generation_task.ref == ref do
+      Process.demonitor(ref, [:flush])
+      
+      case result do
+        {:ok, gif_data} ->
+          # Convert binary data to base64 for embedding
+          gif_base64 = Base.encode64(gif_data)
+          
+          socket =
+            socket
+            |> assign(:gif_generation_status, :completed)
+            |> assign(:generated_gif_data, gif_base64)
+            |> assign(:gif_generation_task, nil)
+            |> put_flash(:info, "GIF generated successfully!")
+          
+          {:noreply, socket}
+        
+        {:error, reason} ->
+          socket =
+            socket
+            |> assign(:gif_generation_status, nil)
+            |> assign(:gif_generation_task, nil)
+            |> put_flash(:error, "GIF generation failed: #{reason}")
+          
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:DOWN, ref, :process, _pid, reason}, socket) do
+    # Handle GIF generation task crash
+    if socket.assigns[:gif_generation_task] && socket.assigns.gif_generation_task.ref == ref do
+      socket =
+        socket
+        |> assign(:gif_generation_status, nil)
+        |> assign(:gif_generation_task, nil)
+        |> put_flash(:error, "GIF generation task crashed: #{inspect(reason)}")
+      
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -554,6 +632,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
           frame_sequence={@frame_sequence}
           selected_frame_indices={@selected_frame_indices}
           animation_speed={@animation_speed}
+          gif_generation_status={@gif_generation_status}
+          generated_gif_data={@generated_gif_data}
         />
       </div>
     </div>
