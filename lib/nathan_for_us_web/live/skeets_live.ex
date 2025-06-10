@@ -9,16 +9,49 @@ defmodule NathanForUsWeb.SkeetsLive do
       Phoenix.PubSub.subscribe(NathanForUs.PubSub, "nathan_fielder_skeets")
     end
 
+    available_languages = Social.list_bluesky_post_languages()
     bluesky_posts = Social.list_bluesky_posts_with_users(limit: 50)
 
     {:ok, assign(socket, 
-      bluesky_posts: bluesky_posts, 
+      bluesky_posts: bluesky_posts,
+      available_languages: available_languages,
+      selected_languages: available_languages,
       page_title: "Nathan Fielder: Mention Log",
       page_description: "What is in the news about Nathan Fielder on Bluesky")}
   end
 
   def handle_info({:new_nathan_fielder_skeet, post}, socket) do
     {:noreply, update(socket, :bluesky_posts, fn posts -> [post | posts] end)}
+  end
+
+  def handle_event("toggle_language", %{"language" => language}, socket) do
+    selected_languages = socket.assigns.selected_languages
+    
+    new_selected_languages = if language in selected_languages do
+      List.delete(selected_languages, language)
+    else
+      [language | selected_languages]
+    end
+    
+    # Reload posts with new language filter
+    filtered_posts = if new_selected_languages == [] do
+      # If no languages selected, show all posts
+      Social.list_bluesky_posts_with_users(limit: 50)
+    else
+      Social.list_bluesky_posts_with_users(limit: 50, languages: new_selected_languages)
+    end
+
+    {:noreply, assign(socket, 
+      selected_languages: new_selected_languages,
+      bluesky_posts: filtered_posts)}
+  end
+
+  def handle_event("reset_languages", _params, socket) do
+    bluesky_posts = Social.list_bluesky_posts_with_users(limit: 50)
+    
+    {:noreply, assign(socket,
+      selected_languages: socket.assigns.available_languages,
+      bluesky_posts: bluesky_posts)}
   end
 
   defp convert_thumb_url(thumb) when is_binary(thumb) do
@@ -37,6 +70,9 @@ defmodule NathanForUsWeb.SkeetsLive do
     <div class="min-h-screen bg-zinc-50 text-zinc-900 p-6 font-mono">
       <div class="max-w-5xl mx-auto">
         <.page_header posts_count={length(@bluesky_posts)} />
+        <.language_filter 
+          available_languages={@available_languages} 
+          selected_languages={@selected_languages} />
         
         <div>
           <.post_list posts={@bluesky_posts} />
@@ -50,7 +86,7 @@ defmodule NathanForUsWeb.SkeetsLive do
   # Page header component
   defp page_header(assigns) do
     ~H"""
-    <div class="mb-8 border-b border-zinc-300 pb-6">
+    <div class="mb-6 border-b border-zinc-300 pb-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-blue-600 mb-1">MENTION LOG</h1>
@@ -61,6 +97,53 @@ defmodule NathanForUsWeb.SkeetsLive do
         </div>
       </div>
     </div>
+    """
+  end
+
+  # Language filter component
+  defp language_filter(assigns) do
+    ~H"""
+    <div class="mb-6 bg-white border border-zinc-300 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold text-blue-600 uppercase">LANGUAGE FILTER</h3>
+        <button 
+          phx-click="reset_languages"
+          class="text-xs text-zinc-500 hover:text-blue-600 transition-colors"
+        >
+          RESET ALL
+        </button>
+      </div>
+      
+      <div class="flex flex-wrap gap-2">
+        <%= for language <- @available_languages do %>
+          <.language_toggle 
+            language={language} 
+            selected={language in @selected_languages} />
+        <% end %>
+      </div>
+      
+      <div class="mt-3 text-xs text-zinc-500">
+        <%= length(@selected_languages) %> of <%= length(@available_languages) %> languages selected
+      </div>
+    </div>
+    """
+  end
+
+  # Individual language toggle component
+  defp language_toggle(assigns) do
+    ~H"""
+    <button
+      phx-click="toggle_language"
+      phx-value-language={@language}
+      class={[
+        "px-3 py-1.5 text-xs border rounded transition-colors",
+        if(@selected,
+          do: "bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
+          else: "bg-zinc-100 text-zinc-600 border-zinc-300 hover:bg-zinc-200")
+      ]}
+    >
+      <%= String.upcase(@language) %>
+    </button>
     """
   end
 

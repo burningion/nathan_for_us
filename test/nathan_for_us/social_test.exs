@@ -2,7 +2,7 @@ defmodule NathanForUs.SocialTest do
   use NathanForUs.DataCase
 
   alias NathanForUs.Social
-  alias NathanForUs.Social.{Post, Follow}
+  alias NathanForUs.Social.{Post, Follow, BlueskyPost}
 
   import NathanForUs.AccountsFixtures
   import NathanForUs.SocialFixtures
@@ -200,6 +200,91 @@ defmodule NathanForUs.SocialTest do
 
       {:ok, _} = Social.follow_user(user.id, following2.id)
       assert Social.get_following_count(user.id) == 2
+    end
+  end
+
+  describe "bluesky language filtering" do
+    test "list_bluesky_post_languages/0 returns distinct languages" do
+      # Create some test bluesky posts with different languages
+      {:ok, _post1} = %BlueskyPost{}
+        |> BlueskyPost.changeset(%{
+          cid: "test_cid_1",
+          collection: "app.bsky.feed.post",
+          operation: "create",
+          record_text: "Hello world",
+          record_langs: ["en"],
+          record_created_at: ~U[2024-01-01 12:00:00Z]
+        })
+        |> Repo.insert()
+
+      {:ok, _post2} = %BlueskyPost{}
+        |> BlueskyPost.changeset(%{
+          cid: "test_cid_2",
+          collection: "app.bsky.feed.post", 
+          operation: "create",
+          record_text: "Bonjour monde",
+          record_langs: ["fr"],
+          record_created_at: ~U[2024-01-01 12:01:00Z]
+        })
+        |> Repo.insert()
+
+      {:ok, _post3} = %BlueskyPost{}
+        |> BlueskyPost.changeset(%{
+          cid: "test_cid_3",
+          collection: "app.bsky.feed.post",
+          operation: "create", 
+          record_text: "Hola mundo",
+          record_langs: ["es", "en"],
+          record_created_at: ~U[2024-01-01 12:02:00Z]
+        })
+        |> Repo.insert()
+
+      languages = Social.list_bluesky_post_languages()
+      assert "en" in languages
+      assert "fr" in languages  
+      assert "es" in languages
+      assert length(languages) == 3
+    end
+
+    test "list_bluesky_posts_with_users/1 filters by languages" do
+      # Create test posts with different languages
+      {:ok, post1} = %BlueskyPost{}
+        |> BlueskyPost.changeset(%{
+          cid: "test_cid_filter_1",
+          collection: "app.bsky.feed.post",
+          operation: "create",
+          record_text: "English post", 
+          record_langs: ["en"],
+          record_created_at: ~U[2024-01-01 12:00:00Z]
+        })
+        |> Repo.insert()
+
+      {:ok, post2} = %BlueskyPost{}
+        |> BlueskyPost.changeset(%{
+          cid: "test_cid_filter_2",
+          collection: "app.bsky.feed.post",
+          operation: "create", 
+          record_text: "French post",
+          record_langs: ["fr"],
+          record_created_at: ~U[2024-01-01 12:01:00Z]
+        })
+        |> Repo.insert()
+
+      # Test filtering by English only
+      english_posts = Social.list_bluesky_posts_with_users(languages: ["en"])
+      assert length(english_posts) >= 1
+      assert Enum.any?(english_posts, fn p -> p.id == post1.id end)
+      assert Enum.all?(english_posts, fn p -> "en" in (p.record_langs || []) end)
+
+      # Test filtering by French only  
+      french_posts = Social.list_bluesky_posts_with_users(languages: ["fr"])
+      assert length(french_posts) >= 1
+      assert Enum.any?(french_posts, fn p -> p.id == post2.id end)
+      assert Enum.all?(french_posts, fn p -> "fr" in (p.record_langs || []) end)
+
+      # Test no filter returns all posts
+      all_posts = Social.list_bluesky_posts_with_users()
+      assert length(all_posts) >= 2
     end
   end
 end

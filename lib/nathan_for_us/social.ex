@@ -213,17 +213,39 @@ defmodule NathanForUs.Social do
   """
   def list_bluesky_posts_with_users(opts \\ []) do
     limit = Keyword.get(opts, :limit, 50)
+    language_filter = Keyword.get(opts, :languages, [])
     
     # Handles to filter out (test accounts)
     filtered_handles = ["bobbby.online", "yburyug.bsky.social"]
     
-    from(bp in BlueskyPost,
+    query = from(bp in BlueskyPost,
       left_join: bu in BlueskyUser, on: bp.bluesky_user_id == bu.id,
       where: is_nil(bu.handle) or bu.handle not in ^filtered_handles,
       order_by: [desc: bp.record_created_at],
       limit: ^limit,
       preload: [:bluesky_user]
     )
+    
+    query = if language_filter != [] do
+      from(q in query, where: fragment("? && ?", q.record_langs, ^language_filter))
+    else
+      query
+    end
+    
+    Repo.all(query)
+  end
+
+  @doc """
+  Returns distinct languages from bluesky posts.
+  """
+  def list_bluesky_post_languages() do
+    from(bp in BlueskyPost,
+      where: not is_nil(bp.record_langs),
+      select: bp.record_langs
+    )
     |> Repo.all()
+    |> List.flatten()
+    |> Enum.uniq()
+    |> Enum.sort()
   end
 end
