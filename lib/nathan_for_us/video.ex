@@ -455,6 +455,56 @@ defmodule NathanForUs.Video do
     end
   end
 
+  def get_frame_sequence_from_frame_ids(target_frame_id, frame_ids) do
+    case Repo.get(VideoFrame, target_frame_id) do
+      %VideoFrame{} = target_frame ->
+        # Get all frames by their IDs
+        frames = VideoFrame
+        |> where([f], f.id in ^frame_ids)
+        |> order_by([f], f.frame_number)
+        |> Repo.all()
+
+        # Get captions for the target frame
+        target_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          where: fc.frame_id == ^target_frame_id,
+          select: c.text
+        )
+        |> Repo.all()
+        |> Enum.join(" | ")
+
+        # Get captions for all frames in the sequence
+        sequence_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          join: f in VideoFrame, on: fc.frame_id == f.id,
+          where: f.id in ^frame_ids,
+          select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
+          order_by: [f.frame_number, c.start_time_ms]
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.frame_id)
+        |> Enum.into(%{}, fn {frame_id, captions} ->
+          {frame_id, Enum.map(captions, & &1.caption_text)}
+        end)
+
+        {:ok, %{
+          target_frame: target_frame,
+          sequence_frames: frames,
+          target_captions: target_captions,
+          sequence_captions: sequence_captions,
+          sequence_info: %{
+            target_frame_number: target_frame.frame_number,
+            start_frame_number: frames |> Enum.map(& &1.frame_number) |> Enum.min(),
+            end_frame_number: frames |> Enum.map(& &1.frame_number) |> Enum.max(),
+            total_frames: length(frames)
+          }
+        }}
+
+      nil ->
+        {:error, :frame_not_found}
+    end
+  end
+
   # Private helper to calculate the frame range needed to cover selected indices
   defp calculate_range_for_selected_indices(target_frame_number, selected_indices, base_sequence_length, max_frame_number) do
     if Enum.empty?(selected_indices) do

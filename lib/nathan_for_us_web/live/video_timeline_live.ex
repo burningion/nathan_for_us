@@ -257,9 +257,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             {:noreply, socket}
           
           frames ->
-            # Redirect to video search with the first frame to show sequence
+            # Redirect to video search with the first frame and all frame IDs
             first_frame = List.first(frames)
-            path = ~p"/video-search?frame=#{first_frame.id}&frames=#{Enum.join(indices, ",")}"
+            frame_ids = Enum.map(frames, & &1.id)
+            path = ~p"/video-search?frame=#{first_frame.id}&frame_ids=#{Enum.join(frame_ids, ",")}"
             
             socket = redirect(socket, to: path)
             {:noreply, socket}

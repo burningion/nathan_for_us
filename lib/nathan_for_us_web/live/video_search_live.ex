@@ -773,23 +773,37 @@ defmodule NathanForUsWeb.VideoSearchLive do
         try do
           frame_id = String.to_integer(frame_id_str)
           
-          # Parse selected frames from URL first
-          selected_indices = parse_selected_frames_from_params(params)
-          
-          # Use the new function that ensures all selected frames are loaded
-          frame_sequence_result = if Enum.empty?(selected_indices) do
-            Video.get_frame_sequence(frame_id)
-          else
-            Video.get_frame_sequence_with_selected_indices(frame_id, selected_indices)
+          # Check if we have specific frame IDs or need to parse indices
+          frame_sequence_result = case Map.get(params, "frame_ids") do
+            nil ->
+              # Legacy: Parse selected frames from URL indices
+              selected_indices = parse_selected_frames_from_params(params)
+              if Enum.empty?(selected_indices) do
+                Video.get_frame_sequence(frame_id)
+              else
+                Video.get_frame_sequence_with_selected_indices(frame_id, selected_indices)
+              end
+            frame_ids_str ->
+              # New: Use specific frame IDs
+              frame_ids = parse_frame_ids_from_params(frame_ids_str)
+              Video.get_frame_sequence_from_frame_ids(frame_id, frame_ids)
           end
           
           case frame_sequence_result do
             {:ok, frame_sequence} ->
-              # If no specific frames selected, select all frames by default
-              final_selected_indices = if Enum.empty?(selected_indices) do
-                0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
-              else
-                selected_indices
+              # For frame_ids approach, select all frames; for legacy indices, use those
+              final_selected_indices = case Map.get(params, "frame_ids") do
+                nil ->
+                  # Legacy: use parsed indices or select all
+                  selected_indices = parse_selected_frames_from_params(params)
+                  if Enum.empty?(selected_indices) do
+                    0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
+                  else
+                    selected_indices
+                  end
+                _ ->
+                  # New: select all frames since we got exactly what we wanted
+                  0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
               end
               
               socket
@@ -827,6 +841,23 @@ defmodule NathanForUsWeb.VideoSearchLive do
         |> Enum.uniq()  # Remove duplicates
         |> Enum.sort()
     end
+  end
+
+  defp parse_frame_ids_from_params(frame_ids_str) do
+    frame_ids_str
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.reduce([], fn frame_id_str, acc ->
+      try do
+        frame_id = String.to_integer(frame_id_str)
+        [frame_id | acc]
+      rescue
+        ArgumentError -> acc
+      end
+    end)
+    |> Enum.uniq()
+    |> Enum.reverse()  # Keep original order
   end
 
   # Update URL with current video selection
