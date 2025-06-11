@@ -229,6 +229,28 @@ Hooks.ExpandFrameForm = {
   }
 }
 
+// Timeline Tutorial Hook for first-time visitors
+Hooks.TimelineTutorial = {
+  mounted() {
+    // Check if this is the first visit to the timeline
+    const hasVisited = localStorage.getItem('timeline-tutorial-visited')
+    
+    if (!hasVisited) {
+      // First-time visitor, show the tutorial modal
+      this.pushEvent('show_tutorial_modal', {})
+    }
+  }
+}
+
+// Timeline Tutorial Button Hook to mark user as visited
+Hooks.TimelineTutorialButton = {
+  mounted() {
+    this.el.addEventListener('click', () => {
+      localStorage.setItem('timeline-tutorial-visited', 'true')
+    })
+  }
+}
+
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {

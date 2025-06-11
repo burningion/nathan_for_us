@@ -54,6 +54,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:timeline_playing, false)
             |> assign(:playback_speed, 1.0)
             |> assign(:page_title, "Timeline: #{video.title}")
+            |> assign(:show_tutorial_modal, false)
           
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -227,6 +228,16 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     {:noreply, socket}
   end
   
+  def handle_event("close_tutorial_modal", _params, socket) do
+    socket = assign(socket, :show_tutorial_modal, false)
+    {:noreply, socket}
+  end
+  
+  def handle_event("show_tutorial_modal", _params, socket) do
+    socket = assign(socket, :show_tutorial_modal, true)
+    {:noreply, socket}
+  end
+  
   def handle_event("create_sequence_from_selection", _params, socket) do
     case socket.assigns.selected_frame_indices do
       [] ->
@@ -321,7 +332,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-900 text-white">
+    <div class="min-h-screen bg-gray-900 text-white" phx-hook="TimelineTutorial" id="timeline-container">
       <!-- Header -->
       <div class="bg-gray-800 border-b border-gray-700 px-6 py-4">
         <div class="flex items-center justify-between">
@@ -378,6 +389,82 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         selected_frame_indices={@selected_frame_indices}
         timeline_position={@timeline_position}
       />
+      
+      <!-- Tutorial Modal -->
+      <%= if @show_tutorial_modal do %>
+        <div class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div class="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-600">
+            <div class="p-8">
+              <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold font-mono text-blue-400">Welcome to Timeline Browser</h2>
+                <button
+                  phx-click="close_tutorial_modal"
+                  class="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+              
+              <div class="space-y-6 text-gray-200">
+                <div class="flex items-start gap-4">
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">1</div>
+                  <div>
+                    <h3 class="text-lg font-semibold mb-2 text-white">Navigate with the Timeline</h3>
+                    <p class="leading-relaxed">Drag the scrubber along the timeline to jump to any point in the video. Click anywhere on the timeline track to jump directly to that position. Use the zoom controls to get more precise control over smaller sections.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start gap-4">
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">2</div>
+                  <div>
+                    <h3 class="text-lg font-semibold mb-2 text-white">Playback Controls</h3>
+                    <p class="leading-relaxed">Use the play/pause button to automatically advance through the timeline. Adjust playback speed from 0.25x to 4x to browse at your preferred pace. The current frame position and timestamp are always displayed.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start gap-4">
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">3</div>
+                  <div>
+                    <h3 class="text-lg font-semibold mb-2 text-white">Multi-Select Frames</h3>
+                    <p class="leading-relaxed">Click on individual frames to select them (they'll show a blue border). Hold Shift and drag to select multiple frames at once. You can also click individual frames while holding Ctrl/Cmd to add them to your selection.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start gap-4">
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">4</div>
+                  <div>
+                    <h3 class="text-lg font-semibold mb-2 text-white">Create Sequences</h3>
+                    <p class="leading-relaxed">Once you have frames selected, click the "Create Sequence" button to jump to the main app where you can generate GIFs, analyze the frames, or perform other operations on your selection.</p>
+                  </div>
+                </div>
+                
+                <div class="bg-gray-700 p-4 rounded-lg mt-6">
+                  <h4 class="font-semibold text-white mb-2">💡 Pro Tips</h4>
+                  <ul class="text-sm space-y-1 text-gray-300">
+                    <li>• Click on any frame to open it in a larger modal view</li>
+                    <li>• Use keyboard shortcuts: Space to play/pause, arrow keys to scrub</li>
+                    <li>• The timeline shows your current position as a percentage and timestamp</li>
+                    <li>• Zoom in on interesting sections for frame-perfect selection</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div class="flex justify-end mt-8">
+                <button
+                  phx-click="close_tutorial_modal"
+                  phx-hook="TimelineTutorialButton"
+                  id="tutorial-got-it-btn"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-mono font-medium transition-colors"
+                >
+                  Got it!
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
       
       <!-- Frame Modal -->
       <%= if @show_frame_modal and @modal_frame do %>
@@ -461,4 +548,5 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         Base.encode64(hex_data)
     end
   end
+  
 end
