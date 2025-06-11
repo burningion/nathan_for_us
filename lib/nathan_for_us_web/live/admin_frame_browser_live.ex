@@ -109,6 +109,11 @@ defmodule NathanForUsWeb.AdminFrameBrowserLive do
     end
   end
 
+  # Legacy handler for compatibility with tests
+  def handle_event("generate_gif", _params, socket) do
+    handle_event("generate_gif_server", %{}, socket)
+  end
+
   def handle_event("generate_gif_server", _params, socket) do
     selected_indices = socket.assigns.selected_frame_indices
     frames = socket.assigns.frames

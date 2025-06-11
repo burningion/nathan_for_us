@@ -87,6 +87,7 @@ defmodule NathanForUsWeb.Router do
     pipe_through [:browser, :require_authenticated_user, :require_admin_user]
     
     live "/frames", AdminFrameBrowserLive
+    live "/upload", AdminVideoUploadLive
   end
 
   scope "/", NathanForUsWeb do

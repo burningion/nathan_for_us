@@ -107,6 +107,13 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Configure MIME types for file uploads
+config :mime, :types, %{
+  "video/x-matroska" => ["mkv"],
+  "application/x-subrip" => ["srt"],
+  "text/vtt" => ["vtt"]
+}
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

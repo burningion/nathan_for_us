@@ -203,6 +203,21 @@ defmodule NathanForUsWeb.AdminLive do
           <p class="text-zinc-600">Administrative functions for Nathan For Us</p>
         </div>
 
+        <!-- Admin Navigation -->
+        <div class="mb-8">
+          <nav class="flex space-x-4">
+            <.link navigate={~p"/admin"} class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              Dashboard
+            </.link>
+            <.link navigate={~p"/admin/upload"} class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+              Upload Video
+            </.link>
+            <.link navigate={~p"/admin/frames"} class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+              Browse Frames
+            </.link>
+          </nav>
+        </div>
+
         <!-- Stats Section -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div class="bg-white rounded-lg p-6 shadow-sm border border-zinc-200">

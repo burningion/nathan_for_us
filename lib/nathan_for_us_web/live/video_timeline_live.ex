@@ -421,7 +421,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                   <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">2</div>
                   <div>
                     <h3 class="text-lg font-semibold mb-2 text-white">Playback Controls</h3>
-                    <p class="leading-relaxed">Use the play/pause button to automatically advance through the timeline. Adjust playback speed from 0.25x to 4x to browse at your preferred pace. The current frame position and timestamp are always displayed.</p>
+                    <p class="leading-relaxed">Use the play/pause button to automatically advance through the timeline. When playing, it cycles through frames at your selected speed (0.25x to 4x). The play button will automatically pause when it reaches the end of the video or when you interact with the timeline. The current frame position and timestamp are always displayed.</p>
                   </div>
                 </div>
                 

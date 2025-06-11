@@ -66,6 +66,14 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   @impl true
   def handle_params(params, _url, socket) do
+    # Check if this is a shared link and show a helpful message
+    socket = 
+      if Map.get(params, "shared") == "1" && Map.has_key?(params, "frame_ids") do
+        put_flash(socket, :info, "Viewing shared frame selection! These are the frames someone wanted to show you.")
+      else
+        socket
+      end
+    
     # Only handle URL params if we don't already have a frame sequence open
     # This prevents URL updates from overriding expanded sequences
     socket = 
@@ -1107,6 +1115,34 @@ defmodule NathanForUsWeb.VideoSearchLive do
     </div>
 
     """
+  end
+
+  @doc """
+  Generates a share URL for the selected frames that other users can use to see the same selection.
+  """
+  def generate_share_url(frame_sequence, selected_frame_indices) do
+    if frame_sequence && !Enum.empty?(selected_frame_indices) do
+      # Get the frame IDs of the selected frames
+      selected_frames = 
+        selected_frame_indices
+        |> Enum.map(fn index -> 
+          Enum.at(frame_sequence.sequence_frames, index)
+        end)
+        |> Enum.filter(& &1)
+        |> Enum.map(& &1.id)
+      
+      # Generate the share URL with frame IDs
+      if !Enum.empty?(selected_frames) do
+        base_frame_id = hd(frame_sequence.sequence_frames).id
+        frame_ids_param = Enum.join(selected_frames, ",")
+        
+        "/video-search?frame=#{base_frame_id}&frame_ids=#{frame_ids_param}&shared=1"
+      else
+        nil
+      end
+    else
+      nil
+    end
   end
 
 end

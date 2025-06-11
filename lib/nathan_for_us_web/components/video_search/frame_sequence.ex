@@ -289,6 +289,31 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
               <div class="text-zinc-100 text-sm leading-relaxed font-mono text-left">
                 <%= get_selected_frames_captions(@frame_sequence, @selected_frame_indices) %>
               </div>
+              
+              <!-- Share Link -->
+              <%= if share_url = NathanForUsWeb.VideoSearchLive.generate_share_url(@frame_sequence, @selected_frame_indices) do %>
+                <div class="mt-3 pt-3 border-t border-zinc-600">
+                  <div class="flex items-center gap-2 text-xs">
+                    <span class="text-zinc-400 font-mono">🔗 SHARE:</span>
+                    <input 
+                      type="text" 
+                      value={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
+                      readonly
+                      class="flex-1 bg-zinc-700 text-zinc-200 px-2 py-1 rounded font-mono text-xs border border-zinc-600 focus:border-blue-500 focus:outline-none select-all"
+                      onclick="this.select(); navigator.clipboard.writeText(this.value); this.classList.add('bg-green-700'); setTimeout(() => this.classList.remove('bg-green-700'), 1000);"
+                    />
+                    <button
+                      onclick="navigator.clipboard.writeText(document.querySelector('input[readonly]').value); this.textContent = 'Copied!'; setTimeout(() => this.textContent = 'Copy', 1000);"
+                      class="bg-zinc-600 hover:bg-zinc-500 text-zinc-200 px-2 py-1 rounded text-xs font-mono transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <div class="text-zinc-500 text-xs mt-1 font-mono">
+                    Share this link to show others your selected frames
+                  </div>
+                </div>
+              <% end %>
             </div>
           </div>
         <% else %>
@@ -304,6 +329,31 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
               <div class="text-zinc-100 text-sm leading-relaxed font-mono text-left">
                 <%= get_selected_frames_captions(@frame_sequence, @selected_frame_indices) %>
               </div>
+              
+              <!-- Share Link -->
+              <%= if share_url = NathanForUsWeb.VideoSearchLive.generate_share_url(@frame_sequence, @selected_frame_indices) do %>
+                <div class="mt-3 pt-3 border-t border-zinc-600">
+                  <div class="flex items-center gap-2 text-xs">
+                    <span class="text-zinc-400 font-mono">🔗 SHARE:</span>
+                    <input 
+                      type="text" 
+                      value={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
+                      readonly
+                      class="flex-1 bg-zinc-700 text-zinc-200 px-2 py-1 rounded font-mono text-xs border border-zinc-600 focus:border-blue-500 focus:outline-none select-all"
+                      onclick="this.select(); navigator.clipboard.writeText(this.value); this.classList.add('bg-green-700'); setTimeout(() => this.classList.remove('bg-green-700'), 1000);"
+                    />
+                    <button
+                      onclick="navigator.clipboard.writeText(document.querySelector('input[readonly]').value); this.textContent = 'Copied!'; setTimeout(() => this.textContent = 'Copy', 1000);"
+                      class="bg-zinc-600 hover:bg-zinc-500 text-zinc-200 px-2 py-1 rounded text-xs font-mono transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <div class="text-zinc-500 text-xs mt-1 font-mono">
+                    Share this link to show others your selected frames
+                  </div>
+                </div>
+              <% end %>
             </div>
           </div>
         <% end %>
