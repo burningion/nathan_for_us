@@ -832,20 +832,18 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
 
 
   defp encode_image_data(nil), do: ""
-  defp encode_image_data(hex_data) when is_binary(hex_data) do
-    # The image data is stored as hex-encoded string starting with \x
-    # We need to decode it from hex, then encode to base64
-    case String.starts_with?(hex_data, "\\x") do
-      true ->
-        # Remove the \x prefix and decode from hex
-        hex_string = String.slice(hex_data, 2..-1//1)
+  defp encode_image_data(binary_data) when is_binary(binary_data) do
+    # Handle both raw binary data (bytea) and hex-encoded strings
+    case binary_data do
+      # If it's a hex string starting with \x, decode it first
+      "\\x" <> hex_string ->
         case Base.decode16(hex_string, case: :lower) do
-          {:ok, binary_data} -> Base.encode64(binary_data)
+          {:ok, decoded_data} -> Base.encode64(decoded_data)
           :error -> ""
         end
-      false ->
-        # Already binary data, encode directly
-        Base.encode64(hex_data)
+      # If it's raw binary data (which it should be from bytea), encode directly
+      _ ->
+        Base.encode64(binary_data)
     end
   end
 
