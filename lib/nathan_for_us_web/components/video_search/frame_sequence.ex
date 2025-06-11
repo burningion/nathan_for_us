@@ -385,16 +385,22 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
     first_frame = List.first(assigns.frame_sequence.sequence_frames)
 
     # Get frame dimensions with fallbacks for nil values
-    frame_width = case Map.get(first_frame, :width) do
-      nil -> 1920  # Default to 1920 if nil
-      width when is_integer(width) and width > 0 -> width
-      _ -> 1920
+    frame_width = case first_frame do
+      nil -> 1920
+      frame -> case Map.get(frame, :width) do
+        nil -> 1920  # Default to 1920 if nil
+        width when is_integer(width) and width > 0 -> width
+        _ -> 1920
+      end
     end
 
-    frame_height = case Map.get(first_frame, :height) do
-      nil -> 1080  # Default to 1080 if nil
-      height when is_integer(height) and height > 0 -> height
-      _ -> 1080
+    frame_height = case first_frame do
+      nil -> 1080
+      frame -> case Map.get(frame, :height) do
+        nil -> 1080  # Default to 1080 if nil
+        height when is_integer(height) and height > 0 -> height
+        _ -> 1080
+      end
     end
 
     # Calculate aspect ratio and set more compact size constraints
