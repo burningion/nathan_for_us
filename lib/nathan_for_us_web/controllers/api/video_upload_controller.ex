@@ -156,6 +156,8 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
   end
 
   defp link_frames_to_captions(frames, captions) do
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    
     frame_caption_links = 
       for frame <- frames,
           caption <- captions,
@@ -163,8 +165,8 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
         %{
           frame_id: frame.id,
           caption_id: caption.id,
-          inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
-          updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+          inserted_at: now,
+          updated_at: now
         }
       end
 
