@@ -72,6 +72,24 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Deletes all frames for a video.
+  """
+  def delete_video_frames(video_id) do
+    VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Deletes all captions for a video.
+  """
+  def delete_video_captions(video_id) do
+    VideoCaption
+    |> where([c], c.video_id == ^video_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
   Gets video frames with pagination.
   """
   def get_video_frames_with_pagination(video_id, offset \\ 0, limit \\ 20) do

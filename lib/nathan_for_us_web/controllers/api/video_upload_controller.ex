@@ -93,6 +93,10 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
       video ->
         # Now run the transaction for captions/frames
         Repo.transaction(fn ->
+          # Clear existing frames and captions for this video
+          Video.delete_video_frames(video.id)
+          Video.delete_video_captions(video.id)
+
           # Create captions first (frames reference them)
           caption_attrs = prepare_captions_attrs(captions_params, video.id)
           captions = create_captions_batch(caption_attrs)
