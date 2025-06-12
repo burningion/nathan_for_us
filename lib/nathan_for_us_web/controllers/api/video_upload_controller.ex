@@ -70,29 +70,37 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
 
   defp upload_video_data(%{"video" => video_params, "frames" => frames_params, "captions" => captions_params}) do
     Repo.transaction(fn ->
-      # Create the video record
+      # Create or find existing video record
       video_attrs = prepare_video_attrs(video_params)
-      case Video.create_video(video_attrs) do
-        {:ok, video} ->
-          # Create captions first (frames reference them)
-          caption_attrs = prepare_captions_attrs(captions_params, video.id)
-          captions = create_captions_batch(caption_attrs)
-
-          # Create frames with image data
-          frame_attrs = prepare_frames_attrs(frames_params, video.id)
-          frames = create_frames_batch(frame_attrs)
-
-          # Link frames to captions based on timestamp overlap
-          link_frames_to_captions(frames, captions)
-
-          # Update video status to completed
-          case Video.update_video(video, %{status: "completed", processed_at: DateTime.utc_now()}) do
-            {:ok, updated_video} -> updated_video
-            {:error, changeset} -> Repo.rollback(changeset)
-          end
-
+      video = case Video.create_video(video_attrs) do
+        {:ok, video} -> 
+          video
         {:error, changeset} ->
-          Repo.rollback(changeset)
+          # Check if it's a duplicate file_path error
+          case changeset.errors[:file_path] do
+            {"has already been taken", _} ->
+              # Find existing video by file_path
+              Video.get_video_by_file_path(video_attrs.file_path)
+            _ ->
+              Repo.rollback(changeset)
+          end
+      end
+
+      # Create captions first (frames reference them)
+      caption_attrs = prepare_captions_attrs(captions_params, video.id)
+      captions = create_captions_batch(caption_attrs)
+
+      # Create frames with image data
+      frame_attrs = prepare_frames_attrs(frames_params, video.id)
+      frames = create_frames_batch(frame_attrs)
+
+      # Link frames to captions based on timestamp overlap
+      link_frames_to_captions(frames, captions)
+
+      # Update video status to completed
+      case Video.update_video(video, %{status: "completed", processed_at: DateTime.utc_now()}) do
+        {:ok, updated_video} -> updated_video
+        {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
   end

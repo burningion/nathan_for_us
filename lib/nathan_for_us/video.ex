@@ -65,6 +65,13 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Gets a video by file path.
+  """
+  def get_video_by_file_path(file_path) do
+    Repo.get_by(Video, file_path: file_path)
+  end
+
+  @doc """
   Gets video frames with pagination.
   """
   def get_video_frames_with_pagination(video_id, offset \\ 0, limit \\ 20) do
