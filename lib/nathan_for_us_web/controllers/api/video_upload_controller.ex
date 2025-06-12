@@ -135,8 +135,8 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
         height: frame["height"],
         image_data: image_data,
         compression_ratio: frame["compression_ratio"],
-        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+        updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
       }
     end)
   end
@@ -159,8 +159,8 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
         %{
           frame_id: frame.id,
           caption_id: caption.id,
-          inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
-          updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+          inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+          updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
         }
       end
 
