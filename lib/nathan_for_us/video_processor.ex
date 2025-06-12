@@ -337,8 +337,8 @@ defmodule NathanForUs.VideoProcessor do
           text: caption.text,
           start_time_ms: caption.start_time_ms,
           end_time_ms: caption.end_time_ms,
-          inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-          updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+          inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+          updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
         }
       end)
 
@@ -375,8 +375,8 @@ defmodule NathanForUs.VideoProcessor do
             width: width,
             height: height,
             compression_ratio: frame_data.compression_ratio,
-            inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-            updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+            inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+            updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
           }
         end)
 
@@ -397,8 +397,8 @@ defmodule NathanForUs.VideoProcessor do
               %{
                 frame_id: frame.id,
                 caption_id: caption.id,
-                inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-                updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+                inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+                updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
               }
             end)
           end

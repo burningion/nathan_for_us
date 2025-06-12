@@ -92,8 +92,8 @@ defmodule NathanForUs.Video do
       |> Enum.map(fn frame_attrs ->
         frame_attrs
         |> Map.put(:video_id, video_id)
-        |> Map.put(:inserted_at, NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
-        |> Map.put(:updated_at, NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+        |> Map.put(:inserted_at, DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second))
+        |> Map.put(:updated_at, DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second))
       end)
 
     Repo.insert_all(VideoFrame, frames)
@@ -243,8 +243,8 @@ defmodule NathanForUs.Video do
         %{
           frame_id: frame.id,
           caption_id: caption.id,
-          inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-          updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+          inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+          updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
         }
       end
 
