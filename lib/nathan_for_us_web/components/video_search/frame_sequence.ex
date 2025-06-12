@@ -289,14 +289,14 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
               <div class="text-zinc-100 text-sm leading-relaxed font-mono text-left">
                 <%= get_selected_frames_captions(@frame_sequence, @selected_frame_indices) %>
               </div>
-              
+
               <!-- Share Link -->
               <%= if share_url = NathanForUsWeb.VideoSearchLive.generate_share_url(@frame_sequence, @selected_frame_indices) do %>
                 <div class="mt-3 pt-3 border-t border-zinc-600">
                   <div class="flex items-center gap-2 text-xs">
                     <span class="text-zinc-400 font-mono">🔗 SHARE:</span>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
                       readonly
                       class="flex-1 bg-zinc-700 text-zinc-200 px-2 py-1 rounded font-mono text-xs border border-zinc-600 focus:border-blue-500 focus:outline-none select-all"
@@ -312,25 +312,25 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
                   <div class="text-zinc-500 text-xs mt-1 font-mono">
                     Share this link to show others your selected frames
                   </div>
-                  
+
                   <!-- Social Sharing Buttons -->
                   <div class="mt-3 pt-3 border-t border-zinc-600">
                     <div class="text-zinc-400 text-xs uppercase mb-2 font-mono">📱 SOCIAL SHARE</div>
                     <div class="flex flex-wrap gap-2">
-                      <.social_share_button 
-                        platform="twitter" 
+                      <.social_share_button
+                        platform="twitter"
                         gif_url={if @client_gif_enabled and @client_download_url, do: @client_download_url, else: "data:image/gif;base64,#{@generated_gif_data}"}
                         caption={get_selected_frames_captions(@frame_sequence, @selected_frame_indices)}
                         share_url={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
                       />
-                      <.social_share_button 
-                        platform="reddit" 
+                      <.social_share_button
+                        platform="reddit"
                         gif_url={if @client_gif_enabled and @client_download_url, do: @client_download_url, else: "data:image/gif;base64,#{@generated_gif_data}"}
                         caption={get_selected_frames_captions(@frame_sequence, @selected_frame_indices)}
                         share_url={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
                       />
-                      <.social_share_button 
-                        platform="copy" 
+                      <.social_share_button
+                        platform="copy"
                         gif_url={if @client_gif_enabled and @client_download_url, do: @client_download_url, else: "data:image/gif;base64,#{@generated_gif_data}"}
                         caption={get_selected_frames_captions(@frame_sequence, @selected_frame_indices)}
                         share_url={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
@@ -354,15 +354,15 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
               <div class="text-zinc-100 text-sm leading-relaxed font-mono text-left">
                 <%= get_selected_frames_captions(@frame_sequence, @selected_frame_indices) %>
               </div>
-              
+
               <!-- Share Link -->
               <%= if share_url = NathanForUsWeb.VideoSearchLive.generate_share_url(@frame_sequence, @selected_frame_indices) do %>
                 <div class="mt-3 pt-3 border-t border-zinc-600">
                   <div class="flex items-center gap-2 text-xs">
                     <span class="text-zinc-400 font-mono">🔗 SHARE:</span>
-                    <input 
-                      type="text" 
-                      value={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
+                    <input
+                      type="text"
+                      value={"https://www.nathanforus.com/#{share_url}"}
                       readonly
                       class="flex-1 bg-zinc-700 text-zinc-200 px-2 py-1 rounded font-mono text-xs border border-zinc-600 focus:border-blue-500 focus:outline-none select-all"
                       onclick="this.select(); navigator.clipboard.writeText(this.value); this.classList.add('bg-green-700'); setTimeout(() => this.classList.remove('bg-green-700'), 1000);"
@@ -971,7 +971,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           </svg>
           Twitter
         </button>
-      
+
       <% "reddit" -> %>
         <button
           onclick={"shareToReddit('#{String.replace(@caption, "'", "\\'")}', '#{@share_url}')"}
@@ -983,7 +983,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           </svg>
           Reddit
         </button>
-      
+
       <% "copy" -> %>
         <button
           onclick={"copyGifToClipboard('#{@gif_url}', '#{String.replace(@caption, "'", "\\'")}'); this.textContent = 'Copied!'; setTimeout(() => this.innerHTML = '<svg class=\"w-4 h-4\" fill=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z\"/></svg>Copy GIF', 1500)"}
@@ -995,7 +995,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
           </svg>
           Copy GIF
         </button>
-      
+
       <% _ -> %>
         <div class="text-gray-500 text-xs">Unsupported platform</div>
     <% end %>
@@ -1019,7 +1019,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
             // Handle blob URLs (client-generated GIFs)
             const response = await fetch(gifUrl);
             const blob = await response.blob();
-            
+
             if (navigator.clipboard && window.ClipboardItem) {
               await navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})]);
             } else {

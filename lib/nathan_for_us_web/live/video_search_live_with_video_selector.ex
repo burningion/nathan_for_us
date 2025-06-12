@@ -1,27 +1,27 @@
 defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
   @moduledoc """
   BACKUP: Original video-specific search implementation with video selector.
-  
+
   This module contains the original video search functionality that allows
   users to select a specific video and search within that video only.
-  
+
   This code is preserved for future "episode search" functionality where
   users might want to search within specific videos/episodes.
-  
+
   Key features:
   - Video selector dropdown
   - Search within selected video only
   - Video-specific search results
   - Frame-caption associations for selected video
-  
+
   To restore this functionality:
   1. Copy this code back to video_search_live.ex
   2. Update router to use this module
   3. Test video selector functionality
   """
-  
+
   use NathanForUsWeb, :live_view
-  
+
   alias NathanForUs.Video
 
   on_mount {__MODULE__, :assign_meta_tags}
@@ -29,9 +29,9 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
   def on_mount(:assign_meta_tags, _params, _session, socket) do
     socket =
       socket
-      |> assign(:page_title, "Nathan Appearance Video Search")
+      |> assign(:page_title, "Nathan Search")
       |> assign(:page_description, "search a quote and find the frame(s) in which nathan said it in an interview")
-    
+
     {:cont, socket}
   end
 
@@ -58,7 +58,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
   def handle_event("search", %{"search" => %{"term" => term, "video_id" => video_id}}, socket) when term != "" do
     video_id = if video_id == "", do: socket.assigns.selected_video_id, else: String.to_integer(video_id)
     send(self(), {:perform_search, term, video_id})
-    
+
     socket =
       socket
       |> assign(:search_term, term)
@@ -81,7 +81,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
 
   def handle_event("search", %{"search[term]" => term}, socket) when term != "" do
     send(self(), {:perform_search, term, socket.assigns.selected_video_id})
-    
+
     socket =
       socket
       |> assign(:search_term, term)
@@ -93,7 +93,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
 
   def handle_event("video_select", %{"video_id" => video_id}, socket) do
     video_id = String.to_integer(video_id)
-    
+
     socket =
       socket
       |> assign(:selected_video_id, video_id)
@@ -116,7 +116,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
   @impl true
   def handle_info({:perform_search, term, video_id}, socket) do
     results = Video.search_frames_by_text_simple(term, video_id)
-    
+
     socket =
       socket
       |> assign(:search_results, results)
@@ -131,25 +131,25 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
     <div class="min-h-screen bg-zinc-50 text-zinc-900 p-4 md:p-6 font-mono">
       <div class="max-w-5xl mx-auto">
         <.search_header search_term={@search_term} results_count={length(@search_results)} />
-        
+
         <div class="space-y-4">
-          <.video_selector 
+          <.video_selector
             videos={@videos}
             selected_video_id={@selected_video_id}
           />
-          
-          <.search_interface 
-            search_term={@search_term} 
+
+          <.search_interface
+            search_term={@search_term}
             loading={@loading}
             selected_video_id={@selected_video_id}
           />
-          
-          <.search_results 
+
+          <.search_results
             :if={!@loading}
             search_results={@search_results}
             search_term={@search_term}
           />
-          
+
           <.loading_state :if={@loading} />
         </div>
       </div>
@@ -162,7 +162,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
     ~H"""
     <div class="bg-white border border-zinc-300 rounded-lg p-4 md:p-6 shadow-sm">
       <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">VIDEO SELECTION</div>
-      
+
       <div class="space-y-3">
         <%= for video <- @videos do %>
           <div class={[
@@ -173,12 +173,12 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
           phx-value-video_id={video.id}>
             <div class="font-bold truncate"><%= video.title %></div>
             <div class="text-xs text-zinc-500 mt-1">
-              <%= if video.frame_count, do: "#{video.frame_count} frames", else: "Processing..." %> | 
+              <%= if video.frame_count, do: "#{video.frame_count} frames", else: "Processing..." %> |
               <%= if video.duration_ms, do: format_timestamp(video.duration_ms), else: "Unknown duration" %>
             </div>
           </div>
         <% end %>
-        
+
         <%= if length(@videos) == 0 do %>
           <div class="text-zinc-500 text-sm italic">No videos available</div>
         <% end %>
@@ -199,12 +199,12 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
           SEARCH DATABASE FOR SPOKEN DIALOGUE ACROSS INTERVIEWS
         </div>
       </div>
-      
+
       <%= if @search_term != "" do %>
         <div class="bg-blue-50 border border-blue-200 rounded p-3">
           <div class="text-xs text-blue-600 uppercase mb-1 tracking-wide">SEARCH RESULTS</div>
           <div class="font-mono text-sm text-blue-900">
-            Query: "<span class="font-bold"><%= @search_term %></span>" | 
+            Query: "<span class="font-bold"><%= @search_term %></span>" |
             Results: <span class="font-bold"><%= @results_count %></span> frames
           </div>
         </div>
@@ -218,7 +218,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
     ~H"""
     <div class="bg-white border border-zinc-300 rounded-lg p-4 md:p-6 shadow-sm">
       <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">SEARCH INTERFACE</div>
-      
+
       <.form for={%{}} as={:search} phx-submit="search" class="mb-4">
         <input type="hidden" name="search[video_id]" value={@selected_video_id} />
         <div class="flex flex-col sm:flex-row gap-2">
@@ -239,7 +239,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
           </button>
         </div>
       </.form>
-      
+
       <!-- Quick search suggestions -->
       <div class="border-t border-zinc-200 pt-4">
         <div class="text-xs text-zinc-500 uppercase mb-2">QUICK QUERIES</div>
@@ -250,7 +250,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
           <.suggestion_button query="business" disabled={is_nil(@selected_video_id)} />
         </div>
       </div>
-      
+
       <%= if is_nil(@selected_video_id) do %>
         <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
           Please select a video above to begin searching.
@@ -283,7 +283,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
           <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">
             SEARCH RESULTS (<%= length(@search_results) %>)
           </div>
-          
+
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <%= for result <- @search_results do %>
               <div class="border border-zinc-200 rounded-lg overflow-hidden bg-zinc-50 hover:bg-zinc-100 transition-colors">
@@ -292,14 +292,14 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
                   <%= if result.image_data do %>
                     <%= case result.image_data do %>
                       <% "\\x" <> hex_data -> %>
-                        <img 
-                          src={"data:image/jpeg;base64,#{Base.encode64(:binary.decode_hex(String.slice(hex_data, 2..-1//1)))}"} 
+                        <img
+                          src={"data:image/jpeg;base64,#{Base.encode64(:binary.decode_hex(String.slice(hex_data, 2..-1//1)))}"}
                           alt={"Frame at #{format_timestamp(result.timestamp_ms)}"}
                           class="w-full h-full object-cover"
                         />
                       <% binary_data -> %>
-                        <img 
-                          src={"data:image/jpeg;base64,#{Base.encode64(binary_data)}"} 
+                        <img
+                          src={"data:image/jpeg;base64,#{Base.encode64(binary_data)}"}
                           alt={"Frame at #{format_timestamp(result.timestamp_ms)}"}
                           class="w-full h-full object-cover"
                         />
@@ -308,13 +308,13 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
                     <div class="text-zinc-400 text-sm">No image</div>
                   <% end %>
                 </div>
-                
+
                 <!-- Frame Info -->
                 <div class="p-3">
                   <div class="text-xs text-zinc-500 mb-1 font-mono">
                     FRAME #<%= result.frame_number %> | <%= format_timestamp(result.timestamp_ms) %>
                   </div>
-                  
+
                   <!-- Caption Text -->
                   <%= if result.caption_text do %>
                     <div class="text-sm text-zinc-700 font-mono leading-relaxed">
@@ -361,7 +361,7 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
     seconds = rem(total_seconds, 60)
     "#{String.pad_leading(Integer.to_string(minutes), 2, "0")}:#{String.pad_leading(Integer.to_string(seconds), 2, "0")}"
   end
-  
+
   defp format_timestamp(_), do: "00:00"
 
   defp highlight_search_term(text, search_term) when is_binary(text) and is_binary(search_term) do
@@ -374,6 +374,6 @@ defmodule NathanForUsWeb.VideoSearchLiveWithVideoSelector do
         text
     end
   end
-  
+
   defp highlight_search_term(text, _), do: text
 end

@@ -813,4 +813,39 @@ defmodule NathanForUs.Video do
     end
   end
 
+  @doc """
+  Gets random frames from all videos for background slideshow.
+  Returns a list of frames with video information.
+  """
+  def get_random_frames(count \\ 50) do
+    # Get a sample of random frames from all videos except video ID 14
+    query = """
+    SELECT f.id, f.video_id, f.frame_number, f.timestamp_ms, f.image_data, f.width, f.height,
+           v.title as video_title, v.file_path as video_file_path
+    FROM video_frames f
+    JOIN videos v ON f.video_id = v.id
+    WHERE f.video_id != 14
+    ORDER BY RANDOM()
+    LIMIT $1
+    """
+    
+    case Ecto.Adapters.SQL.query(Repo, query, [count]) do
+      {:ok, %{rows: rows, columns: columns}} ->
+        Enum.map(rows, fn row ->
+          columns
+          |> Enum.zip(row)
+          |> Enum.into(%{})
+          |> Map.update!("image_data", fn data -> 
+            case data do
+              nil -> nil
+              binary_data -> Base.encode64(binary_data)
+            end
+          end)
+        end)
+      
+      {:error, _} ->
+        []
+    end
+  end
+
 end

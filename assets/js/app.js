@@ -26,6 +26,7 @@ import topbar from "../vendor/topbar"
 import ClientGifGenerator from './hooks/client_gif_generator.js'
 import TimelineScrubber from './hooks/timeline_scrubber.js'
 import FrameMultiSelect from './hooks/frame_multi_select.js'
+import { SlidingBackground } from './hooks/sliding_background.js'
 
 // Frame Animator Hook for cycling through frame sequences
 let Hooks = {}
@@ -38,6 +39,9 @@ Hooks.TimelineScrubber = TimelineScrubber
 
 // Frame multi-select hook
 Hooks.FrameMultiSelect = FrameMultiSelect
+
+// Sliding background hook
+Hooks.SlidingBackground = SlidingBackground
 
 // Welcome Dialog Hook for first-time visitors
 Hooks.WelcomeDialog = {
