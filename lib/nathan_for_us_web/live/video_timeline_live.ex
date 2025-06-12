@@ -35,7 +35,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         
         {:ok, video} ->
           # Get video metadata
-          frame_count = NathanForUs.Video.get_video_frame_count(video_id)
+          {:ok, frame_count} = NathanForUs.Video.get_video_frame_count(video_id)
           video_duration_ms = NathanForUs.Video.get_video_duration_ms(video_id)
           
           socket =

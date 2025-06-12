@@ -312,6 +312,31 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
                   <div class="text-zinc-500 text-xs mt-1 font-mono">
                     Share this link to show others your selected frames
                   </div>
+                  
+                  <!-- Social Sharing Buttons -->
+                  <div class="mt-3 pt-3 border-t border-zinc-600">
+                    <div class="text-zinc-400 text-xs uppercase mb-2 font-mono">📱 SOCIAL SHARE</div>
+                    <div class="flex flex-wrap gap-2">
+                      <.social_share_button 
+                        platform="twitter" 
+                        gif_url={if @client_gif_enabled and @client_download_url, do: @client_download_url, else: "data:image/gif;base64,#{@generated_gif_data}"}
+                        caption={get_selected_frames_captions(@frame_sequence, @selected_frame_indices)}
+                        share_url={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
+                      />
+                      <.social_share_button 
+                        platform="reddit" 
+                        gif_url={if @client_gif_enabled and @client_download_url, do: @client_download_url, else: "data:image/gif;base64,#{@generated_gif_data}"}
+                        caption={get_selected_frames_captions(@frame_sequence, @selected_frame_indices)}
+                        share_url={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
+                      />
+                      <.social_share_button 
+                        platform="copy" 
+                        gif_url={if @client_gif_enabled and @client_download_url, do: @client_download_url, else: "data:image/gif;base64,#{@generated_gif_data}"}
+                        caption={get_selected_frames_captions(@frame_sequence, @selected_frame_indices)}
+                        share_url={"#{NathanForUsWeb.Endpoint.url()}#{share_url}"}
+                      />
+                    </div>
+                  </div>
                 </div>
               <% end %>
             </div>
@@ -922,5 +947,98 @@ defmodule NathanForUsWeb.Components.VideoSearch.FrameSequence do
     else
       "No frames selected"
     end
+  end
+
+  @doc """
+  Renders a social sharing button for different platforms.
+  """
+  attr :platform, :string, required: true
+  attr :gif_url, :string, required: true
+  attr :caption, :string, required: true
+  attr :share_url, :string, required: true
+
+  def social_share_button(assigns) do
+    ~H"""
+    <%= case @platform do %>
+      <% "twitter" -> %>
+        <button
+          onclick={"shareToTwitter('#{String.replace(@caption, "'", "\\'")}', '#{@share_url}')"}
+          class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-mono font-bold transition-colors flex items-center gap-1"
+          title="Share to Twitter"
+        >
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+          </svg>
+          Twitter
+        </button>
+      
+      <% "reddit" -> %>
+        <button
+          onclick={"shareToReddit('#{String.replace(@caption, "'", "\\'")}', '#{@share_url}')"}
+          class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-xs font-mono font-bold transition-colors flex items-center gap-1"
+          title="Share to Reddit"
+        >
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.187 0-.381.02-.573.057.188.476.196 1.04.573 1.04.188 0 .381-.058.573-.114-.188-.476-.196-1.04-.573-.983zm-5.5 3.5c0-.133.058-.266.144-.366.29-.313.729-.306 1.034-.039.39.342.825.594 1.33.594.504 0 .915-.252 1.33-.594.305-.267.744-.274 1.034.039.086.1.144.233.144.366 0 .23-.179.415-.42.415-.072 0-.116-.007-.134-.020-.363.323-.813.49-1.284.49-.472 0-.921-.167-1.284-.49-.018.013-.062.02-.134.02-.241 0-.42-.185-.42-.415z"/>
+          </svg>
+          Reddit
+        </button>
+      
+      <% "copy" -> %>
+        <button
+          onclick={"copyGifToClipboard('#{@gif_url}', '#{String.replace(@caption, "'", "\\'")}'); this.textContent = 'Copied!'; setTimeout(() => this.innerHTML = '<svg class=\"w-4 h-4\" fill=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z\"/></svg>Copy GIF', 1500)"}
+          class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-xs font-mono font-bold transition-colors flex items-center gap-1"
+          title="Copy GIF to clipboard"
+        >
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+          </svg>
+          Copy GIF
+        </button>
+      
+      <% _ -> %>
+        <div class="text-gray-500 text-xs">Unsupported platform</div>
+    <% end %>
+
+    <script>
+      window.shareToTwitter = function(caption, url) {
+        const text = `Check out this Nathan Fielder moment: "${caption}" ${url} #NathanForYou #Business #Genius`;
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+        window.open(twitterUrl, '_blank', 'width=550,height=420');
+      }
+
+      window.shareToReddit = function(caption, url) {
+        const title = `Nathan Fielder: "${caption}"`;
+        const redditUrl = `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
+        window.open(redditUrl, '_blank');
+      }
+
+      window.copyGifToClipboard = async function(gifUrl, caption) {
+        try {
+          if (gifUrl.startsWith('blob:')) {
+            // Handle blob URLs (client-generated GIFs)
+            const response = await fetch(gifUrl);
+            const blob = await response.blob();
+            
+            if (navigator.clipboard && window.ClipboardItem) {
+              await navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})]);
+            } else {
+              // Fallback: copy URL
+              await navigator.clipboard.writeText(`Nathan Fielder: "${caption}" - Check it out!`);
+            }
+          } else {
+            // Handle data URLs (server-generated GIFs) - copy text instead
+            const text = `Nathan Fielder: "${caption}" - Check it out!`;
+            await navigator.clipboard.writeText(text);
+          }
+        } catch (err) {
+          console.error('Failed to copy:', err);
+          // Fallback to copying text
+          const text = `Nathan Fielder: "${caption}" - Check it out!`;
+          navigator.clipboard.writeText(text);
+        }
+      }
+    </script>
+    """
   end
 end

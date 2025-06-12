@@ -760,13 +760,15 @@ defmodule NathanForUs.Video do
   Gets the total frame count for a video.
   """
   def get_video_frame_count(video_id) do
-    VideoFrame
+    count = VideoFrame
     |> where([f], f.video_id == ^video_id)
     |> select([f], count(f.id))
     |> Repo.one()
-    |> case do
-      nil -> 0
-      count -> count
+    
+    case count do
+      nil -> {:ok, 0}
+      count when count > 0 -> {:ok, count}
+      _ -> {:ok, 0}
     end
   end
 
@@ -789,6 +791,26 @@ defmodule NathanForUs.Video do
     |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
     |> order_by([f], f.frame_number)
     |> Repo.all()
+  end
+
+  @doc """
+  Gets a frame sequence starting from a specific frame number.
+  This is used for generating random clips.
+  """
+  def get_frame_sequence_by_frame_number(video_id, frame_number, sequence_length \\ 5) do
+    # Find the frame at the specified frame number
+    target_frame = VideoFrame
+    |> where([f], f.video_id == ^video_id and f.frame_number == ^frame_number)
+    |> Repo.one()
+    
+    case target_frame do
+      %VideoFrame{} = frame ->
+        # Use the existing get_frame_sequence function
+        get_frame_sequence(frame.id, sequence_length)
+      
+      nil ->
+        {:error, :frame_not_found}
+    end
   end
 
 end

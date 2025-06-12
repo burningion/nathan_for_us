@@ -402,6 +402,66 @@ body {
   color: #22543D;
 }
 
+/* Mobile touch feedback and gestures */
+.tap-feedback {
+  transform: scale(0.95) !important;
+  transition: transform 0.1s ease !important;
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.drag-selecting {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  border-color: #3b82f6 !important;
+  transform: scale(1.02);
+  transition: all 0.1s ease;
+}
+
+.frame-selection-box {
+  border: 2px dashed #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Enhanced mobile frame selection */
+.frame-card {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: all 0.2s ease;
+}
+
+.frame-card:active {
+  transform: scale(0.98);
+}
+
+/* Mobile-first improvements */
+@media (max-width: 768px) {
+  .frame-card {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .frame-select-btn {
+    min-height: 44px; /* Apple's minimum touch target */
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Larger touch targets for mobile */
+  .business-btn {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Better spacing for mobile taps */
+  .grid {
+    gap: 0.75rem;
+  }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .business-container {

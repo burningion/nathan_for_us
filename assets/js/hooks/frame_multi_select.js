@@ -4,6 +4,11 @@ const FrameMultiSelect = {
     this.startIndex = null;
     this.lastClickedIndex = null;
     this.selectionBox = null;
+    this.isMobile = 'ontouchstart' in window;
+    this.longPressTimer = null;
+    this.longPressActive = false;
+    this.touchStartTime = null;
+    this.animationFrame = null;
     
     // Store reference to the container
     this.container = this.el;
@@ -15,9 +20,14 @@ const FrameMultiSelect = {
     this.boundMouseUp = this.handleMouseUp.bind(this);
     this.boundDragStart = (e) => e.preventDefault();
     
+    // Touch event handlers
+    this.boundTouchStart = this.handleTouchStart.bind(this);
+    this.boundTouchMove = this.handleTouchMove.bind(this);
+    this.boundTouchEnd = this.handleTouchEnd.bind(this);
+    
     this.setupEventListeners();
     
-    console.log('FrameMultiSelect hook mounted');
+    console.log('FrameMultiSelect hook mounted - Mobile:', this.isMobile);
   },
   
   updated() {
@@ -33,26 +43,46 @@ const FrameMultiSelect = {
     // Remove existing listeners first
     this.cleanupEventListeners();
     
-    // Handle frame selection with shift-click
-    this.container.addEventListener('click', this.boundFrameClick);
-    
-    // Handle drag selection
-    this.container.addEventListener('mousedown', this.boundMouseDown);
-    document.addEventListener('mousemove', this.boundMouseMove);
-    document.addEventListener('mouseup', this.boundMouseUp);
+    if (this.isMobile) {
+      // Touch-based interaction for mobile
+      this.container.addEventListener('touchstart', this.boundTouchStart, { passive: false });
+      this.container.addEventListener('touchmove', this.boundTouchMove, { passive: false });
+      this.container.addEventListener('touchend', this.boundTouchEnd, { passive: false });
+    } else {
+      // Mouse-based interaction for desktop
+      this.container.addEventListener('click', this.boundFrameClick);
+      this.container.addEventListener('mousedown', this.boundMouseDown);
+      document.addEventListener('mousemove', this.boundMouseMove);
+      document.addEventListener('mouseup', this.boundMouseUp);
+    }
     
     // Prevent default drag behavior on images
     this.container.addEventListener('dragstart', this.boundDragStart);
     
-    console.log('FrameMultiSelect event listeners setup');
+    console.log('FrameMultiSelect event listeners setup for', this.isMobile ? 'mobile' : 'desktop');
   },
   
   cleanupEventListeners() {
+    // Clear any active timers
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+    
+    if (this.animationFrame) {
+      cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
+    }
+    
+    // Remove event listeners
     if (this.boundFrameClick) {
       this.container.removeEventListener('click', this.boundFrameClick);
       this.container.removeEventListener('mousedown', this.boundMouseDown);
       document.removeEventListener('mousemove', this.boundMouseMove);
       document.removeEventListener('mouseup', this.boundMouseUp);
+      this.container.removeEventListener('touchstart', this.boundTouchStart);
+      this.container.removeEventListener('touchmove', this.boundTouchMove);
+      this.container.removeEventListener('touchend', this.boundTouchEnd);
       this.container.removeEventListener('dragstart', this.boundDragStart);
     }
     
@@ -261,6 +291,140 @@ const FrameMultiSelect = {
     });
     
     return selectedIndices.sort((a, b) => a - b);
+  },
+
+  // Touch event handlers for mobile
+  handleTouchStart(e) {
+    const frameBtn = e.target.closest('.frame-select-btn');
+    const frameCard = e.target.closest('.frame-card');
+    
+    this.touchStartTime = Date.now();
+    this.longPressActive = false;
+    
+    if (frameBtn) {
+      const frameIndex = parseInt(frameBtn.dataset.frameIndex);
+      
+      // Start long press timer for range selection
+      this.longPressTimer = setTimeout(() => {
+        this.longPressActive = true;
+        this.startRangeSelection(frameIndex);
+        
+        // Haptic feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+      }, 500); // 500ms long press
+      
+      return;
+    }
+    
+    // Handle touch on empty space for drag selection
+    if (!frameCard && e.target.closest('.grid')) {
+      e.preventDefault();
+      
+      const touch = e.touches[0];
+      this.isSelecting = true;
+      this.startX = touch.clientX;
+      this.startY = touch.clientY;
+      
+      this.createSelectionBox(touch.clientX, touch.clientY);
+      console.log('Started touch drag selection');
+    }
+  },
+
+  handleTouchMove(e) {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+    
+    if (this.isSelecting && this.selectionBox) {
+      e.preventDefault();
+      
+      const touch = e.touches[0];
+      this.updateSelectionBox(this.startX, this.startY, touch.clientX, touch.clientY);
+      
+      // Throttle the selection update for performance
+      if (!this.animationFrame) {
+        this.animationFrame = requestAnimationFrame(() => {
+          this.updateFrameSelection();
+          this.animationFrame = null;
+        });
+      }
+    }
+  },
+
+  handleTouchEnd(e) {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+    
+    if (this.animationFrame) {
+      cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
+    }
+    
+    if (this.isSelecting) {
+      // End drag selection
+      this.handleMouseUp(e);
+      return;
+    }
+    
+    if (this.longPressActive) {
+      // Long press selection completed
+      this.longPressActive = false;
+      return;
+    }
+    
+    // Handle tap on frame
+    const frameBtn = e.target.closest('.frame-select-btn');
+    if (frameBtn) {
+      const touchDuration = Date.now() - this.touchStartTime;
+      
+      // Only trigger tap if it was a quick touch (not a long press)
+      if (touchDuration < 500) {
+        const frameIndex = parseInt(frameBtn.dataset.frameIndex);
+        this.handleFrameTap(frameIndex);
+      }
+    }
+  },
+
+  handleFrameTap(frameIndex) {
+    this.lastClickedIndex = frameIndex;
+    
+    // Show tap feedback
+    this.showTapFeedback(frameIndex);
+    
+    this.pushEvent('select_frame', { 
+      frame_index: frameIndex.toString(),
+      shift_key: 'false'
+    });
+  },
+
+  startRangeSelection(frameIndex) {
+    if (this.lastClickedIndex !== null) {
+      this.handleRangeSelection(frameIndex);
+    } else {
+      this.lastClickedIndex = frameIndex;
+      this.pushEvent('select_frame', { 
+        frame_index: frameIndex.toString(),
+        shift_key: 'false'
+      });
+    }
+  },
+
+  showTapFeedback(frameIndex) {
+    const frameBtn = this.container.querySelector(`[data-frame-index="${frameIndex}"]`);
+    if (frameBtn) {
+      const frameCard = frameBtn.closest('.frame-card');
+      if (frameCard) {
+        frameCard.classList.add('tap-feedback');
+        setTimeout(() => {
+          frameCard.classList.remove('tap-feedback');
+        }, 150);
+      }
+    }
   }
 };
 

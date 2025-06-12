@@ -179,40 +179,101 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
   end
   
   @doc """
-  Renders empty state when no results found.
+  Renders empty state when no results found with Nathan-esque messages.
   """
   attr :search_term, :string, required: true
   
   def empty_state(assigns) do
+    # Random Nathan-esque empty state messages
+    empty_messages = [
+      "This didn't go as planned...",
+      "Hmm, that's not working...",
+      "Let me try a different approach...",
+      "I may have misunderstood the assignment...",
+      "This isn't going according to the plan...",
+      "Time to pivot the strategy...",
+      "The business model needs adjustment...",
+      "I need to go back to the drawing board...",
+      "This calls for a new rehearsal...",
+      "I wasn't prepared for this outcome..."
+    ]
+    
+    suggestions = [
+      "Try simpler terms like \"nathan\" or \"business\"",
+      "Maybe check if that exact phrase was said?",
+      "Consider using the random moment button",
+      "Try searching for emotions like \"confused\" or \"awkward\"",
+      "Search for key Nathan topics like \"rehearsal\" or \"summit ice\"",
+      "Sometimes less is more with search terms"
+    ]
+    
+    random_message = Enum.random(empty_messages)
+    random_suggestion = Enum.random(suggestions)
+    assigns = assigns |> assign(:empty_message, random_message) |> assign(:suggestion, random_suggestion)
+    
     ~H"""
     <div class="bg-white border border-zinc-300 rounded-lg p-8 text-center shadow-sm">
-      <div class="text-blue-600 text-lg mb-2 font-mono">
-        NO MATCHES FOUND
+      <div class="text-amber-600 text-lg mb-2 font-mono">
+        <%= @empty_message %>
       </div>
+      <div class="text-6xl mb-4">😬</div>
       <p class="text-zinc-600 text-sm mb-4">
-        No video frames found containing "<%= @search_term %>"
+        No video frames found for "<%= @search_term %>"
       </p>
-      <p class="text-zinc-500 text-xs font-mono">
-        Try different keywords or check the quick queries above
-      </p>
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <p class="text-blue-800 text-sm font-mono">
+          Nathan's suggestion: <%= @suggestion %>
+        </p>
+      </div>
+      <button
+        phx-click="random_nathan_moment"
+        class="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-zinc-900 border border-yellow-600 rounded text-sm font-mono font-bold transition-colors"
+      >
+        🎲 Try a random moment instead
+      </button>
     </div>
     """
   end
   
   @doc """
-  Renders loading state.
+  Renders loading state with Nathan-esque messages.
   """
   attr :search_term, :string, required: true
   
   def loading_state(assigns) do
+    # Random Nathan-esque loading messages
+    loading_messages = [
+      "Calculating business strategy...",
+      "Consulting with my team...",
+      "Running this through my rehearsal process...", 
+      "Preparing for the unexpected...",
+      "The plan is working perfectly...",
+      "This is going exactly as planned...",
+      "Analyzing all possible outcomes...",
+      "Making sure I understand the assignment...",
+      "Double-checking my homework...",
+      "Reviewing my business school notes...",
+      "Getting into character...",
+      "Preparing my next move..."
+    ]
+    
+    random_message = Enum.random(loading_messages)
+    assigns = assign(assigns, :loading_message, random_message)
+    
     ~H"""
     <div class="bg-white border border-zinc-300 rounded-lg p-8 text-center shadow-sm">
       <div class="text-blue-600 text-lg mb-2 font-mono">
-        PROCESSING QUERY
+        <%= @loading_message %>
       </div>
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <div class="flex items-center justify-center mb-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div class="ml-4 text-4xl animate-pulse">🤔</div>
+      </div>
       <p class="text-zinc-600 text-sm font-mono">
-        Scanning video database for: "<%= @search_term %>"
+        Searching for: "<%= @search_term %>"
+      </p>
+      <p class="text-zinc-400 text-xs font-mono mt-2 italic">
+        This might take a moment. Nathan is very thorough.
       </p>
     </div>
     """

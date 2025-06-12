@@ -8,7 +8,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
   
   use NathanForUsWeb, :live_view
   
-  alias NathanForUs.{Video}
+  alias NathanForUs.Video
   alias NathanForUs.Video.Search
   alias NathanForUsWeb.Components.VideoSearch.{
     SearchHeader,
@@ -165,6 +165,61 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
       {:noreply, socket}
     end
+  end
+
+  def handle_event("generate_random_clip", _params, socket) do
+    IO.puts("🎬 DEBUG: generate_random_clip event received!")
+    
+    case generate_random_5_second_clip() do
+      {:ok, clip_data} ->
+        IO.puts("🎬 DEBUG: Generated clip: #{inspect(clip_data)}")
+        
+        # Open the frame sequence modal directly with the random clip
+        socket =
+          socket
+          |> assign(:frame_sequence, clip_data.frame_sequence)
+          |> assign(:selected_frame_indices, clip_data.selected_indices)
+          |> assign(:show_sequence_modal, true)
+          |> assign(:frame_sequence_version, socket.assigns.frame_sequence_version + 1)
+          |> put_flash(:info, "🎬 Random 5-second Nathan clip generated!")
+
+        {:noreply, socket}
+      
+      {:error, reason} ->
+        IO.puts("🎬 DEBUG: Error generating clip: #{inspect(reason)}")
+        
+        socket =
+          socket
+          |> put_flash(:error, "The plan didn't work... (#{reason})")
+
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("search_category", %{"category" => category}, socket) do
+    IO.puts("DEBUG: search_category event received for: #{category}")
+    
+    # Map category to search terms
+    search_term = case category do
+      "awkward silence" -> "pause"
+      "business genius" -> "business"
+      "confused stare" -> "confused"
+      "summit ice" -> "summit ice"
+      _ -> category
+    end
+    
+    IO.puts("DEBUG: Mapped to search term: #{search_term}")
+    
+    send(self(), {:perform_search, search_term})
+    
+    socket =
+      socket
+      |> assign(:search_term, search_term)
+      |> assign(:loading, true)
+      |> assign(:search_results, [])
+      |> put_flash(:info, "🎭 Searching for #{category} moments...")
+
+    {:noreply, socket}
   end
 
   def handle_event("toggle_video_modal", _params, socket) do
@@ -963,11 +1018,21 @@ defmodule NathanForUsWeb.VideoSearchLive do
         {:noreply, socket}
       
       {:error, reason} ->
+        nathan_error_messages = [
+          "This didn't go according to the plan...",
+          "I wasn't prepared for this outcome...",
+          "The strategy needs adjustment...",
+          "Time to pivot and try again...",
+          "This calls for a new approach..."
+        ]
+        
+        error_message = "#{Enum.random(nathan_error_messages)} (#{reason})"
+        
         socket =
           socket
           |> assign(:search_results, [])
           |> assign(:loading, false)
-          |> put_flash(:error, "Search failed: #{reason}")
+          |> put_flash(:error, error_message)
 
         {:noreply, socket}
     end
@@ -987,7 +1052,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       socket
       |> assign(:search_results, [])
       |> assign(:loading, false)
-      |> put_flash(:error, "Invalid search term")
+      |> put_flash(:error, "I may have misunderstood the assignment... (Invalid search term)")
 
     {:noreply, socket}
   end
@@ -1002,21 +1067,36 @@ defmodule NathanForUsWeb.VideoSearchLive do
           # Convert binary data to base64 for embedding
           gif_base64 = Base.encode64(gif_data)
           
+          success_messages = [
+            "The plan worked perfectly! 🎬",
+            "Business genius strikes again! 📈",
+            "Another successful operation! 🎯", 
+            "Everything went according to plan! ✨",
+            "Mission accomplished! 🏆"
+          ]
+          
           socket =
             socket
             |> assign(:gif_generation_status, :completed)
             |> assign(:generated_gif_data, gif_base64)
             |> assign(:gif_generation_task, nil)
-            |> put_flash(:info, "GIF generated successfully!")
+            |> put_flash(:info, Enum.random(success_messages))
           
           {:noreply, socket}
         
         {:error, reason} ->
+          error_messages = [
+            "This didn't go as planned...",
+            "The strategy needs adjustment...",
+            "Time to pivot and try again...",
+            "I wasn't prepared for this outcome..."
+          ]
+          
           socket =
             socket
             |> assign(:gif_generation_status, nil)
             |> assign(:gif_generation_task, nil)
-            |> put_flash(:error, "GIF generation failed: #{reason}")
+            |> put_flash(:error, "#{Enum.random(error_messages)} (#{reason})")
           
           {:noreply, socket}
       end
@@ -1028,11 +1108,18 @@ defmodule NathanForUsWeb.VideoSearchLive do
   def handle_info({:DOWN, ref, :process, _pid, reason}, socket) do
     # Handle GIF generation task crash
     if socket.assigns[:gif_generation_task] && socket.assigns.gif_generation_task.ref == ref do
+      crash_messages = [
+        "This is not going according to plan...",
+        "I need to go back to the drawing board...",
+        "The rehearsal didn't prepare me for this...",
+        "Time for a complete strategy overhaul..."
+      ]
+      
       socket =
         socket
         |> assign(:gif_generation_status, nil)
         |> assign(:gif_generation_task, nil)
-        |> put_flash(:error, "GIF generation task crashed: #{inspect(reason)}")
+        |> put_flash(:error, "#{Enum.random(crash_messages)} (Process crashed: #{inspect(reason)})")
       
       {:noreply, socket}
     else
@@ -1142,6 +1229,50 @@ defmodule NathanForUsWeb.VideoSearchLive do
       end
     else
       nil
+    end
+  end
+
+  # Private helper functions
+
+  defp generate_random_5_second_clip do
+    # Get all available videos
+    videos = Video.list_videos()
+    
+    case videos do
+      [] ->
+        {:error, "No videos available"}
+      
+      available_videos ->
+        # Pick a random video
+        random_video = Enum.random(available_videos)
+        
+        # Get total frames for this video to pick a random starting point
+        case Video.get_video_frame_count(random_video.id) do
+          {:ok, total_frames} when total_frames > 30 ->
+            # Pick a random starting frame, ensuring we have at least 30 frames left
+            # (for a 5-second clip at 6fps)
+            max_start_frame = total_frames - 30
+            random_start_frame = :rand.uniform(max_start_frame)
+            
+            # Generate a frame sequence starting from the random frame
+            case Video.get_frame_sequence_by_frame_number(random_video.id, random_start_frame) do
+              {:ok, frame_sequence} ->
+                # Select all frames for the 5-second clip (up to 30 frames for 5 seconds at 6fps)
+                frame_count = min(30, length(frame_sequence.sequence_frames))
+                selected_indices = Enum.to_list(0..(frame_count - 1))
+                
+                {:ok, %{
+                  frame_sequence: frame_sequence,
+                  selected_indices: selected_indices
+                }}
+              
+              {:error, reason} ->
+                {:error, "Could not load frame sequence: #{reason}"}
+            end
+          
+          {:ok, _small_frame_count} ->
+            {:error, "Video too short for 5-second clip"}
+        end
     end
   end
 

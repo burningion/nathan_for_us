@@ -22,7 +22,11 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
   def search_interface(assigns) do
     ~H"""
     <div class="bg-white border border-zinc-300 rounded-lg p-4 md:p-6 shadow-sm">
-      <div class="text-xs text-blue-600 uppercase mb-4 tracking-wide">SEARCH INTERFACE</div>
+      <!-- Top row with title and random clip button -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-xs text-blue-600 uppercase tracking-wide">SEARCH INTERFACE</div>
+        <.compact_random_clip_button />
+      </div>
       
       <.search_form 
         search_term={@search_term}
@@ -30,14 +34,6 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
         loading={@loading}
         autocomplete_suggestions={@autocomplete_suggestions}
         show_autocomplete={@show_autocomplete}
-      />
-      
-      <.quick_suggestions />
-      
-      <.search_status 
-        search_mode={@search_mode}
-        videos={@videos}
-        selected_video_ids={@selected_video_ids}
       />
     </div>
     """
@@ -126,67 +122,18 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
   end
   
   @doc """
-  Renders quick search suggestions.
+  Renders a compact random clip button for the top-right position.
   """
-  def quick_suggestions(assigns) do
-    ~H"""
-    <div class="border-t border-zinc-200 pt-4">
-      <div class="text-xs text-zinc-500 uppercase mb-2">QUICK QUERIES</div>
-      <div class="flex flex-wrap gap-2">
-        <.suggestion_button query="nathan" />
-        <.suggestion_button query="business" />
-        <.suggestion_button query="train" />
-        <.suggestion_button query="conan" />
-        <.suggestion_button query="rehearsal" />
-      </div>
-    </div>
-    """
-  end
-  
-  @doc """
-  Renders a suggestion button.
-  """
-  attr :query, :string, required: true
-  
-  def suggestion_button(assigns) do
+  def compact_random_clip_button(assigns) do
     ~H"""
     <button
-      phx-click="search"
-      phx-value-search[term]={@query}
-      class="px-3 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-300 rounded text-xs font-mono transition-colors"
+      phx-click="generate_random_clip"
+      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-mono font-medium transition-colors"
+      title="Generate a random 5-second Nathan clip"
     >
-      "<%= @query %>"
+      Random Clip
     </button>
     """
   end
   
-  @doc """
-  Renders the search status panel.
-  """
-  attr :search_mode, :atom, required: true
-  attr :videos, :list, required: true
-  attr :selected_video_ids, :list, required: true
-  
-  def search_status(assigns) do
-    ~H"""
-    <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm font-mono">
-      <div class="text-xs text-blue-600 uppercase mb-1">SEARCH STATUS</div>
-      <%= if @search_mode == :global do %>
-        Searching across all <%= length(@videos) %> videos
-      <% else %>
-        <div class="flex items-center justify-between">
-          <div>
-            Filtering <%= length(@selected_video_ids) %> of <%= length(@videos) %> videos
-          </div>
-          <button
-            phx-click="clear_video_filter"
-            class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
-          >
-            CLEAR FILTER
-          </button>
-        </div>
-      <% end %>
-    </div>
-    """
-  end
 end

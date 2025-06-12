@@ -101,6 +101,8 @@ Hooks.FrameAnimator = {
   mounted() {
     // Store reference to this hook instance for external access
     this.el.phxHook = this
+    this.isPlaying = true
+    this.transitionDuration = 150 // ms for smooth crossfade
     
     this.updateAnimationRange()
     
@@ -132,65 +134,137 @@ Hooks.FrameAnimator = {
     this.frames = JSON.parse(this.el.dataset.frames).filter(frame => frame !== null)
     this.selectedIndices = JSON.parse(this.el.dataset.selectedIndices || '[]')
     this.frameTimestamps = JSON.parse(this.el.dataset.frameTimestamps || '[]')
-    this.animationSpeed = parseInt(this.el.dataset.animationSpeed) || 150
+    this.animationSpeed = parseInt(this.el.dataset.animationSpeed) || 300
     
     this.animationFrameCount = this.selectedIndices.length
     this.currentFrameIndex = 0  // Index within selectedIndices array
     this.frameElements = Array.from(this.el.querySelectorAll('[data-frame-index]'))
     this.counter = document.getElementById(this.el.id.replace('animation-container', 'frame-counter'))
     
-    // Hide all frames initially
+    // Set up smooth transitions on all frame elements
     this.frameElements.forEach(el => {
+      el.style.transition = `opacity ${this.transitionDuration}ms ease-in-out, transform ${this.transitionDuration}ms ease-in-out`
       el.classList.remove('opacity-100')
       el.classList.add('opacity-0')
+      el.style.transform = 'scale(1)'
     })
     
-    // Show the first selected frame
+    // Show the first selected frame with smooth entry
     if (this.selectedIndices.length > 0 && this.frameElements[this.selectedIndices[0]]) {
-      this.frameElements[this.selectedIndices[0]].classList.remove('opacity-0')
-      this.frameElements[this.selectedIndices[0]].classList.add('opacity-100')
+      const firstFrame = this.frameElements[this.selectedIndices[0]]
+      // Use requestAnimationFrame for smooth initial transition
+      requestAnimationFrame(() => {
+        firstFrame.classList.remove('opacity-0')
+        firstFrame.classList.add('opacity-100')
+        firstFrame.style.transform = 'scale(1.02)' // Slight emphasis
+        
+        // Reset scale after transition
+        setTimeout(() => {
+          firstFrame.style.transform = 'scale(1)'
+        }, this.transitionDuration)
+      })
     }
     
-    // Update counter
+    // Update counter with smooth fade
     if (this.counter) {
-      this.counter.textContent = `1/${this.animationFrameCount}`
+      this.updateCounterWithTransition(`1/${this.animationFrameCount}`)
     }
   },
   
+  updateCounterWithTransition(text) {
+    if (!this.counter) return
+    
+    this.counter.style.transition = 'opacity 100ms ease-in-out'
+    this.counter.style.opacity = '0'
+    
+    setTimeout(() => {
+      this.counter.textContent = text
+      this.counter.style.opacity = '1'
+    }, 100)
+  },
   
   startAnimation() {
     this.scheduleNextFrame()
   },
   
   scheduleNextFrame() {
-    if (this.animationFrameCount <= 1) return
+    if (this.animationFrameCount <= 1 || !this.isPlaying) return
     
-    // Hide current frame
-    if (this.selectedIndices.length > 0 && this.frameElements[this.selectedIndices[this.currentFrameIndex]]) {
-      this.frameElements[this.selectedIndices[this.currentFrameIndex]].classList.remove('opacity-100')
-      this.frameElements[this.selectedIndices[this.currentFrameIndex]].classList.add('opacity-0')
-    }
+    const currentElement = this.frameElements[this.selectedIndices[this.currentFrameIndex]]
     
     // Move to next frame within selected indices
     this.currentFrameIndex = (this.currentFrameIndex + 1) % this.selectedIndices.length
+    const nextElement = this.frameElements[this.selectedIndices[this.currentFrameIndex]]
     
-    // Show next frame
-    if (this.selectedIndices.length > 0 && this.frameElements[this.selectedIndices[this.currentFrameIndex]]) {
-      this.frameElements[this.selectedIndices[this.currentFrameIndex]].classList.remove('opacity-0')
-      this.frameElements[this.selectedIndices[this.currentFrameIndex]].classList.add('opacity-100')
+    if (currentElement && nextElement) {
+      // Smooth crossfade transition
+      this.performCrossfade(currentElement, nextElement)
     }
     
-    // Update counter
+    // Update counter with transition
     if (this.counter) {
-      this.counter.textContent = `${this.currentFrameIndex + 1}/${this.animationFrameCount}`
+      this.updateCounterWithTransition(`${this.currentFrameIndex + 1}/${this.animationFrameCount}`)
     }
     
-    // Schedule next frame with user-controlled speed
+    // Schedule next frame with user-controlled speed plus transition time
     this.animationTimeout = setTimeout(() => {
       this.scheduleNextFrame()
-    }, this.animationSpeed)
+    }, Math.max(this.animationSpeed, this.transitionDuration + 50))
   },
   
+  performCrossfade(currentElement, nextElement) {
+    // Start hiding current element
+    currentElement.style.opacity = '0'
+    currentElement.style.transform = 'scale(0.98)'
+    
+    // Show next element with slight delay for smoother transition
+    setTimeout(() => {
+      nextElement.style.opacity = '1'
+      nextElement.style.transform = 'scale(1.02)'
+      
+      // Reset transform after transition
+      setTimeout(() => {
+        currentElement.style.transform = 'scale(1)'
+        nextElement.style.transform = 'scale(1)'
+      }, this.transitionDuration)
+    }, this.transitionDuration * 0.3)
+  },
+  
+  // New methods for user control
+  pause() {
+    this.isPlaying = false
+    if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout)
+    }
+  },
+  
+  play() {
+    this.isPlaying = true
+    if (this.animationFrameCount > 1) {
+      this.scheduleNextFrame()
+    }
+  },
+  
+  setSpeed(speedMs) {
+    this.animationSpeed = speedMs
+  },
+  
+  // Navigate to specific frame
+  goToFrame(frameIndex) {
+    if (frameIndex >= 0 && frameIndex < this.selectedIndices.length) {
+      const currentElement = this.frameElements[this.selectedIndices[this.currentFrameIndex]]
+      const targetElement = this.frameElements[this.selectedIndices[frameIndex]]
+      
+      if (currentElement && targetElement) {
+        this.currentFrameIndex = frameIndex
+        this.performCrossfade(currentElement, targetElement)
+        
+        if (this.counter) {
+          this.updateCounterWithTransition(`${frameIndex + 1}/${this.animationFrameCount}`)
+        }
+      }
+    }
+  }
 }
 
 // Video Search Welcome Hook for first-time visitors
