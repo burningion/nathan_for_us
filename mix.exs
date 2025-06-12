@@ -61,6 +61,7 @@ defmodule NathanForUs.MixProject do
       {:bcrypt_elixir, "~> 3.0"},
       {:websockex, "~> 0.4.3"},
       {:gen_stage, "~> 1.2"},
+      {:req, "~> 0.5.10"},
     ]
   end
 

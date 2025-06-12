@@ -848,4 +848,34 @@ defmodule NathanForUs.Video do
     end
   end
 
+  @doc """
+  Counts the number of frames for a video.
+  """
+  def count_video_frames(video_id) do
+    VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Counts the number of captions for a video.
+  """
+  def count_video_captions(video_id) do
+    VideoCaption
+    |> where([c], c.video_id == ^video_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Counts the number of frame-caption links for a video.
+  """
+  def count_frame_caption_links(video_id) do
+    query = from fc in FrameCaption,
+            join: f in VideoFrame, on: fc.frame_id == f.id,
+            where: f.video_id == ^video_id,
+            select: count(fc.id)
+    
+    Repo.one(query)
+  end
+
 end

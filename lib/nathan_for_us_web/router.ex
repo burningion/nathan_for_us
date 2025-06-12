@@ -38,9 +38,11 @@ defmodule NathanForUsWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", NathanForUsWeb do
-  #   pipe_through :api
-  # end
+  scope "/api", NathanForUsWeb.Api do
+    pipe_through :api
+
+    post "/videos/upload", VideoUploadController, :upload
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:nathan_for_us, :dev_routes) do
