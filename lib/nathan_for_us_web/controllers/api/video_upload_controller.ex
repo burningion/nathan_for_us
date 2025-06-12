@@ -105,6 +105,8 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
   end
 
   defp prepare_captions_attrs(captions_params, video_id) do
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    
     Enum.map(captions_params, fn caption ->
       %{
         video_id: video_id,
@@ -112,13 +114,15 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
         end_time_ms: caption["end_time_ms"],
         text: caption["text"],
         caption_index: caption["caption_index"],
-        inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+        inserted_at: now,
+        updated_at: now
       }
     end)
   end
 
   defp prepare_frames_attrs(frames_params, video_id) do
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    
     Enum.map(frames_params, fn frame ->
       image_data = case frame["image_data"] do
         nil -> nil
@@ -135,8 +139,8 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
         height: frame["height"],
         image_data: image_data,
         compression_ratio: frame["compression_ratio"],
-        inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+        inserted_at: now,
+        updated_at: now
       }
     end)
   end
