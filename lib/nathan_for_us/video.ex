@@ -108,8 +108,8 @@ defmodule NathanForUs.Video do
       |> Enum.map(fn caption_attrs ->
         caption_attrs
         |> Map.put(:video_id, video_id)
-        |> Map.put(:inserted_at, NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
-        |> Map.put(:updated_at, NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+        |> Map.put(:inserted_at, DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second))
+        |> Map.put(:updated_at, DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second))
       end)
 
     Repo.insert_all(VideoCaption, captions)
