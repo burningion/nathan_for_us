@@ -203,7 +203,6 @@ defmodule NathanForUsWeb.AdminVideoUploadLive do
     
     # Generate unique filename
     timestamp = DateTime.utc_now() |> DateTime.to_unix()
-    extension = Path.extname(entry.client_name)
     filename = "#{timestamp}_#{entry.client_name}"
     file_path = Path.join(upload_dir, filename)
     
