@@ -112,8 +112,8 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
         end_time_ms: caption["end_time_ms"],
         text: caption["text"],
         caption_index: caption["caption_index"],
-        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+        updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
       }
     end)
   end
