@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Video.Upload do
     
     video_id = opts[:video_id] || raise_missing_option("video-id")
     api_url = opts[:api_url] || raise_missing_option("api-url")
-    batch_size = opts[:batch_size] || 50
+    batch_size = opts[:batch_size] || 10
     dry_run = opts[:dry_run] || false
     
     IO.puts("🗄️  Starting video data upload process...")

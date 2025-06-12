@@ -90,6 +90,16 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Gets all captions for a video.
+  """
+  def get_video_captions(video_id) do
+    VideoCaption
+    |> where([c], c.video_id == ^video_id)
+    |> order_by([c], c.start_time_ms)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets video frames with pagination.
   """
   def get_video_frames_with_pagination(video_id, offset \\ 0, limit \\ 20) do
