@@ -10,6 +10,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   alias NathanForUs.Video
   alias NathanForUs.Video.Search
+  alias NathanForUs.Video.GifService
+
   alias NathanForUsWeb.Components.VideoSearch.{
     SearchHeader,
     SearchInterface,
@@ -24,7 +26,10 @@ defmodule NathanForUsWeb.VideoSearchLive do
     socket =
       socket
       |> assign(:page_title, "Nathan Search")
-      |> assign(:page_description, "search a quote and find the frame(s) in which nathan said it in an interview")
+      |> assign(
+        :page_description,
+        "search a quote and find the frame(s) in which nathan said it in an interview"
+      )
 
     {:cont, socket}
   end
@@ -56,7 +61,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:selected_frame_indices, [])
       |> assign(:autocomplete_suggestions, [])
       |> assign(:show_autocomplete, false)
-      |> assign(:expanded_videos, MapSet.new())  # Track which videos are expanded
+      # Track which videos are expanded
+      |> assign(:expanded_videos, MapSet.new())
       |> assign(:frame_sequence_version, 0)
       |> assign(:show_welcome_modal, show_welcome_modal)
       |> assign(:gif_generation_status, nil)
@@ -70,10 +76,22 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   @impl true
   def handle_params(params, _url, socket) do
+    # Check if this is a GIF generation request
+    socket =
+      if GifService.should_generate_gif?(params) do
+        handle_gif_generation_from_params(socket, params)
+      else
+        socket
+      end
+
     # Check if this is a shared link and show a helpful message
     socket =
       if Map.get(params, "shared") == "1" && Map.has_key?(params, "frame_ids") do
-        put_flash(socket, :info, "Viewing shared frame selection! These are the frames someone wanted to show you.")
+        put_flash(
+          socket,
+          :info,
+          "Viewing shared frame selection! These are the frames someone wanted to show you."
+        )
       else
         socket
       end
@@ -144,11 +162,12 @@ defmodule NathanForUsWeb.VideoSearchLive do
   # Catch-all for any other search patterns to handle gracefully
   def handle_event("search", params, socket) do
     # Extract term from various possible parameter structures
-    term = case params do
-      %{"term" => term} -> term
-      %{"search_term" => term} -> term
-      _ -> ""
-    end
+    term =
+      case params do
+        %{"term" => term} -> term
+        %{"search_term" => term} -> term
+        _ -> ""
+      end
 
     if term != "" do
       send(self(), {:perform_search, term})
@@ -204,13 +223,14 @@ defmodule NathanForUsWeb.VideoSearchLive do
     IO.puts("DEBUG: search_category event received for: #{category}")
 
     # Map category to search terms
-    search_term = case category do
-      "awkward silence" -> "pause"
-      "business genius" -> "business"
-      "confused stare" -> "confused"
-      "summit ice" -> "summit ice"
-      _ -> category
-    end
+    search_term =
+      case category do
+        "awkward silence" -> "pause"
+        "business genius" -> "business"
+        "confused stare" -> "confused"
+        "summit ice" -> "summit ice"
+        _ -> category
+      end
 
     IO.puts("DEBUG: Mapped to search term: #{search_term}")
 
@@ -387,7 +407,9 @@ defmodule NathanForUsWeb.VideoSearchLive do
   end
 
   def handle_event("select_all_frames", _params, socket) do
-    all_frame_indices = 0..(length(socket.assigns.frame_sequence.sequence_frames) - 1) |> Enum.to_list()
+    all_frame_indices =
+      0..(length(socket.assigns.frame_sequence.sequence_frames) - 1) |> Enum.to_list()
+
     socket =
       socket
       |> assign(:selected_frame_indices, all_frame_indices)
@@ -413,17 +435,25 @@ defmodule NathanForUsWeb.VideoSearchLive do
       nil ->
         Logger.info("No frame sequence found")
         {:noreply, socket}
+
       frame_sequence ->
-        Logger.info("Current sequence: #{frame_sequence.sequence_info.start_frame_number}-#{frame_sequence.sequence_info.end_frame_number}")
+        Logger.info(
+          "Current sequence: #{frame_sequence.sequence_info.start_frame_number}-#{frame_sequence.sequence_info.end_frame_number}"
+        )
 
         # Get one frame before the current sequence start
         case Search.expand_frame_sequence_backward(frame_sequence) do
           {:ok, expanded_sequence} ->
-            Logger.info("Expanded sequence: #{expanded_sequence.sequence_info.start_frame_number}-#{expanded_sequence.sequence_info.end_frame_number}")
+            Logger.info(
+              "Expanded sequence: #{expanded_sequence.sequence_info.start_frame_number}-#{expanded_sequence.sequence_info.end_frame_number}"
+            )
 
             # Update selected indices to account for the new frame at the beginning
             # and automatically select the new frame (index 0)
-            updated_indices = [0 | Enum.map(socket.assigns.selected_frame_indices, fn index -> index + 1 end)]
+            updated_indices = [
+              0 | Enum.map(socket.assigns.selected_frame_indices, fn index -> index + 1 end)
+            ]
+
             Logger.info("Updated selected indices with new frame: #{inspect(updated_indices)}")
 
             socket =
@@ -450,13 +480,18 @@ defmodule NathanForUsWeb.VideoSearchLive do
       nil ->
         Logger.info("No frame sequence found")
         {:noreply, socket}
+
       frame_sequence ->
-        Logger.info("Current sequence: #{frame_sequence.sequence_info.start_frame_number}-#{frame_sequence.sequence_info.end_frame_number}")
+        Logger.info(
+          "Current sequence: #{frame_sequence.sequence_info.start_frame_number}-#{frame_sequence.sequence_info.end_frame_number}"
+        )
 
         # Get one frame after the current sequence end
         case Search.expand_frame_sequence_forward(frame_sequence) do
           {:ok, expanded_sequence} ->
-            Logger.info("Expanded sequence: #{expanded_sequence.sequence_info.start_frame_number}-#{expanded_sequence.sequence_info.end_frame_number}")
+            Logger.info(
+              "Expanded sequence: #{expanded_sequence.sequence_info.start_frame_number}-#{expanded_sequence.sequence_info.end_frame_number}"
+            )
 
             # Selected indices stay the same since we're adding at the end
             # but also automatically select the new frame (last index)
@@ -481,7 +516,10 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   def handle_event("expand_sequence_backward_multiple", params, socket) do
     require Logger
-    Logger.info("Received expand_sequence_backward_multiple event with params: #{inspect(params)}")
+
+    Logger.info(
+      "Received expand_sequence_backward_multiple event with params: #{inspect(params)}"
+    )
 
     count_str = Map.get(params, "value", "")
     Logger.info("Extracted count_str: #{inspect(count_str)}")
@@ -504,20 +542,30 @@ defmodule NathanForUsWeb.VideoSearchLive do
             c when c >= 1 and c <= 20 ->
               Logger.info("Expanding backward by #{count} frames")
               Logger.info("Current sequence frames: #{length(frame_sequence.sequence_frames)}")
-              Logger.info("Current start frame: #{frame_sequence.sequence_info.start_frame_number}")
+
+              Logger.info(
+                "Current start frame: #{frame_sequence.sequence_info.start_frame_number}"
+              )
+
               Logger.info("Current end frame: #{frame_sequence.sequence_info.end_frame_number}")
 
               # Expand backward multiple times
               {final_sequence, total_added} = expand_backward_multiple(frame_sequence, count, 0)
-              Logger.info("Final sequence frames: #{length(final_sequence.sequence_frames)}, added: #{total_added}")
+
+              Logger.info(
+                "Final sequence frames: #{length(final_sequence.sequence_frames)}, added: #{total_added}"
+              )
+
               Logger.info("Final start frame: #{final_sequence.sequence_info.start_frame_number}")
               Logger.info("Final end frame: #{final_sequence.sequence_info.end_frame_number}")
 
               if total_added > 0 do
                 # Add new indices for all added frames (they'll be at indices 0 to total_added-1)
-                new_indices = Enum.to_list(0..(total_added-1))
+                new_indices = Enum.to_list(0..(total_added - 1))
                 # Shift existing indices by total_added
-                shifted_existing = Enum.map(socket.assigns.selected_frame_indices, &(&1 + total_added))
+                shifted_existing =
+                  Enum.map(socket.assigns.selected_frame_indices, &(&1 + total_added))
+
                 updated_indices = (new_indices ++ shifted_existing) |> Enum.uniq() |> Enum.sort()
 
                 socket =
@@ -571,12 +619,20 @@ defmodule NathanForUsWeb.VideoSearchLive do
             c when c >= 1 and c <= 20 ->
               Logger.info("Expanding forward by #{count} frames")
               Logger.info("Current sequence frames: #{length(frame_sequence.sequence_frames)}")
-              Logger.info("Current start frame: #{frame_sequence.sequence_info.start_frame_number}")
+
+              Logger.info(
+                "Current start frame: #{frame_sequence.sequence_info.start_frame_number}"
+              )
+
               Logger.info("Current end frame: #{frame_sequence.sequence_info.end_frame_number}")
 
               # Expand forward multiple times
               {final_sequence, total_added} = expand_forward_multiple(frame_sequence, count, 0)
-              Logger.info("Final sequence frames: #{length(final_sequence.sequence_frames)}, added: #{total_added}")
+
+              Logger.info(
+                "Final sequence frames: #{length(final_sequence.sequence_frames)}, added: #{total_added}"
+              )
+
               Logger.info("Final start frame: #{final_sequence.sequence_info.start_frame_number}")
               Logger.info("Final end frame: #{final_sequence.sequence_info.end_frame_number}")
 
@@ -584,7 +640,11 @@ defmodule NathanForUsWeb.VideoSearchLive do
                 # Add new indices for all added frames (they'll be at the end)
                 original_length = length(socket.assigns.frame_sequence.sequence_frames)
                 new_indices = Enum.to_list(original_length..(original_length + total_added - 1))
-                updated_indices = (socket.assigns.selected_frame_indices ++ new_indices) |> Enum.uniq() |> Enum.sort()
+
+                updated_indices =
+                  (socket.assigns.selected_frame_indices ++ new_indices)
+                  |> Enum.uniq()
+                  |> Enum.sort()
 
                 socket =
                   socket
@@ -616,7 +676,12 @@ defmodule NathanForUsWeb.VideoSearchLive do
     search_form = %{"term" => term}
 
     if String.length(term) >= 3 do
-      suggestions = Search.get_autocomplete_suggestions(term, socket.assigns.search_mode, socket.assigns.selected_video_ids)
+      suggestions =
+        Search.get_autocomplete_suggestions(
+          term,
+          socket.assigns.search_mode,
+          socket.assigns.selected_video_ids
+        )
 
       socket =
         socket
@@ -673,11 +738,13 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   def handle_event("generate_gif", _params, socket) do
     case {socket.assigns.frame_sequence, socket.assigns.selected_frame_indices} do
-      {frame_sequence, selected_indices} when not is_nil(frame_sequence) and length(selected_indices) > 0 ->
+      {frame_sequence, selected_indices}
+      when not is_nil(frame_sequence) and length(selected_indices) > 0 ->
         # Start async GIF generation
-        task = Task.async(fn ->
-          NathanForUs.AdminService.generate_gif_from_frames(frame_sequence, selected_indices)
-        end)
+        task =
+          Task.async(fn ->
+            NathanForUs.AdminService.generate_gif_from_frames(frame_sequence, selected_indices)
+          end)
 
         socket =
           socket
@@ -699,7 +766,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   def handle_event("generate_gif_client", _params, socket) do
     case {socket.assigns.frame_sequence, socket.assigns.selected_frame_indices} do
-      {frame_sequence, selected_indices} when not is_nil(frame_sequence) and length(selected_indices) > 0 ->
+      {frame_sequence, selected_indices}
+      when not is_nil(frame_sequence) and length(selected_indices) > 0 ->
         # Get selected frames based on indices
         selected_frames =
           selected_indices
@@ -707,29 +775,33 @@ defmodule NathanForUsWeb.VideoSearchLive do
           |> Enum.reject(&is_nil/1)
 
         # Convert frame data to the format expected by JavaScript
-        frame_data = Enum.map(selected_frames, fn frame ->
-          %{
-            id: frame.id,
-            image_data: if Map.get(frame, :image_data) do
-              case String.starts_with?(frame.image_data, "\\x") do
-                true ->
-                  # Remove the \x prefix and decode from hex
-                  hex_string = String.slice(frame.image_data, 2..-1//1)
-                  case Base.decode16(hex_string, case: :lower) do
-                    {:ok, binary_data} -> Base.encode64(binary_data)
-                    :error -> ""
+        frame_data =
+          Enum.map(selected_frames, fn frame ->
+            %{
+              id: frame.id,
+              image_data:
+                if Map.get(frame, :image_data) do
+                  case String.starts_with?(frame.image_data, "\\x") do
+                    true ->
+                      # Remove the \x prefix and decode from hex
+                      hex_string = String.slice(frame.image_data, 2..-1//1)
+
+                      case Base.decode16(hex_string, case: :lower) do
+                        {:ok, binary_data} -> Base.encode64(binary_data)
+                        :error -> ""
+                      end
+
+                    false ->
+                      # Already binary data, encode directly
+                      Base.encode64(frame.image_data)
                   end
-                false ->
-                  # Already binary data, encode directly
-                  Base.encode64(frame.image_data)
-              end
-            else
-              ""
-            end,
-            frame_number: frame.frame_number,
-            timestamp_ms: frame.timestamp_ms
-          }
-        end)
+                else
+                  ""
+                end,
+              frame_number: frame.frame_number,
+              timestamp_ms: frame.timestamp_ms
+            }
+          end)
 
         socket =
           socket
@@ -788,7 +860,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
         end
 
       # Update the search results to reflect the new expanded state
-      updated_results = update_video_expansion_state(socket.assigns.search_results, updated_expanded)
+      updated_results =
+        update_video_expansion_state(socket.assigns.search_results, updated_expanded)
 
       socket =
         socket
@@ -813,7 +886,9 @@ defmodule NathanForUsWeb.VideoSearchLive do
   # Handle video selection from URL parameters
   defp handle_video_selection_from_params(socket, params) do
     case Map.get(params, "video") do
-      nil -> socket
+      nil ->
+        socket
+
       video_id_str ->
         try do
           video_id = String.to_integer(video_id_str)
@@ -835,43 +910,51 @@ defmodule NathanForUsWeb.VideoSearchLive do
   # Handle frame selection from URL parameters
   defp handle_frame_selection_from_params(socket, params) do
     case Map.get(params, "frame") do
-      nil -> socket
+      nil ->
+        socket
+
       frame_id_str ->
         try do
           frame_id = String.to_integer(frame_id_str)
 
           # Check if we have specific frame IDs or need to parse indices
-          frame_sequence_result = case Map.get(params, "frame_ids") do
-            nil ->
-              # Legacy: Parse selected frames from URL indices
-              selected_indices = parse_selected_frames_from_params(params)
-              if Enum.empty?(selected_indices) do
-                Video.get_frame_sequence(frame_id)
-              else
-                Video.get_frame_sequence_with_selected_indices(frame_id, selected_indices)
-              end
-            frame_ids_str ->
-              # New: Use specific frame IDs
-              frame_ids = parse_frame_ids_from_params(frame_ids_str)
-              Video.get_frame_sequence_from_frame_ids(frame_id, frame_ids)
-          end
+          frame_sequence_result =
+            case Map.get(params, "frame_ids") do
+              nil ->
+                # Legacy: Parse selected frames from URL indices
+                selected_indices = parse_selected_frames_from_params(params)
+
+                if Enum.empty?(selected_indices) do
+                  Video.get_frame_sequence(frame_id)
+                else
+                  Video.get_frame_sequence_with_selected_indices(frame_id, selected_indices)
+                end
+
+              frame_ids_str ->
+                # New: Use specific frame IDs
+                frame_ids = parse_frame_ids_from_params(frame_ids_str)
+                Video.get_frame_sequence_from_frame_ids(frame_id, frame_ids)
+            end
 
           case frame_sequence_result do
             {:ok, frame_sequence} ->
               # For frame_ids approach, select all frames; for legacy indices, use those
-              final_selected_indices = case Map.get(params, "frame_ids") do
-                nil ->
-                  # Legacy: use parsed indices or select all
-                  selected_indices = parse_selected_frames_from_params(params)
-                  if Enum.empty?(selected_indices) do
+              final_selected_indices =
+                case Map.get(params, "frame_ids") do
+                  nil ->
+                    # Legacy: use parsed indices or select all
+                    selected_indices = parse_selected_frames_from_params(params)
+
+                    if Enum.empty?(selected_indices) do
+                      0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
+                    else
+                      selected_indices
+                    end
+
+                  _ ->
+                    # New: select all frames since we got exactly what we wanted
                     0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
-                  else
-                    selected_indices
-                  end
-                _ ->
-                  # New: select all frames since we got exactly what we wanted
-                  0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
-              end
+                end
 
               socket
               |> assign(:frame_sequence, frame_sequence)
@@ -890,13 +973,19 @@ defmodule NathanForUsWeb.VideoSearchLive do
   # Parse selected frame indices from URL parameters
   defp parse_selected_frames_from_params(params) do
     case Map.get(params, "frames") do
-      nil -> []
-      "" -> []  # Handle empty string
+      nil ->
+        []
+
+      # Handle empty string
+      "" ->
+        []
+
       frames_str ->
         frames_str
         |> String.split(",")
         |> Enum.map(&String.trim/1)
-        |> Enum.reject(&(&1 == ""))  # Reject empty strings
+        # Reject empty strings
+        |> Enum.reject(&(&1 == ""))
         |> Enum.reduce([], fn frame_str, acc ->
           try do
             frame_index = String.to_integer(frame_str)
@@ -905,7 +994,8 @@ defmodule NathanForUsWeb.VideoSearchLive do
             ArgumentError -> acc
           end
         end)
-        |> Enum.uniq()  # Remove duplicates
+        # Remove duplicates
+        |> Enum.uniq()
         |> Enum.sort()
     end
   end
@@ -924,18 +1014,21 @@ defmodule NathanForUsWeb.VideoSearchLive do
       end
     end)
     |> Enum.uniq()
-    |> Enum.reverse()  # Keep original order
+    # Keep original order
+    |> Enum.reverse()
   end
 
   # Update URL with current video selection
   defp push_video_selection_to_url(socket) do
     current_params = get_current_url_params(socket)
 
-    new_params = case socket.assigns.selected_video_ids do
-      [] -> Map.delete(current_params, "video")
-      [video_id] -> Map.put(current_params, "video", to_string(video_id))
-      _ -> current_params # Multiple videos not supported in URL yet
-    end
+    new_params =
+      case socket.assigns.selected_video_ids do
+        [] -> Map.delete(current_params, "video")
+        [video_id] -> Map.put(current_params, "video", to_string(video_id))
+        # Multiple videos not supported in URL yet
+        _ -> current_params
+      end
 
     push_patch(socket, to: build_url_with_params("/video-search", new_params))
   end
@@ -944,23 +1037,25 @@ defmodule NathanForUsWeb.VideoSearchLive do
   defp push_frame_selection_to_url(socket) do
     current_params = get_current_url_params(socket)
 
-    new_params = case {socket.assigns.frame_sequence, socket.assigns.selected_frame_indices} do
-      {nil, _} ->
-        current_params
-        |> Map.delete("frame")
-        |> Map.delete("frames")
+    new_params =
+      case {socket.assigns.frame_sequence, socket.assigns.selected_frame_indices} do
+        {nil, _} ->
+          current_params
+          |> Map.delete("frame")
+          |> Map.delete("frames")
 
-      {frame_sequence, []} ->
-        current_params
-        |> Map.put("frame", to_string(frame_sequence.target_frame.id))
-        |> Map.delete("frames")
+        {frame_sequence, []} ->
+          current_params
+          |> Map.put("frame", to_string(frame_sequence.target_frame.id))
+          |> Map.delete("frames")
 
-      {frame_sequence, selected_indices} ->
-        frames_str = selected_indices |> Enum.sort() |> Enum.join(",")
-        current_params
-        |> Map.put("frame", to_string(frame_sequence.target_frame.id))
-        |> Map.put("frames", frames_str)
-    end
+        {frame_sequence, selected_indices} ->
+          frames_str = selected_indices |> Enum.sort() |> Enum.join(",")
+
+          current_params
+          |> Map.put("frame", to_string(frame_sequence.target_frame.id))
+          |> Map.put("frames", frames_str)
+      end
 
     push_patch(socket, to: build_url_with_params("/video-search", new_params))
   end
@@ -973,6 +1068,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   # Build URL with parameters
   defp build_url_with_params(path, params) when params == %{}, do: path
+
   defp build_url_with_params(path, params) do
     query_string = URI.encode_query(params)
     "#{path}?#{query_string}"
@@ -1123,7 +1219,10 @@ defmodule NathanForUsWeb.VideoSearchLive do
         socket
         |> assign(:gif_generation_status, nil)
         |> assign(:gif_generation_task, nil)
-        |> put_flash(:error, "#{Enum.random(crash_messages)} (Process crashed: #{inspect(reason)})")
+        |> put_flash(
+          :error,
+          "#{Enum.random(crash_messages)} (Process crashed: #{inspect(reason)})"
+        )
 
       {:noreply, socket}
     else
@@ -1142,11 +1241,16 @@ defmodule NathanForUsWeb.VideoSearchLive do
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Welcome to Nathan For Us!</h2>
             <div class="text-left space-y-3 text-sm text-gray-700 mb-6">
               <p><strong>🎬 Search for any Nathan quote and find the exact frame!</strong></p>
-              <p>• Type in quotes like <code class="bg-gray-100 px-1 rounded">"I graduated from business school"</code></p>
+              <p>
+                • Type in quotes like
+                <code class="bg-gray-100 px-1 rounded">"I graduated from business school"</code>
+              </p>
               <p>• Click frames to create animated GIFs</p>
               <p>• Use the video filter to search specific interviews</p>
               <p>• Expand frame sequences to get more context</p>
-              <p class="text-blue-600 font-medium">Start by searching for something Nathan said in any of his interviews!</p>
+              <p class="text-blue-600 font-medium">
+                Start by searching for something Nathan said in any of his interviews!
+              </p>
             </div>
             <button
               id="welcome-close-button"
@@ -1169,17 +1273,26 @@ defmodule NathanForUsWeb.VideoSearchLive do
       class="min-h-screen relative overflow-hidden"
     >
       <!-- Background Frame Display -->
-      <div class="sliding-background absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-2000 ease-in-out opacity-60 filter blur-sm"
-           style="background-size: cover; background-position: center;">
+      <div
+        class="sliding-background absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-2000 ease-in-out opacity-60 filter blur-sm"
+        style="background-size: cover; background-position: center;"
+      >
       </div>
-
-      <!-- Background Overlay -->
+      
+    <!-- Background Overlay -->
       <div class="absolute inset-0 bg-zinc-50/60 backdrop-blur-sm"></div>
-
-      <!-- Main Content -->
-      <div id="video-search" phx-hook="VideoSearchWelcome" class="relative z-10 min-h-screen text-zinc-900 p-4 md:p-6 font-mono">
+      
+    <!-- Main Content -->
+      <div
+        id="video-search"
+        phx-hook="VideoSearchWelcome"
+        class="relative z-10 min-h-screen text-zinc-900 p-4 md:p-6 font-mono"
+      >
         <div class="max-w-5xl mx-auto">
-          <SearchHeader.search_header search_term={@search_term} results_count={length(@search_results)} />
+          <SearchHeader.search_header
+            search_term={@search_term}
+            results_count={length(@search_results)}
+          />
 
           <div class="space-y-4">
             <SearchInterface.search_interface
@@ -1221,7 +1334,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
         </div>
       </div>
     </div>
-
     """
   end
 
@@ -1255,6 +1367,44 @@ defmodule NathanForUsWeb.VideoSearchLive do
 
   # Private helper functions
 
+  defp handle_gif_generation_from_params(socket, params) do
+    require Logger
+    Logger.info("Handling GIF generation request with params: #{inspect(params)}")
+
+    # First, load the frame sequence to show in the modal
+    socket = 
+      case GifService.parse_gif_params(params) do
+        {:ok, _video_id, frame_ids} ->
+          case Video.get_frame_sequence_from_frame_ids(List.first(frame_ids), frame_ids) do
+            {:ok, frame_sequence} ->
+              # Select all frames and show the modal
+              selected_indices = 0..(length(frame_sequence.sequence_frames) - 1) |> Enum.to_list()
+              
+              socket
+              |> assign(:frame_sequence, frame_sequence)
+              |> assign(:show_sequence_modal, true)
+              |> assign(:selected_frame_indices, selected_indices)
+              
+            {:error, _reason} ->
+              socket |> put_flash(:error, "Could not load frame sequence")
+          end
+          
+        {:error, reason} ->
+          socket |> put_flash(:error, "Invalid GIF parameters: #{reason}")
+      end
+
+    # Start async GIF generation
+    task =
+      Task.async(fn ->
+        GifService.generate_gif_from_url_params(params)
+      end)
+
+    socket
+    |> assign(:gif_generation_task, task)
+    |> assign(:gif_generation_status, :generating)
+    |> put_flash(:info, "🎬 Generating GIF from your frame selection...")
+  end
+
   defp generate_random_5_second_clip do
     # Get all available videos
     videos = Video.list_videos()
@@ -1282,10 +1432,11 @@ defmodule NathanForUsWeb.VideoSearchLive do
                 frame_count = min(30, length(frame_sequence.sequence_frames))
                 selected_indices = Enum.to_list(0..(frame_count - 1))
 
-                {:ok, %{
-                  frame_sequence: frame_sequence,
-                  selected_indices: selected_indices
-                }}
+                {:ok,
+                 %{
+                   frame_sequence: frame_sequence,
+                   selected_indices: selected_indices
+                 }}
 
               {:error, reason} ->
                 {:error, "Could not load frame sequence: #{reason}"}
@@ -1296,5 +1447,4 @@ defmodule NathanForUsWeb.VideoSearchLive do
         end
     end
   end
-
 end
