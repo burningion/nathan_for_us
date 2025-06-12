@@ -68,20 +68,18 @@ defmodule NathanForUs.Video do
   Gets video frames with pagination.
   """
   def get_video_frames_with_pagination(video_id, offset \\ 0, limit \\ 20) do
-    frames =
-      VideoFrame
-      |> where([f], f.video_id == ^video_id)
-      |> order_by([f], f.frame_number)
-      |> offset(^offset)
-      |> limit(^limit)
-      |> Repo.all()
-
-    total_count =
-      VideoFrame
-      |> where([f], f.video_id == ^video_id)
-      |> select([f], count(f.id))
-      |> Repo.one()
-
+    frames = VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> order_by([f], f.frame_number)
+    |> offset(^offset)
+    |> limit(^limit)
+    |> Repo.all()
+    
+    total_count = VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> select([f], count(f.id))
+    |> Repo.one()
+    
     {:ok, %{frames: frames, total_count: total_count}}
   end
 
@@ -89,7 +87,7 @@ defmodule NathanForUs.Video do
   Creates video frames in batch for efficiency.
   """
   def create_frames_batch(video_id, frame_data) when is_list(frame_data) do
-    frames =
+    frames = 
       frame_data
       |> Enum.map(fn frame_attrs ->
         frame_attrs
@@ -105,7 +103,7 @@ defmodule NathanForUs.Video do
   Creates video captions in batch for efficiency.
   """
   def create_captions_batch(video_id, caption_data) when is_list(caption_data) do
-    captions =
+    captions = 
       caption_data
       |> Enum.map(fn caption_attrs ->
         caption_attrs
@@ -132,7 +130,7 @@ defmodule NathanForUs.Video do
     GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at
     ORDER BY f.timestamp_ms
     """
-
+    
     Ecto.Adapters.SQL.query!(Repo, query, [search_term])
     |> map_frame_results_with_captions()
   end
@@ -156,7 +154,7 @@ defmodule NathanForUs.Video do
     GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at, v.title
     ORDER BY v.title, f.timestamp_ms
     """
-
+    
     Ecto.Adapters.SQL.query!(Repo, query, [search_pattern])
     |> map_frame_results_with_captions()
   end
@@ -164,10 +162,9 @@ defmodule NathanForUs.Video do
   @doc """
   Searches for captions containing the given text using simple ILIKE search within multiple specific videos.
   """
-  def search_frames_by_text_simple_filtered(search_term, video_ids)
-      when is_binary(search_term) and is_list(video_ids) do
+  def search_frames_by_text_simple_filtered(search_term, video_ids) when is_binary(search_term) and is_list(video_ids) do
     search_pattern = "%#{search_term}%"
-
+    
     query = """
     SELECT DISTINCT f.*, 
            v.title as video_title,
@@ -180,7 +177,7 @@ defmodule NathanForUs.Video do
     GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at, v.title
     ORDER BY v.title, f.timestamp_ms
     """
-
+    
     Ecto.Adapters.SQL.query!(Repo, query, [search_pattern, video_ids])
     |> map_frame_results_with_captions()
   end
@@ -188,8 +185,7 @@ defmodule NathanForUs.Video do
   @doc """
   Searches for captions containing the given text using simple ILIKE search within a specific video.
   """
-  def search_frames_by_text_simple(search_term, video_id)
-      when is_binary(search_term) and is_integer(video_id) do
+  def search_frames_by_text_simple(search_term, video_id) when is_binary(search_term) and is_integer(video_id) do
     search_pattern = "%#{search_term}%"
 
     query = """
@@ -202,7 +198,7 @@ defmodule NathanForUs.Video do
     GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at
     ORDER BY f.timestamp_ms
     """
-
+    
     Ecto.Adapters.SQL.query!(Repo, query, [search_pattern, video_id])
     |> map_frame_results_with_captions()
   end
@@ -239,11 +235,11 @@ defmodule NathanForUs.Video do
     captions = Repo.all(from c in VideoCaption, where: c.video_id == ^video_id)
 
     # Create associations based on timestamp overlap
-    associations =
+    associations = 
       for frame <- frames,
           caption <- captions,
-          frame.timestamp_ms >= caption.start_time_ms and
-            frame.timestamp_ms <= caption.end_time_ms do
+          frame.timestamp_ms >= caption.start_time_ms and 
+          frame.timestamp_ms <= caption.end_time_ms do
         %{
           frame_id: frame.id,
           caption_id: caption.id,
@@ -290,14 +286,14 @@ defmodule NathanForUs.Video do
 
   # Private helper functions
 
+
   defp map_frame_results_with_captions(%{rows: rows, columns: columns}) do
     Enum.map(rows, fn row ->
-      frame_data =
-        columns
-        |> Enum.zip(row)
-        |> Enum.into(%{})
-        |> atomize_keys()
-
+      frame_data = columns
+      |> Enum.zip(row)
+      |> Enum.into(%{})
+      |> atomize_keys()
+      
       # Extract caption_texts and add it as a separate field
       caption_texts = Map.get(frame_data, :caption_texts, "")
       Map.put(frame_data, :caption_texts, caption_texts)
@@ -317,22 +313,12 @@ defmodule NathanForUs.Video do
     case Repo.get(VideoFrame, frame_id) do
       %VideoFrame{image_data: image_data} when not is_nil(image_data) ->
         {:ok, image_data}
-
+      
       %VideoFrame{image_data: nil} ->
         {:error, :no_image_data}
-
+      
       nil ->
         {:error, :not_found}
-    end
-  end
-
-  @doc """
-  Gets a video frame by ID.
-  """
-  def get_video_frame(frame_id) do
-    case Repo.get(VideoFrame, frame_id) do
-      %VideoFrame{} = frame -> {:ok, frame}
-      nil -> {:error, :not_found}
     end
   end
 
@@ -345,58 +331,50 @@ defmodule NathanForUs.Video do
       %VideoFrame{video_id: video_id, frame_number: target_frame_number} = target_frame ->
         start_frame = max(1, target_frame_number - sequence_length)
         end_frame = target_frame_number + sequence_length
-
-        frames =
-          VideoFrame
-          |> where([f], f.video_id == ^video_id)
-          |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
-          |> order_by([f], f.frame_number)
-          |> Repo.all()
-
+        
+        frames = VideoFrame
+        |> where([f], f.video_id == ^video_id)
+        |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
+        |> order_by([f], f.frame_number)
+        |> Repo.all()
+        
         # Get captions for the target frame to provide context
-        target_captions =
-          from(fc in FrameCaption,
-            join: c in VideoCaption,
-            on: fc.caption_id == c.id,
-            where: fc.frame_id == ^frame_id,
-            select: c.text
-          )
-          |> Repo.all()
-          |> Enum.join(" | ")
-
+        target_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          where: fc.frame_id == ^frame_id,
+          select: c.text
+        )
+        |> Repo.all()
+        |> Enum.join(" | ")
+        
         # Get captions for all frames in the sequence
         frame_ids = Enum.map(frames, & &1.id)
-
-        sequence_captions =
-          from(fc in FrameCaption,
-            join: c in VideoCaption,
-            on: fc.caption_id == c.id,
-            join: f in VideoFrame,
-            on: fc.frame_id == f.id,
-            where: f.id in ^frame_ids,
-            select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
-            order_by: [f.frame_number, c.start_time_ms]
-          )
-          |> Repo.all()
-          |> Enum.group_by(& &1.frame_id)
-          |> Enum.into(%{}, fn {frame_id, captions} ->
-            {frame_id, Enum.map(captions, & &1.caption_text)}
-          end)
-
-        {:ok,
-         %{
-           target_frame: target_frame,
-           sequence_frames: frames,
-           target_captions: target_captions,
-           sequence_captions: sequence_captions,
-           sequence_info: %{
-             target_frame_number: target_frame_number,
-             start_frame_number: start_frame,
-             end_frame_number: end_frame,
-             total_frames: length(frames)
-           }
-         }}
-
+        sequence_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          join: f in VideoFrame, on: fc.frame_id == f.id,
+          where: f.id in ^frame_ids,
+          select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
+          order_by: [f.frame_number, c.start_time_ms]
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.frame_id)
+        |> Enum.into(%{}, fn {frame_id, captions} ->
+          {frame_id, Enum.map(captions, & &1.caption_text)}
+        end)
+        
+        {:ok, %{
+          target_frame: target_frame,
+          sequence_frames: frames,
+          target_captions: target_captions,
+          sequence_captions: sequence_captions,
+          sequence_info: %{
+            target_frame_number: target_frame_number,
+            start_frame_number: start_frame,
+            end_frame_number: end_frame,
+            total_frames: length(frames)
+          }
+        }}
+      
       nil ->
         {:error, :frame_not_found}
     end
@@ -406,89 +384,72 @@ defmodule NathanForUs.Video do
   Gets a sequence of frames around a target frame, ensuring all selected frame indices are covered.
   This variant is used when loading frame sequences from shared URLs with specific frame selections.
   """
-  def get_frame_sequence_with_selected_indices(
-        frame_id,
-        selected_indices,
-        base_sequence_length \\ 5
-      ) do
+  def get_frame_sequence_with_selected_indices(frame_id, selected_indices, base_sequence_length \\ 5) do
     case Repo.get(VideoFrame, frame_id) do
       %VideoFrame{video_id: video_id, frame_number: target_frame_number} = target_frame ->
         # Get video info to check frame count limits
         video = Repo.get(Video, video_id)
-
-        max_frame_number =
-          case video.frame_count do
-            nil ->
-              # Fallback: get the highest frame number for this video
-              VideoFrame
-              |> where([f], f.video_id == ^video_id)
-              |> select([f], max(f.frame_number))
-              |> Repo.one() || target_frame_number + base_sequence_length
-
-            count ->
-              count
-          end
-
+        max_frame_number = case video.frame_count do
+          nil -> 
+            # Fallback: get the highest frame number for this video
+            VideoFrame
+            |> where([f], f.video_id == ^video_id)
+            |> select([f], max(f.frame_number))
+            |> Repo.one() || target_frame_number + base_sequence_length
+          count -> count
+        end
+        
         # Calculate the range needed to cover all selected indices
-        {start_frame, end_frame} =
-          calculate_range_for_selected_indices(
-            target_frame_number,
-            selected_indices,
-            base_sequence_length,
-            max_frame_number
-          )
-
-        frames =
-          VideoFrame
-          |> where([f], f.video_id == ^video_id)
-          |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
-          |> order_by([f], f.frame_number)
-          |> Repo.all()
-
+        {start_frame, end_frame} = calculate_range_for_selected_indices(
+          target_frame_number, 
+          selected_indices, 
+          base_sequence_length,
+          max_frame_number
+        )
+        
+        frames = VideoFrame
+        |> where([f], f.video_id == ^video_id)
+        |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
+        |> order_by([f], f.frame_number)
+        |> Repo.all()
+        
         # Get captions for the target frame to provide context
-        target_captions =
-          from(fc in FrameCaption,
-            join: c in VideoCaption,
-            on: fc.caption_id == c.id,
-            where: fc.frame_id == ^frame_id,
-            select: c.text
-          )
-          |> Repo.all()
-          |> Enum.join(" | ")
-
+        target_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          where: fc.frame_id == ^frame_id,
+          select: c.text
+        )
+        |> Repo.all()
+        |> Enum.join(" | ")
+        
         # Get captions for all frames in the sequence
         frame_ids = Enum.map(frames, & &1.id)
-
-        sequence_captions =
-          from(fc in FrameCaption,
-            join: c in VideoCaption,
-            on: fc.caption_id == c.id,
-            join: f in VideoFrame,
-            on: fc.frame_id == f.id,
-            where: f.id in ^frame_ids,
-            select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
-            order_by: [f.frame_number, c.start_time_ms]
-          )
-          |> Repo.all()
-          |> Enum.group_by(& &1.frame_id)
-          |> Enum.into(%{}, fn {frame_id, captions} ->
-            {frame_id, Enum.map(captions, & &1.caption_text)}
-          end)
-
-        {:ok,
-         %{
-           target_frame: target_frame,
-           sequence_frames: frames,
-           target_captions: target_captions,
-           sequence_captions: sequence_captions,
-           sequence_info: %{
-             target_frame_number: target_frame_number,
-             start_frame_number: start_frame,
-             end_frame_number: end_frame,
-             total_frames: length(frames)
-           }
-         }}
-
+        sequence_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          join: f in VideoFrame, on: fc.frame_id == f.id,
+          where: f.id in ^frame_ids,
+          select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
+          order_by: [f.frame_number, c.start_time_ms]
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.frame_id)
+        |> Enum.into(%{}, fn {frame_id, captions} ->
+          {frame_id, Enum.map(captions, & &1.caption_text)}
+        end)
+        
+        {:ok, %{
+          target_frame: target_frame,
+          sequence_frames: frames,
+          target_captions: target_captions,
+          sequence_captions: sequence_captions,
+          sequence_info: %{
+            target_frame_number: target_frame_number,
+            start_frame_number: start_frame,
+            end_frame_number: end_frame,
+            total_frames: length(frames)
+          }
+        }}
+      
       nil ->
         {:error, :frame_not_found}
     end
@@ -498,53 +459,46 @@ defmodule NathanForUs.Video do
     case Repo.get(VideoFrame, target_frame_id) do
       %VideoFrame{} = target_frame ->
         # Get all frames by their IDs
-        frames =
-          VideoFrame
-          |> where([f], f.id in ^frame_ids)
-          |> order_by([f], f.frame_number)
-          |> Repo.all()
+        frames = VideoFrame
+        |> where([f], f.id in ^frame_ids)
+        |> order_by([f], f.frame_number)
+        |> Repo.all()
 
         # Get captions for the target frame
-        target_captions =
-          from(fc in FrameCaption,
-            join: c in VideoCaption,
-            on: fc.caption_id == c.id,
-            where: fc.frame_id == ^target_frame_id,
-            select: c.text
-          )
-          |> Repo.all()
-          |> Enum.join(" | ")
+        target_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          where: fc.frame_id == ^target_frame_id,
+          select: c.text
+        )
+        |> Repo.all()
+        |> Enum.join(" | ")
 
         # Get captions for all frames in the sequence
-        sequence_captions =
-          from(fc in FrameCaption,
-            join: c in VideoCaption,
-            on: fc.caption_id == c.id,
-            join: f in VideoFrame,
-            on: fc.frame_id == f.id,
-            where: f.id in ^frame_ids,
-            select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
-            order_by: [f.frame_number, c.start_time_ms]
-          )
-          |> Repo.all()
-          |> Enum.group_by(& &1.frame_id)
-          |> Enum.into(%{}, fn {frame_id, captions} ->
-            {frame_id, Enum.map(captions, & &1.caption_text)}
-          end)
+        sequence_captions = from(fc in FrameCaption,
+          join: c in VideoCaption, on: fc.caption_id == c.id,
+          join: f in VideoFrame, on: fc.frame_id == f.id,
+          where: f.id in ^frame_ids,
+          select: %{frame_id: f.id, caption_text: c.text, frame_number: f.frame_number},
+          order_by: [f.frame_number, c.start_time_ms]
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.frame_id)
+        |> Enum.into(%{}, fn {frame_id, captions} ->
+          {frame_id, Enum.map(captions, & &1.caption_text)}
+        end)
 
-        {:ok,
-         %{
-           target_frame: target_frame,
-           sequence_frames: frames,
-           target_captions: target_captions,
-           sequence_captions: sequence_captions,
-           sequence_info: %{
-             target_frame_number: target_frame.frame_number,
-             start_frame_number: frames |> Enum.map(& &1.frame_number) |> Enum.min(),
-             end_frame_number: frames |> Enum.map(& &1.frame_number) |> Enum.max(),
-             total_frames: length(frames)
-           }
-         }}
+        {:ok, %{
+          target_frame: target_frame,
+          sequence_frames: frames,
+          target_captions: target_captions,
+          sequence_captions: sequence_captions,
+          sequence_info: %{
+            target_frame_number: target_frame.frame_number,
+            start_frame_number: frames |> Enum.map(& &1.frame_number) |> Enum.min(),
+            end_frame_number: frames |> Enum.map(& &1.frame_number) |> Enum.max(),
+            total_frames: length(frames)
+          }
+        }}
 
       nil ->
         {:error, :frame_not_found}
@@ -552,12 +506,7 @@ defmodule NathanForUs.Video do
   end
 
   # Private helper to calculate the frame range needed to cover selected indices
-  defp calculate_range_for_selected_indices(
-         target_frame_number,
-         selected_indices,
-         base_sequence_length,
-         max_frame_number
-       ) do
+  defp calculate_range_for_selected_indices(target_frame_number, selected_indices, base_sequence_length, max_frame_number) do
     if Enum.empty?(selected_indices) do
       # No selected indices, use default range
       start_frame = max(1, target_frame_number - base_sequence_length)
@@ -569,24 +518,24 @@ defmodule NathanForUs.Video do
       # Calculate the range based on default sequence and selected indices
       default_start = max(1, target_frame_number - base_sequence_length)
       default_end = target_frame_number + base_sequence_length
-
+      
       # Convert selected indices to actual frame numbers
       # Assuming the sequence starts at default_start, selected indices map to:
       # index 0 -> default_start, index 1 -> default_start + 1, etc.
       min_selected_index = Enum.min(selected_indices)
       max_selected_index = Enum.max(selected_indices)
-
+      
       # Calculate the actual frame numbers for the selected indices
       min_selected_frame = default_start + min_selected_index
       max_selected_frame = default_start + max_selected_index
-
+      
       # Expand the range to ensure we cover all selected frames
       start_frame = max(1, min(default_start, min_selected_frame))
       end_frame = max(default_end, max_selected_frame)
-
+      
       # Limit end_frame to max available frame if specified
       end_frame = if max_frame_number, do: min(end_frame, max_frame_number), else: end_frame
-
+      
       {start_frame, end_frame}
     end
   end
@@ -595,52 +544,47 @@ defmodule NathanForUs.Video do
   Expands frame sequence backward by adding the previous frame.
   """
   def expand_frame_sequence_backward(frame_sequence) do
-    %{target_frame: target_frame, sequence_frames: current_frames, sequence_info: info} =
-      frame_sequence
-
+    %{target_frame: target_frame, sequence_frames: current_frames, sequence_info: info} = frame_sequence
     video_id = target_frame.video_id
     current_start = info.start_frame_number
-
+    
     # Can we go back one more frame?
     if current_start > 1 do
       new_start = current_start - 1
-
+      
       # Get the additional frame
-      additional_frame =
-        VideoFrame
-        |> where([f], f.video_id == ^video_id and f.frame_number == ^new_start)
-        |> Repo.one()
-
+      additional_frame = VideoFrame
+      |> where([f], f.video_id == ^video_id and f.frame_number == ^new_start)
+      |> Repo.one()
+      
       case additional_frame do
         %VideoFrame{} = frame ->
           # Add the new frame to the beginning of the sequence
           new_frames = [frame | current_frames]
-
+          
           # Get captions for the new frame
-          new_frame_captions =
-            from(fc in FrameCaption,
-              join: c in VideoCaption,
-              on: fc.caption_id == c.id,
-              where: fc.frame_id == ^frame.id,
-              select: c.text
-            )
-            |> Repo.all()
-
+          new_frame_captions = from(fc in FrameCaption,
+            join: c in VideoCaption, on: fc.caption_id == c.id,
+            where: fc.frame_id == ^frame.id,
+            select: c.text
+          )
+          |> Repo.all()
+          
           # Update sequence captions
-          updated_sequence_captions =
-            Map.put(frame_sequence.sequence_captions, frame.id, new_frame_captions)
-
+          updated_sequence_captions = Map.put(frame_sequence.sequence_captions, frame.id, new_frame_captions)
+          
           # Update sequence info
-          updated_info = %{info | start_frame_number: new_start, total_frames: length(new_frames)}
-
-          {:ok,
-           %{
-             frame_sequence
-             | sequence_frames: new_frames,
-               sequence_captions: updated_sequence_captions,
-               sequence_info: updated_info
-           }}
-
+          updated_info = %{info | 
+            start_frame_number: new_start,
+            total_frames: length(new_frames)
+          }
+          
+          {:ok, %{frame_sequence | 
+            sequence_frames: new_frames,
+            sequence_captions: updated_sequence_captions,
+            sequence_info: updated_info
+          }}
+        
         nil ->
           {:error, :frame_not_found}
       end
@@ -653,68 +597,59 @@ defmodule NathanForUs.Video do
   Expands frame sequence forward by adding the next frame.
   """
   def expand_frame_sequence_forward(frame_sequence) do
-    %{target_frame: target_frame, sequence_frames: current_frames, sequence_info: info} =
-      frame_sequence
-
+    %{target_frame: target_frame, sequence_frames: current_frames, sequence_info: info} = frame_sequence
     video_id = target_frame.video_id
     current_end = info.end_frame_number
-
+    
     # Get the video to check max frame count
     video = Repo.get(Video, video_id)
-
-    max_frame_number =
-      case video.frame_count do
-        nil ->
-          # Fallback: get the highest frame number for this video
-          VideoFrame
-          |> where([f], f.video_id == ^video_id)
-          |> select([f], max(f.frame_number))
-          |> Repo.one() || current_end
-
-        count ->
-          count
-      end
-
+    max_frame_number = case video.frame_count do
+      nil -> 
+        # Fallback: get the highest frame number for this video
+        VideoFrame
+        |> where([f], f.video_id == ^video_id)
+        |> select([f], max(f.frame_number))
+        |> Repo.one() || current_end
+      count -> count
+    end
+    
     # Can we go forward one more frame?
     if current_end < max_frame_number do
       new_end = current_end + 1
-
+      
       # Get the additional frame
-      additional_frame =
-        VideoFrame
-        |> where([f], f.video_id == ^video_id and f.frame_number == ^new_end)
-        |> Repo.one()
-
+      additional_frame = VideoFrame
+      |> where([f], f.video_id == ^video_id and f.frame_number == ^new_end)
+      |> Repo.one()
+      
       case additional_frame do
         %VideoFrame{} = frame ->
           # Add the new frame to the end of the sequence
           new_frames = current_frames ++ [frame]
-
+          
           # Get captions for the new frame
-          new_frame_captions =
-            from(fc in FrameCaption,
-              join: c in VideoCaption,
-              on: fc.caption_id == c.id,
-              where: fc.frame_id == ^frame.id,
-              select: c.text
-            )
-            |> Repo.all()
-
+          new_frame_captions = from(fc in FrameCaption,
+            join: c in VideoCaption, on: fc.caption_id == c.id,
+            where: fc.frame_id == ^frame.id,
+            select: c.text
+          )
+          |> Repo.all()
+          
           # Update sequence captions
-          updated_sequence_captions =
-            Map.put(frame_sequence.sequence_captions, frame.id, new_frame_captions)
-
+          updated_sequence_captions = Map.put(frame_sequence.sequence_captions, frame.id, new_frame_captions)
+          
           # Update sequence info
-          updated_info = %{info | end_frame_number: new_end, total_frames: length(new_frames)}
-
-          {:ok,
-           %{
-             frame_sequence
-             | sequence_frames: new_frames,
-               sequence_captions: updated_sequence_captions,
-               sequence_info: updated_info
-           }}
-
+          updated_info = %{info | 
+            end_frame_number: new_end,
+            total_frames: length(new_frames)
+          }
+          
+          {:ok, %{frame_sequence | 
+            sequence_frames: new_frames,
+            sequence_captions: updated_sequence_captions,
+            sequence_info: updated_info
+          }}
+        
         nil ->
           {:error, :frame_not_found}
       end
@@ -731,20 +666,18 @@ defmodule NathanForUs.Video do
     if length(frame_ids) == 0 do
       {:ok, %{}}
     else
-      captions_map =
-        from(fc in FrameCaption,
-          join: c in VideoCaption,
-          on: fc.caption_id == c.id,
-          where: fc.frame_id in ^frame_ids,
-          select: %{frame_id: fc.frame_id, caption_text: c.text},
-          order_by: [fc.frame_id, c.start_time_ms]
-        )
-        |> Repo.all()
-        |> Enum.group_by(& &1.frame_id)
-        |> Enum.into(%{}, fn {frame_id, captions} ->
-          {frame_id, Enum.map(captions, & &1.caption_text)}
-        end)
-
+      captions_map = from(fc in FrameCaption,
+        join: c in VideoCaption, on: fc.caption_id == c.id,
+        where: fc.frame_id in ^frame_ids,
+        select: %{frame_id: fc.frame_id, caption_text: c.text},
+        order_by: [fc.frame_id, c.start_time_ms]
+      )
+      |> Repo.all()
+      |> Enum.group_by(& &1.frame_id)
+      |> Enum.into(%{}, fn {frame_id, captions} ->
+        {frame_id, Enum.map(captions, & &1.caption_text)}
+      end)
+      
       {:ok, captions_map}
     end
   end
@@ -753,13 +686,12 @@ defmodule NathanForUs.Video do
   Gets autocomplete suggestions for search phrases based on video captions.
   Returns full caption phrases that contain the given term.
   """
-  def get_autocomplete_suggestions(search_term, _video_ids \\ nil, limit \\ 5)
-      when is_binary(search_term) do
+  def get_autocomplete_suggestions(search_term, _video_ids \\ nil, limit \\ 5) when is_binary(search_term) do
     if String.length(search_term) < 3 do
       []
     else
       search_pattern = "%#{search_term}%"
-
+      
       # Fixed query: SELECT DISTINCT with ORDER BY in subquery
       query = """
       SELECT text FROM (
@@ -770,17 +702,16 @@ defmodule NathanForUs.Video do
       ORDER BY text_length 
       LIMIT $2
       """
-
+      
       case Ecto.Adapters.SQL.query(Repo, query, [search_pattern, limit]) do
         {:ok, %{rows: rows}} ->
           rows
           |> List.flatten()
           |> Enum.map(&String.trim/1)
-          # Filter out very short phrases
-          |> Enum.reject(&(String.length(&1) < 5))
+          |> Enum.reject(&(String.length(&1) < 5))  # Filter out very short phrases
           |> Enum.uniq()
           |> Enum.take(limit)
-
+        
         {:error, reason} ->
           require Logger
           Logger.warning("Autocomplete query failed: #{inspect(reason)}")
@@ -793,16 +724,13 @@ defmodule NathanForUs.Video do
   Migrates existing frames from file paths to binary storage with compression.
   """
   def migrate_frames_to_binary(video_id, jpeg_quality \\ 75) do
-    frames =
-      VideoFrame
-      |> where([f], f.video_id == ^video_id)
-      # Only migrate frames without binary data
-      |> where([f], is_nil(f.image_data))
-      # Only frames with file paths
-      |> where([f], not is_nil(f.file_path))
-      |> Repo.all()
+    frames = VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> where([f], is_nil(f.image_data))  # Only migrate frames without binary data
+    |> where([f], not is_nil(f.file_path))  # Only frames with file paths
+    |> Repo.all()
 
-    migrated_count =
+    migrated_count = 
       frames
       |> Enum.map(fn frame ->
         case NathanForUs.VideoProcessor.compress_jpeg_file(frame.file_path, jpeg_quality) do
@@ -814,15 +742,13 @@ defmodule NathanForUs.Video do
               file_size: byte_size(compressed_data)
             })
             |> Repo.update()
-
-            # Count successful migration
-            1
-
+            
+            1  # Count successful migration
+          
           {:error, reason} ->
             require Logger
             Logger.warning("Failed to compress frame #{frame.id}: #{inspect(reason)}")
-            # Count failed migration
-            0
+            0  # Count failed migration
         end
       end)
       |> Enum.sum()
@@ -834,12 +760,11 @@ defmodule NathanForUs.Video do
   Gets the total frame count for a video.
   """
   def get_video_frame_count(video_id) do
-    count =
-      VideoFrame
-      |> where([f], f.video_id == ^video_id)
-      |> select([f], count(f.id))
-      |> Repo.one()
-
+    count = VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> select([f], count(f.id))
+    |> Repo.one()
+    
     case count do
       nil -> {:ok, 0}
       count when count > 0 -> {:ok, count}
@@ -874,16 +799,15 @@ defmodule NathanForUs.Video do
   """
   def get_frame_sequence_by_frame_number(video_id, frame_number, sequence_length \\ 5) do
     # Find the frame at the specified frame number
-    target_frame =
-      VideoFrame
-      |> where([f], f.video_id == ^video_id and f.frame_number == ^frame_number)
-      |> Repo.one()
-
+    target_frame = VideoFrame
+    |> where([f], f.video_id == ^video_id and f.frame_number == ^frame_number)
+    |> Repo.one()
+    
     case target_frame do
       %VideoFrame{} = frame ->
         # Use the existing get_frame_sequence function
         get_frame_sequence(frame.id, sequence_length)
-
+      
       nil ->
         {:error, :frame_not_found}
     end
@@ -904,23 +828,24 @@ defmodule NathanForUs.Video do
     ORDER BY RANDOM()
     LIMIT $1
     """
-
+    
     case Ecto.Adapters.SQL.query(Repo, query, [count]) do
       {:ok, %{rows: rows, columns: columns}} ->
         Enum.map(rows, fn row ->
           columns
           |> Enum.zip(row)
           |> Enum.into(%{})
-          |> Map.update!("image_data", fn data ->
+          |> Map.update!("image_data", fn data -> 
             case data do
               nil -> nil
               binary_data -> Base.encode64(binary_data)
             end
           end)
         end)
-
+      
       {:error, _} ->
         []
     end
   end
+
 end
