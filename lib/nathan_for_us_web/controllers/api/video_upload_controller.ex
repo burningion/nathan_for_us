@@ -72,21 +72,28 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
     Repo.transaction(fn ->
       # Create the video record
       video_attrs = prepare_video_attrs(video_params)
-      {:ok, video} = Video.create_video(video_attrs)
+      case Video.create_video(video_attrs) do
+        {:ok, video} ->
+          # Create captions first (frames reference them)
+          caption_attrs = prepare_captions_attrs(captions_params, video.id)
+          captions = create_captions_batch(caption_attrs)
 
-      # Create captions first (frames reference them)
-      caption_attrs = prepare_captions_attrs(captions_params, video.id)
-      captions = create_captions_batch(caption_attrs)
+          # Create frames with image data
+          frame_attrs = prepare_frames_attrs(frames_params, video.id)
+          frames = create_frames_batch(frame_attrs)
 
-      # Create frames with image data
-      frame_attrs = prepare_frames_attrs(frames_params, video.id)
-      frames = create_frames_batch(frame_attrs)
+          # Link frames to captions based on timestamp overlap
+          link_frames_to_captions(frames, captions)
 
-      # Link frames to captions based on timestamp overlap
-      link_frames_to_captions(frames, captions)
+          # Update video status to completed
+          case Video.update_video(video, %{status: "completed", processed_at: DateTime.utc_now()}) do
+            {:ok, updated_video} -> updated_video
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
 
-      # Update video status to processed
-      Video.update_video(video, %{status: "processed", processed_at: DateTime.utc_now()})
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
     end)
   end
 
