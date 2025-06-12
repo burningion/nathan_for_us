@@ -83,7 +83,6 @@ defmodule Mix.Tasks.Video.Upload do
         IO.puts("   💬 Extracted #{length(captions)} captions")
         
         video_data = %{
-          video_id: video_id,
           video: prepare_video_for_upload(video),
           frames: frames,
           captions: captions
@@ -170,17 +169,16 @@ defmodule Mix.Tasks.Video.Upload do
     frame_batches
     |> Enum.with_index(1)
     |> Enum.each(fn {frame_batch, batch_num} ->
-      upload_batch(video_data.video_id, video_data.video, video_data.captions, frame_batch, url, batch_num, total_batches)
+      upload_batch(video_data.video, video_data.captions, frame_batch, url, batch_num, total_batches)
     end)
     
     IO.puts("✅ All batches uploaded successfully!")
   end
   
-  defp upload_batch(video_id, video, captions, frames, url, batch_num, total_batches) do
+  defp upload_batch(video, captions, frames, url, batch_num, total_batches) do
     IO.puts("📤 Uploading batch #{batch_num}/#{total_batches} (#{length(frames)} frames)...")
     
     payload = %{
-      video_id: video_id,
       video: video,
       frames: frames,
       captions: if(batch_num == 1, do: captions, else: [])  # Only send captions with first batch

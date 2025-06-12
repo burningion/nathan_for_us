@@ -68,41 +68,23 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
     end
   end
 
-  defp upload_video_data(%{"video" => video_params, "frames" => frames_params, "captions" => captions_params} = params) do
-    # Check if video_id is provided for updating existing video
-    video = case params["video_id"] do
-      nil ->
-        # No video_id provided, try to create or find by file_path
-        video_attrs = prepare_video_attrs(video_params)
-        case Video.create_video(video_attrs) do
-          {:ok, video} -> 
-            video
-          {:error, changeset} ->
-            # Check if it's a duplicate file_path error
-            case changeset.errors[:file_path] do
-              {"has already been taken", _} ->
-                # Find existing video by file_path
-                case Video.get_video_by_file_path(video_attrs.file_path) do
-                  nil -> {:error, changeset}
-                  existing_video -> existing_video
-                end
-              _ ->
-                {:error, changeset}
+  defp upload_video_data(%{"video" => video_params, "frames" => frames_params, "captions" => captions_params}) do
+    # Try to create or find existing video by file_path in production
+    video_attrs = prepare_video_attrs(video_params)
+    video = case Video.create_video(video_attrs) do
+      {:ok, video} -> 
+        video
+      {:error, changeset} ->
+        # Check if it's a duplicate file_path error
+        case changeset.errors[:file_path] do
+          {"has already been taken", _} ->
+            # Find existing video by file_path in production
+            case Video.get_video_by_file_path(video_attrs.file_path) do
+              nil -> {:error, changeset}
+              existing_video -> existing_video
             end
-        end
-      
-      video_id ->
-        # video_id provided, get existing video and update it
-        case Video.get_video(video_id) do
-          {:ok, existing_video} ->
-            # Update the existing video with new attributes
-            video_attrs = prepare_video_attrs(video_params)
-            case Video.update_video(existing_video, video_attrs) do
-              {:ok, updated_video} -> updated_video
-              {:error, changeset} -> {:error, changeset}
-            end
-          {:error, :not_found} ->
-            {:error, "Video with ID #{video_id} not found"}
+          _ ->
+            {:error, changeset}
         end
     end
 
