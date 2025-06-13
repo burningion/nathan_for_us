@@ -30,6 +30,15 @@ defmodule NathanForUsWeb.FeedLive do
             >
               Yes, I do
             </.link>
+            
+            <br>
+            
+            <.link
+              navigate={~p"/video-search"}
+              class="inline-block bg-blue-600 text-white px-12 py-4 text-xl font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+            >
+              make some GIFs
+            </.link>
           </div>
         </div>
       </div>

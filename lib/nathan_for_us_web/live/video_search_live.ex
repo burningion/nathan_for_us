@@ -1164,6 +1164,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
               <p>• Click frames to create animated GIFs</p>
               <p>• Use the video filter to search specific interviews</p>
               <p>• Expand frame sequences to get more context</p>
+              <p>• Click <strong>Timeline</strong> buttons to open an even richer frame-by-frame editor</p>
               <p class="text-blue-600 font-medium">Start by searching for something Nathan said in any of his interviews!</p>
             </div>
             <button
