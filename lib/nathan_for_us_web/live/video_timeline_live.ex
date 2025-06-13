@@ -32,6 +32,15 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     start_frame = Map.get(params, "start_frame", "")
     selected_indices = Map.get(params, "selected_indices", "")
 
+    # Debug logging
+    Logger.info("handle_params debug:")
+    Logger.info("  all params: #{inspect(params)}")
+    Logger.info("  param keys: #{inspect(Map.keys(params))}")
+    Logger.info("  is_random: #{inspect(is_random)}")
+    Logger.info("  start_frame: #{inspect(start_frame)}")
+    Logger.info("  selected_indices: #{inspect(selected_indices)}")
+    Logger.info("  condition met: #{inspect(is_random and start_frame != "" and selected_indices != "")}")
+
     socket =
       cond do
         search_term != "" ->
@@ -61,13 +70,18 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           end)
         
         is_random and start_frame != "" and selected_indices != "" ->
+          Logger.info("Entering random GIF generation branch")
           # Handle random GIF generation
           try do
             start_frame_num = String.to_integer(start_frame)
-            indices_list = selected_indices
+            # Decode URL-encoded commas and parse indices
+            decoded_indices = URI.decode(selected_indices)
+            Logger.info("Decoded indices: #{inspect(decoded_indices)}")
+            indices_list = decoded_indices
             |> String.split(",")
             |> Enum.map(&String.to_integer/1)
             
+            Logger.info("Sending load_random_sequence message with start_frame: #{start_frame_num}, indices: #{inspect(indices_list)}")
             # Load frames starting from the specified frame and mark as random selection
             send(self(), {:load_random_sequence, start_frame_num, indices_list})
             socket
@@ -75,10 +89,12 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:random_start_frame, start_frame_num)
           rescue
             ArgumentError ->
+              Logger.error("ArgumentError in random parameter parsing")
               socket |> put_flash(:error, "Invalid random parameters")
           end
         
         true ->
+          Logger.info("No special parameter handling, using default")
           socket
       end
 
@@ -139,6 +155,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:is_admin, is_admin?(socket))
             |> assign(:gif_cache_status, nil)
             |> assign(:gif_from_cache, false)
+            |> assign(:selected_frame_captions, [])
 
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -273,7 +290,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               [frame_index | current_selected] |> Enum.sort()
           end
 
-        socket = assign(socket, :selected_frame_indices, new_selected)
+        socket = 
+          socket
+          |> assign(:selected_frame_indices, new_selected)
+          |> load_selected_frame_captions()
         {:noreply, socket}
       end
     rescue
@@ -294,7 +314,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         |> Enum.uniq()
         |> Enum.sort()
 
-      socket = assign(socket, :selected_frame_indices, new_selected)
+      socket = 
+        socket
+        |> assign(:selected_frame_indices, new_selected)
+        |> load_selected_frame_captions()
       {:noreply, socket}
     rescue
       ArgumentError ->
@@ -883,6 +906,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           |> assign(:caption_loading, false)
           |> assign(:show_caption_autocomplete, false)
           |> assign(:selected_frame_indices, [])
+          |> load_selected_frame_captions()
 
         {:noreply, socket}
       else
@@ -967,8 +991,52 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       |> assign(:timeline_position, timeline_position)
       |> assign(:is_caption_filtered, false)
       |> assign(:is_context_view, false)
+      |> load_selected_frame_captions()
+
+    # Automatically check if GIF exists for random sequences
+    if length(frames) >= 2 do
+      send(self(), :auto_check_existing_gif)
+    end
 
     {:noreply, socket}
+  end
+
+  def handle_info(:auto_check_existing_gif, socket) do
+    # Automatically check if GIF exists for the currently selected frames
+    selected_frames = get_selected_frames(socket)
+    video_id = socket.assigns.video.id
+    
+    # Debug logging
+    Logger.info("Auto-checking existing GIF for #{length(selected_frames)} selected frames")
+    Logger.info("Selected frame indices: #{inspect(socket.assigns.selected_frame_indices)}")
+    Logger.info("Current frames count: #{length(socket.assigns.current_frames)}")
+    
+    case selected_frames do
+      frames when length(frames) >= 2 ->
+        # Check if GIF already exists
+        case Gif.find_or_prepare(video_id, frames) do
+          {:ok, existing_gif} ->
+            # GIF already exists, load it automatically
+            gif_base64 = Gif.to_base64(existing_gif)
+            
+            socket =
+              socket
+              |> assign(:gif_generation_status, :completed)
+              |> assign(:generated_gif_data, gif_base64)
+              |> assign(:gif_generation_task, nil)
+              |> assign(:gif_from_cache, true)
+              |> assign(:gif_cache_status, "Automatically loaded from database cache (ID: #{existing_gif.id})")
+
+            {:noreply, socket}
+
+          {:generate, _hash, _frame_ids} ->
+            # GIF doesn't exist yet, just show preview
+            {:noreply, socket}
+        end
+      
+      _ ->
+        {:noreply, socket}
+    end
   end
 
   def render(assigns) do
@@ -992,9 +1060,23 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               ← Back to Search
             </.link>
 
+            <.link
+              navigate={~p"/public-timeline"}
+              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-mono font-medium transition-colors text-sm"
+            >
+              TIMELINE
+            </.link>
+
+            <.link
+              navigate={~p"/browse-gifs"}
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-mono font-medium transition-colors text-sm"
+            >
+              BROWSE GIFS
+            </.link>
+
             <button
               phx-click="random_gif"
-              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-mono font-medium transition-colors text-sm"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-mono font-medium transition-colors text-sm"
               title="Generate random GIF from any video"
             >
               🎲 Random GIF
@@ -1074,6 +1156,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         gif_from_cache={@gif_from_cache}
         current_user={@current_user}
         video_id={@video.id}
+        selected_frame_captions={@selected_frame_captions}
       />
 
       <!-- Random Selection Controls (show when in random selection mode) -->
@@ -1290,6 +1373,23 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   end
 
   # Helper functions
+
+  # Load captions for selected frames
+  defp load_selected_frame_captions(socket) do
+    selected_frames = get_selected_frames(socket)
+    
+    frame_captions = Enum.map(selected_frames, fn frame ->
+      captions = NathanForUs.Video.get_frame_captions(frame.id)
+      %{
+        frame_id: frame.id,
+        frame_number: frame.frame_number,
+        timestamp_ms: frame.timestamp_ms,
+        captions: captions
+      }
+    end)
+    
+    assign(socket, :selected_frame_captions, frame_captions)
+  end
 
   # Check if current user is admin
   defp is_admin?(socket) do

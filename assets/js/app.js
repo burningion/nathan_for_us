@@ -339,10 +339,13 @@ Hooks.GifPreview = {
     this.frames = JSON.parse(this.el.dataset.frames || '[]')
     this.currentIndex = 0
     this.isPlaying = true
-    this.speed = 150 // milliseconds between frames
+    this.speed = 150 // milliseconds between frames (original speed)
+    this.captionSpeed = 800 // milliseconds between caption updates (slower for readability)
+    this.lastCaptionUpdate = 0 // track when we last updated captions
     
     this.playPauseBtn = this.el.querySelector('#gif-play-pause')
     this.speedSelect = this.el.querySelector('#gif-speed')
+    this.captionSpeedSelect = document.querySelector('#caption-speed')
     this.frameCounter = this.el.querySelector('#frame-counter')
     
     // Set up controls
@@ -356,10 +359,18 @@ Hooks.GifPreview = {
       })
     }
     
+    if (this.captionSpeedSelect) {
+      this.captionSpeedSelect.addEventListener('change', (e) => {
+        this.captionSpeed = parseInt(e.target.value)
+      })
+    }
+    
     // Start the animation if we have frames
     if (this.frames.length > 0) {
       this.createImageElement()
       this.startAnimation()
+      // Initialize caption for first frame
+      this.updateCaption(this.frames[0])
     }
   },
   
@@ -377,6 +388,8 @@ Hooks.GifPreview = {
     if (this.frames.length > 0) {
       this.createImageElement()
       this.startAnimation()
+      // Initialize caption for first frame
+      this.updateCaption(this.frames[0])
     }
   },
   
@@ -420,6 +433,13 @@ Hooks.GifPreview = {
     if (this.frameCounter) {
       this.frameCounter.textContent = `${this.currentIndex + 1} / ${this.frames.length}`
     }
+    
+    // Update captions only at slower interval
+    const now = Date.now()
+    if (now - this.lastCaptionUpdate >= this.captionSpeed) {
+      this.updateCaption(frame)
+      this.lastCaptionUpdate = now
+    }
   },
   
   startAnimation() {
@@ -450,6 +470,30 @@ Hooks.GifPreview = {
     } else if (this.animationTimeout) {
       clearTimeout(this.animationTimeout)
     }
+  },
+  
+  updateCaption(frame) {
+    const captionElement = document.getElementById('current-caption')
+    if (!captionElement) return
+    
+    const caption = frame && frame.caption ? frame.caption : ''
+    
+    // Add smooth transition effect (longer for better readability)
+    captionElement.style.transition = 'opacity 0.3s ease-in-out'
+    captionElement.style.opacity = '0'
+    
+    setTimeout(() => {
+      if (caption && caption.trim() !== '') {
+        captionElement.textContent = caption
+        captionElement.style.fontStyle = 'normal'
+        captionElement.style.color = '#d1d5db' // text-gray-300
+      } else {
+        captionElement.textContent = 'No captions available for this frame'
+        captionElement.style.fontStyle = 'italic'
+        captionElement.style.color = '#9ca3af' // text-gray-400
+      }
+      captionElement.style.opacity = '1'
+    }, 150)
   }
 }
 

@@ -17,10 +17,15 @@ defmodule NathanForUs.Viral.BrowseableGif do
     field :category, :string
     field :frame_data, :string # JSON encoded frame data
     field :is_public, :boolean, default: true # Could be made private in future
+    field :upvotes_count, :integer, default: 0
+    field :downvotes_count, :integer, default: 0
+    field :hot_score, :float, default: 0.0
+    field :hot_score_updated_at, :utc_datetime
     
     belongs_to :video, NathanForUs.Video.Video
     belongs_to :created_by_user, NathanForUs.Accounts.User
     belongs_to :gif, NathanForUs.Gif # Link to the actual GIF binary data
+    has_many :gif_votes, NathanForUs.Viral.GifVote
 
     timestamps(type: :utc_datetime)
   end
@@ -29,7 +34,8 @@ defmodule NathanForUs.Viral.BrowseableGif do
   def changeset(browseable_gif, attrs) do
     browseable_gif
     |> cast(attrs, [:title, :start_frame_index, :end_frame_index, 
-                    :video_id, :created_by_user_id, :gif_id, :category, :frame_data, :is_public])
+                    :video_id, :created_by_user_id, :gif_id, :category, :frame_data, :is_public,
+                    :upvotes_count, :downvotes_count, :hot_score, :hot_score_updated_at])
     |> validate_required([:start_frame_index, :end_frame_index, :video_id, :gif_id])
     |> validate_number(:start_frame_index, greater_than_or_equal_to: 0)
     |> validate_number(:end_frame_index, greater_than: 0)

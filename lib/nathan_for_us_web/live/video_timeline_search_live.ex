@@ -134,7 +134,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
           <div class="flex items-center gap-4">
             <button
               phx-click="random_gif"
-              class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors shadow-lg"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
               title="Generate random GIF from any video"
             >
               🎲 Random GIF
@@ -142,7 +142,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
 
             <.link
               navigate={~p"/browse-gifs"}
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
             >
               Browse GIFs
             </.link>
@@ -246,7 +246,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
                   </p>
                   <button
                     phx-click="random_gif"
-                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg font-mono font-bold transition-colors shadow-lg text-lg"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-mono font-bold transition-colors shadow-lg text-lg"
                   >
                     🎲 Generate Random GIF
                   </button>

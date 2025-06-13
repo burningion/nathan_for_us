@@ -80,9 +80,23 @@ defmodule NathanForUsWeb.PublicTimelineLive do
           <h1 class="text-2xl font-bold font-mono">Nathan Timeline</h1>
           
           <div class="flex items-center gap-4">
+            <.link
+              navigate={~p"/video-timeline"}
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+            >
+              SEARCH QUOTES
+            </.link>
+
+            <.link
+              navigate={~p"/browse-gifs"}
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+            >
+              BROWSE GIFS
+            </.link>
+            
             <button
               phx-click="random_gif"
-              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
               title="Generate random GIF from any video"
             >
               🎲 Random GIF
