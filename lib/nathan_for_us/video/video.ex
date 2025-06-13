@@ -8,6 +8,7 @@ defmodule NathanForUs.Video.Video do
   import Ecto.Changeset
 
   alias NathanForUs.Video.{VideoFrame, VideoCaption}
+  alias NathanForUs.Gif
 
   schema "videos" do
     field :title, :string
@@ -21,6 +22,7 @@ defmodule NathanForUs.Video.Video do
 
     has_many :frames, VideoFrame, foreign_key: :video_id
     has_many :captions, VideoCaption, foreign_key: :video_id
+    has_many :gifs, Gif, foreign_key: :video_id
 
     timestamps()
   end

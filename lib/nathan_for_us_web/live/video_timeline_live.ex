@@ -10,6 +10,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
 
   alias NathanForUs.Repo
   alias NathanForUs.Video.VideoFrame
+  alias NathanForUs.Gif
   alias NathanForUsWeb.Components.VideoTimeline.{
     TimelinePlayer,
     FrameDisplay,
@@ -193,7 +194,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       frame_index = String.to_integer(frame_index_str)
       shift_key = Map.get(params, "shift_key", "false") == "true"
 
-      # If we're in caption filtered state, clicking a frame should show context
+      # If we're in caption filtered state AND not already in context view, clicking a frame should show context
       if socket.assigns.is_caption_filtered and not socket.assigns.is_context_view do
         # Get the clicked frame
         clicked_frame = Enum.at(socket.assigns.current_frames, frame_index)
@@ -310,35 +311,6 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     {:noreply, socket}
   end
 
-  def handle_event("create_sequence_from_selection", _params, socket) do
-    case socket.assigns.selected_frame_indices do
-      [] ->
-        socket = put_flash(socket, :error, "No frames selected")
-        {:noreply, socket}
-
-      indices ->
-        # Get the selected frames
-        selected_frames =
-          indices
-          |> Enum.map(&Enum.at(socket.assigns.current_frames, &1))
-          |> Enum.reject(&is_nil/1)
-
-        case selected_frames do
-          [] ->
-            socket = put_flash(socket, :error, "Selected frames not found")
-            {:noreply, socket}
-
-          frames ->
-            # Redirect to video search with the first frame and all frame IDs
-            first_frame = List.first(frames)
-            frame_ids = Enum.map(frames, & &1.id)
-            path = ~p"/video-search?frame=#{first_frame.id}&frame_ids=#{Enum.join(frame_ids, ",")}"
-
-            socket = redirect(socket, to: path)
-            {:noreply, socket}
-        end
-    end
-  end
 
   def handle_event("caption_autocomplete", %{"caption_search" => %{"term" => term}}, socket) do
     term = String.trim(term)
@@ -395,6 +367,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         |> assign(:caption_loading, false)
         |> assign(:show_caption_autocomplete, false)
         |> assign(:selected_frame_indices, [])  # Clear selection
+        |> assign(:is_context_view, false)  # Reset context view
+        |> assign(:context_frames, [])
+        |> assign(:context_target_frame, nil)
 
       {:noreply, socket}
     else
@@ -522,26 +497,56 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   def handle_event("generate_timeline_gif_server", _params, socket) do
     # Generate GIF on server side using selected frames
     selected_frames = get_selected_frames(socket)
+    video_id = socket.assigns.video.id
     
     case selected_frames do
       [] ->
         {:noreply, socket}
       frames ->
-        # Start async server-side GIF generation
-        task = Task.async(fn ->
-          # Create a mock frame sequence for the existing GIF generation function
-          mock_sequence = %{sequence_frames: frames}
-          selected_indices = 0..(length(frames) - 1) |> Enum.to_list()
-          NathanForUs.AdminService.generate_gif_from_frames(mock_sequence, selected_indices)
-        end)
+        # Check if GIF already exists
+        case Gif.find_or_prepare(video_id, frames) do
+          {:ok, existing_gif} ->
+            # GIF already exists, use cached version
+            gif_base64 = Gif.to_base64(existing_gif)
+            
+            socket =
+              socket
+              |> assign(:gif_generation_status, :completed)
+              |> assign(:generated_gif_data, gif_base64)
+              |> assign(:gif_generation_task, nil)
 
-        socket =
-          socket
-          |> assign(:gif_generation_status, :generating)
-          |> assign(:gif_generation_task, task)
-          |> assign(:generated_gif_data, nil)
+            {:noreply, socket}
 
-        {:noreply, socket}
+          {:generate, hash, frame_ids} ->
+            # Need to generate new GIF
+            task = Task.async(fn ->
+              # Create a mock frame sequence for the existing GIF generation function
+              mock_sequence = %{sequence_frames: frames}
+              selected_indices = 0..(length(frames) - 1) |> Enum.to_list()
+              
+              case NathanForUs.AdminService.generate_gif_from_frames(mock_sequence, selected_indices) do
+                {:ok, gif_binary} ->
+                  # Save the generated GIF to database
+                  case Gif.save_generated_gif(hash, video_id, frame_ids, gif_binary) do
+                    {:ok, saved_gif} ->
+                      {:ok, gif_binary, saved_gif}
+                    {:error, _reason} ->
+                      # Still return the GIF even if saving failed
+                      {:ok, gif_binary, nil}
+                  end
+                {:error, reason} ->
+                  {:error, reason}
+              end
+            end)
+
+            socket =
+              socket
+              |> assign(:gif_generation_status, :generating)
+              |> assign(:gif_generation_task, task)
+              |> assign(:generated_gif_data, nil)
+
+            {:noreply, socket}
+        end
     end
   end
 
@@ -643,6 +648,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         |> assign(:caption_loading, false)
         |> assign(:show_caption_autocomplete, false)
         |> assign(:selected_frame_indices, [])
+        |> assign(:is_context_view, false)  # Reset context view
+        |> assign(:context_frames, [])
+        |> assign(:context_target_frame, nil)
 
       {:noreply, socket}
     else
@@ -658,9 +666,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       Process.demonitor(ref, [:flush])
 
       case result do
-        {:ok, gif_data} ->
+        {:ok, gif_binary, _saved_gif} ->
           # Convert binary data to base64 for embedding
-          gif_base64 = Base.encode64(gif_data)
+          gif_base64 = Base.encode64(gif_binary)
 
           socket =
             socket
@@ -740,15 +748,6 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                 Reload All
               <% end %>
             </button>
-
-            <%= if length(@selected_frame_indices) > 0 do %>
-              <button
-                phx-click="create_sequence_from_selection"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-mono text-sm"
-              >
-                Create Sequence (<%= length(@selected_frame_indices) %> frames)
-              </button>
-            <% end %>
           </div>
         </div>
       </div>
@@ -974,20 +973,6 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     |> Enum.reject(&is_nil/1)
   end
 
-  # Encode frame image data for client-side GIF generation
-  defp encode_frame_image_for_client(nil), do: ""
-  defp encode_frame_image_for_client(hex_data) when is_binary(hex_data) do
-    case String.starts_with?(hex_data, "\\x") do
-      true ->
-        hex_string = String.slice(hex_data, 2..-1//1)
-        case Base.decode16(hex_string, case: :lower) do
-          {:ok, binary_data} -> Base.encode64(binary_data)
-          :error -> ""
-        end
-      false ->
-        Base.encode64(hex_data)
-    end
-  end
 
   defp format_duration(nil), do: "Unknown duration"
   defp format_duration(ms) when is_integer(ms) do

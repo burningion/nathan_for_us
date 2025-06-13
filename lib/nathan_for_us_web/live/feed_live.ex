@@ -33,12 +33,21 @@ defmodule NathanForUsWeb.FeedLive do
             
             <br>
             
-            <.link
-              navigate={~p"/video-search"}
-              class="inline-block bg-blue-600 text-white px-12 py-4 text-xl font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
-            >
-              make some GIFs
-            </.link>
+            <div class="flex gap-4 justify-center">
+              <.link
+                navigate={~p"/video-search"}
+                class="inline-block bg-blue-600 text-white px-12 py-4 text-xl font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+              >
+                make some GIFs
+              </.link>
+              
+              <.link
+                navigate={~p"/skeets"}
+                class="inline-block bg-blue-600 text-white px-12 py-4 text-xl font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+              >
+                in the news
+              </.link>
+            </div>
           </div>
         </div>
       </div>
