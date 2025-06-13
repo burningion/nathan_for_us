@@ -19,9 +19,9 @@ defmodule NathanForUsWeb.Components.VideoTimeline.TimelineControls do
     ~H"""
     <div class="bg-gray-800 border-b border-gray-700 px-6 py-3">
       <div class="flex items-center justify-between">
-        <!-- Playback Controls -->
+        <!-- Playback Controls (disabled due to server crashes) -->
         <div class="flex items-center gap-4">
-          <!-- Play/Pause Button -->
+          <%!-- Play/Pause Button (hidden to prevent crashes)
           <button
             phx-click="toggle_playback"
             class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors"
@@ -55,6 +55,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.TimelineControls do
               <option value="4.0" selected={@playback_speed == 4.0}>4x</option>
             </select>
           </div>
+          --%>
         </div>
         
         <!-- Position Info -->

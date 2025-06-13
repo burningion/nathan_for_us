@@ -14,7 +14,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     TimelinePlayer,
     FrameDisplay,
     TimelineControls,
-    CaptionSearch
+    CaptionSearch,
+    GifPreview
   }
 
   require Logger
@@ -93,6 +94,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:is_context_view, false)
             |> assign(:context_target_frame, nil)
             |> assign(:expand_count, 3)
+            |> assign(:gif_generation_status, nil)
+            |> assign(:generated_gif_data, nil)
 
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -516,6 +519,41 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     end
   end
 
+  def handle_event("generate_timeline_gif_server", _params, socket) do
+    # Generate GIF on server side using selected frames
+    selected_frames = get_selected_frames(socket)
+    
+    case selected_frames do
+      [] ->
+        {:noreply, socket}
+      frames ->
+        # Start async server-side GIF generation
+        task = Task.async(fn ->
+          # Create a mock frame sequence for the existing GIF generation function
+          mock_sequence = %{sequence_frames: frames}
+          selected_indices = 0..(length(frames) - 1) |> Enum.to_list()
+          NathanForUs.AdminService.generate_gif_from_frames(mock_sequence, selected_indices)
+        end)
+
+        socket =
+          socket
+          |> assign(:gif_generation_status, :generating)
+          |> assign(:gif_generation_task, task)
+          |> assign(:generated_gif_data, nil)
+
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("reset_gif_generation", _params, socket) do
+    socket =
+      socket
+      |> assign(:gif_generation_status, nil)
+      |> assign(:generated_gif_data, nil)
+
+    {:noreply, socket}
+  end
+
   def handle_info({:load_frames_at_position, position}, socket) do
     # Only load if this is the current position (debouncing)
     if position == socket.assigns.timeline_position do
@@ -614,6 +652,51 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     end
   end
 
+  def handle_info({ref, result}, socket) do
+    # Handle server-side GIF generation task completion
+    if socket.assigns[:gif_generation_task] && socket.assigns.gif_generation_task.ref == ref do
+      Process.demonitor(ref, [:flush])
+
+      case result do
+        {:ok, gif_data} ->
+          # Convert binary data to base64 for embedding
+          gif_base64 = Base.encode64(gif_data)
+
+          socket =
+            socket
+            |> assign(:gif_generation_status, :completed)
+            |> assign(:generated_gif_data, gif_base64)
+            |> assign(:gif_generation_task, nil)
+
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          socket =
+            socket
+            |> assign(:gif_generation_status, nil)
+            |> assign(:gif_generation_task, nil)
+
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:DOWN, ref, :process, _pid, _reason}, socket) do
+    # Handle server-side GIF generation task crash
+    if socket.assigns[:gif_generation_task] && socket.assigns.gif_generation_task.ref == ref do
+      socket =
+        socket
+        |> assign(:gif_generation_status, nil)
+        |> assign(:gif_generation_task, nil)
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gray-900 text-white" phx-hook="TimelineTutorial" id="timeline-container">
@@ -637,10 +720,25 @@ defmodule NathanForUsWeb.VideoTimelineLive do
 
             <button
               phx-click="reload_all_frames"
-              class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded font-mono text-xs"
-              title="Reload all frames (clear search filter)"
+              class={[
+                "text-white px-4 py-2 rounded font-mono transition-all",
+                if(@is_caption_filtered or @is_context_view,
+                  do: "bg-blue-600 hover:bg-blue-700 text-sm font-bold shadow-lg",
+                  else: "bg-gray-600 hover:bg-gray-500 text-xs px-3 py-1"
+                )
+              ]}
+              title={
+                if(@is_caption_filtered or @is_context_view,
+                  do: "Return to full timeline view",
+                  else: "Reload all frames (clear search filter)"
+                )
+              }
             >
-              Reload All
+              <%= if @is_caption_filtered or @is_context_view do %>
+                ← Back to Timeline
+              <% else %>
+                Reload All
+              <% end %>
             </button>
 
             <%= if length(@selected_frame_indices) > 0 do %>
@@ -671,23 +769,33 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         />
       </div>
 
-      <!-- Timeline Controls -->
-      <TimelineControls.timeline_controls
-        timeline_position={@timeline_position}
-        timeline_playing={@timeline_playing}
-        playback_speed={@playback_speed}
-        timeline_zoom={@timeline_zoom}
-        frame_count={@frame_count}
-        video_duration_ms={@video_duration_ms}
-      />
+      <!-- Timeline Controls (hidden when searching or in context view) -->
+      <%= unless @is_caption_filtered or @is_context_view do %>
+        <TimelineControls.timeline_controls
+          timeline_position={@timeline_position}
+          timeline_playing={@timeline_playing}
+          playback_speed={@playback_speed}
+          timeline_zoom={@timeline_zoom}
+          frame_count={@frame_count}
+          video_duration_ms={@video_duration_ms}
+        />
 
-      <!-- Timeline Player -->
-      <TimelinePlayer.timeline_player
-        timeline_position={@timeline_position}
-        timeline_zoom={@timeline_zoom}
-        frame_count={@frame_count}
-        video_duration_ms={@video_duration_ms}
-        video={@video}
+        <!-- Timeline Player -->
+        <TimelinePlayer.timeline_player
+          timeline_position={@timeline_position}
+          timeline_zoom={@timeline_zoom}
+          frame_count={@frame_count}
+          video_duration_ms={@video_duration_ms}
+          video={@video}
+        />
+      <% end %>
+
+      <!-- GIF Preview (shows when frames are selected) -->
+      <GifPreview.gif_preview
+        current_frames={@current_frames}
+        selected_frame_indices={@selected_frame_indices}
+        gif_generation_status={@gif_generation_status}
+        generated_gif_data={@generated_gif_data}
       />
 
       <!-- Frame Display -->
@@ -858,6 +966,28 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   end
 
   # Helper functions
+
+  # Get selected frames based on current indices
+  defp get_selected_frames(socket) do
+    socket.assigns.selected_frame_indices
+    |> Enum.map(&Enum.at(socket.assigns.current_frames, &1))
+    |> Enum.reject(&is_nil/1)
+  end
+
+  # Encode frame image data for client-side GIF generation
+  defp encode_frame_image_for_client(nil), do: ""
+  defp encode_frame_image_for_client(hex_data) when is_binary(hex_data) do
+    case String.starts_with?(hex_data, "\\x") do
+      true ->
+        hex_string = String.slice(hex_data, 2..-1//1)
+        case Base.decode16(hex_string, case: :lower) do
+          {:ok, binary_data} -> Base.encode64(binary_data)
+          :error -> ""
+        end
+      false ->
+        Base.encode64(hex_data)
+    end
+  end
 
   defp format_duration(nil), do: "Unknown duration"
   defp format_duration(ms) when is_integer(ms) do

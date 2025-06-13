@@ -329,6 +329,126 @@ Hooks.TimelineTutorialButton = {
   }
 }
 
+// GIF Preview Hook for timeline frame selection
+Hooks.GifPreview = {
+  mounted() {
+    this.frames = JSON.parse(this.el.dataset.frames || '[]')
+    this.currentIndex = 0
+    this.isPlaying = true
+    this.speed = 150 // milliseconds between frames
+    
+    this.playPauseBtn = this.el.querySelector('#gif-play-pause')
+    this.speedSelect = this.el.querySelector('#gif-speed')
+    this.frameCounter = this.el.querySelector('#frame-counter')
+    
+    // Set up controls
+    if (this.playPauseBtn) {
+      this.playPauseBtn.addEventListener('click', () => this.togglePlayback())
+    }
+    
+    if (this.speedSelect) {
+      this.speedSelect.addEventListener('change', (e) => {
+        this.speed = parseInt(e.target.value)
+      })
+    }
+    
+    // Start the animation if we have frames
+    if (this.frames.length > 0) {
+      this.createImageElement()
+      this.startAnimation()
+    }
+  },
+  
+  updated() {
+    // Stop current animation
+    if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout)
+    }
+    
+    // Update frames from new data
+    this.frames = JSON.parse(this.el.dataset.frames || '[]')
+    this.currentIndex = 0
+    
+    // Restart animation if we have frames
+    if (this.frames.length > 0) {
+      this.createImageElement()
+      this.startAnimation()
+    }
+  },
+  
+  destroyed() {
+    if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout)
+    }
+  },
+  
+  createImageElement() {
+    // Remove existing image
+    const existingImg = this.el.querySelector('img')
+    if (existingImg) {
+      existingImg.remove()
+    }
+    
+    // Create new image element
+    this.img = document.createElement('img')
+    this.img.className = 'w-full h-full object-cover'
+    this.img.style.transition = 'opacity 0.1s ease-in-out'
+    
+    // Insert before the loading text
+    const loadingDiv = this.el.querySelector('.absolute.inset-0')
+    if (loadingDiv) {
+      loadingDiv.style.display = 'none'
+    }
+    
+    this.el.appendChild(this.img)
+    this.displayCurrentFrame()
+  },
+  
+  displayCurrentFrame() {
+    if (this.frames.length === 0 || !this.img) return
+    
+    const frame = this.frames[this.currentIndex]
+    if (frame && frame.image_data) {
+      this.img.src = `data:image/jpeg;base64,${frame.image_data}`
+    }
+    
+    // Update counter
+    if (this.frameCounter) {
+      this.frameCounter.textContent = `${this.currentIndex + 1} / ${this.frames.length}`
+    }
+  },
+  
+  startAnimation() {
+    if (this.frames.length <= 1) return
+    
+    this.scheduleNextFrame()
+  },
+  
+  scheduleNextFrame() {
+    if (!this.isPlaying || this.frames.length <= 1) return
+    
+    this.animationTimeout = setTimeout(() => {
+      this.currentIndex = (this.currentIndex + 1) % this.frames.length
+      this.displayCurrentFrame()
+      this.scheduleNextFrame()
+    }, this.speed)
+  },
+  
+  togglePlayback() {
+    this.isPlaying = !this.isPlaying
+    
+    if (this.playPauseBtn) {
+      this.playPauseBtn.textContent = this.isPlaying ? 'Pause' : 'Play'
+    }
+    
+    if (this.isPlaying) {
+      this.scheduleNextFrame()
+    } else if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout)
+    }
+  }
+}
+
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
