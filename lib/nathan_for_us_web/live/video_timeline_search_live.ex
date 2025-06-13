@@ -81,6 +81,24 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("random_gif", _params, socket) do
+    case Video.get_random_video_sequence(15) do
+      {:ok, video_id, start_frame} ->
+        # Generate a range of 15 frame indices starting from the random frame
+        frame_indices = Enum.to_list(0..14)
+        indices_param = Enum.join(frame_indices, ",")
+        
+        # Navigate to the video timeline with pre-selected frames
+        path = ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
+        socket = redirect(socket, to: path)
+        {:noreply, socket}
+      
+      {:error, _reason} ->
+        socket = put_flash(socket, :error, "No suitable videos found for random GIF generation")
+        {:noreply, socket}
+    end
+  end
+
   def handle_info({:auto_search, term}, socket) do
     if String.length(term) >= 3 do
       socket = assign(socket, :loading, true)
@@ -147,6 +165,13 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
                 <% else %>
                   Search
                 <% end %>
+              </button>
+              <button
+                type="button"
+                phx-click="random_gif"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-mono font-medium transition-colors"
+              >
+                🎲 Random
               </button>
               <%= if @has_searched do %>
                 <button

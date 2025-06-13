@@ -1132,6 +1132,39 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Gets a random video with a random sequence of frames for GIF creation.
+  Returns {:ok, video_id, start_frame_number} or {:error, reason}.
+  """
+  def get_random_video_sequence(sequence_length \\ 15) do
+    # Get a random video that has frames
+    video_query = """
+    SELECT v.id, COUNT(f.id) as frame_count
+    FROM videos v
+    JOIN video_frames f ON f.video_id = v.id
+    WHERE v.id != 14
+    GROUP BY v.id
+    HAVING COUNT(f.id) >= $1
+    ORDER BY RANDOM()
+    LIMIT 1
+    """
+    
+    case Ecto.Adapters.SQL.query(Repo, video_query, [sequence_length]) do
+      {:ok, %{rows: [[video_id, frame_count]]}} ->
+        # Pick a random starting frame that allows for the full sequence
+        max_start_frame = max(1, frame_count - sequence_length + 1)
+        start_frame = :rand.uniform(max_start_frame)
+        
+        {:ok, video_id, start_frame}
+      
+      {:ok, %{rows: []}} ->
+        {:error, :no_suitable_videos}
+      
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Gets random frames from all videos for background slideshow.
   Returns a list of frames with video information.
   """

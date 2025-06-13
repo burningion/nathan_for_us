@@ -25,24 +25,47 @@ defmodule NathanForUsWeb.VideoTimelineLive do
 
   def handle_params(params, _url, socket) do
     search_term = Map.get(params, "search", "")
+    is_random = Map.get(params, "random", "false") == "true"
+    start_frame = Map.get(params, "start_frame", "")
+    selected_indices = Map.get(params, "selected_indices", "")
 
     socket =
-      if search_term != "" do
-        # Decode the URL-encoded search term
-        decoded_search_term = URI.decode(search_term)
+      cond do
+        search_term != "" ->
+          # Decode the URL-encoded search term
+          decoded_search_term = URI.decode(search_term)
 
-        # Set the search term and trigger the search automatically
-        socket
-        |> assign(:caption_search_term, decoded_search_term)
-        |> then(fn socket ->
-          # Trigger search if the term is long enough
-          if String.length(decoded_search_term) >= 3 do
-            send(self(), {:auto_search_from_params, decoded_search_term})
-          end
+          # Set the search term and trigger the search automatically
           socket
-        end)
-      else
-        socket
+          |> assign(:caption_search_term, decoded_search_term)
+          |> then(fn socket ->
+            # Trigger search if the term is long enough
+            if String.length(decoded_search_term) >= 3 do
+              send(self(), {:auto_search_from_params, decoded_search_term})
+            end
+            socket
+          end)
+        
+        is_random and start_frame != "" and selected_indices != "" ->
+          # Handle random GIF generation
+          try do
+            start_frame_num = String.to_integer(start_frame)
+            indices_list = selected_indices
+            |> String.split(",")
+            |> Enum.map(&String.to_integer/1)
+            
+            # Load frames starting from the specified frame and mark as random selection
+            send(self(), {:load_random_sequence, start_frame_num, indices_list})
+            socket
+            |> assign(:is_random_selection, true)
+            |> assign(:random_start_frame, start_frame_num)
+          rescue
+            ArgumentError ->
+              socket |> put_flash(:error, "Invalid random parameters")
+          end
+        
+        true ->
+          socket
       end
 
     {:noreply, socket}
@@ -97,6 +120,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:expand_count, 3)
             |> assign(:gif_generation_status, nil)
             |> assign(:generated_gif_data, nil)
+            |> assign(:is_random_selection, false)
+            |> assign(:random_start_frame, nil)
 
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -442,6 +467,106 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     end
   end
 
+  def handle_event("expand_random_left", _params, socket) do
+    if socket.assigns.is_random_selection do
+      video_id = socket.assigns.video.id
+      current_frames = socket.assigns.current_frames
+      expand_count = socket.assigns.expand_count
+      
+      # Find the earliest frame number in current selection
+      earliest_frame_number = current_frames |> Enum.map(& &1.frame_number) |> Enum.min()
+      
+      # Calculate new start frame
+      new_start_frame = max(1, earliest_frame_number - expand_count)
+      
+      if new_start_frame < earliest_frame_number do
+        # Get additional frames
+        additional_frames = NathanForUs.Video.get_video_frames_in_range(
+          video_id, 
+          new_start_frame, 
+          earliest_frame_number - 1
+        )
+        
+        # Combine with existing frames
+        new_frames = additional_frames ++ current_frames
+        
+        # Update selection indices to include the new frames
+        additional_count = length(additional_frames)
+        updated_indices = socket.assigns.selected_frame_indices
+        |> Enum.map(&(&1 + additional_count))  # Shift existing indices
+        |> then(&(Enum.to_list(0..(additional_count - 1)) ++ &1))  # Add new indices
+        
+        socket =
+          socket
+          |> assign(:current_frames, new_frames)
+          |> assign(:selected_frame_indices, updated_indices)
+          |> assign(:random_start_frame, new_start_frame)
+
+        {:noreply, socket}
+      else
+        {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("expand_random_right", _params, socket) do
+    if socket.assigns.is_random_selection do
+      video_id = socket.assigns.video.id
+      current_frames = socket.assigns.current_frames
+      expand_count = socket.assigns.expand_count
+      
+      # Find the latest frame number in current selection
+      latest_frame_number = current_frames |> Enum.map(& &1.frame_number) |> Enum.max()
+      
+      # Calculate new end frame
+      new_end_frame = latest_frame_number + expand_count
+      
+      # Get additional frames
+      additional_frames = NathanForUs.Video.get_video_frames_in_range(
+        video_id, 
+        latest_frame_number + 1, 
+        new_end_frame
+      )
+      
+      if not Enum.empty?(additional_frames) do
+        # Combine with existing frames
+        new_frames = current_frames ++ additional_frames
+        
+        # Update selection indices to include the new frames
+        current_count = length(current_frames)
+        additional_count = length(additional_frames)
+        new_indices = Enum.to_list(current_count..(current_count + additional_count - 1))
+        updated_indices = socket.assigns.selected_frame_indices ++ new_indices
+        
+        socket =
+          socket
+          |> assign(:current_frames, new_frames)
+          |> assign(:selected_frame_indices, updated_indices)
+
+        {:noreply, socket}
+      else
+        {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("clear_random_selection", _params, socket) do
+    socket =
+      socket
+      |> assign(:is_random_selection, false)
+      |> assign(:random_start_frame, nil)
+      |> assign(:selected_frame_indices, [])
+    
+    # Reload frames at current position
+    send(self(), {:load_frames_at_position, socket.assigns.timeline_position})
+    
+    {:noreply, socket}
+  end
+
   def handle_event("expand_context_left", _params, socket) do
     if socket.assigns.is_context_view and socket.assigns.context_target_frame do
       video_id = socket.assigns.video.id
@@ -705,6 +830,28 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     end
   end
 
+  def handle_info({:load_random_sequence, start_frame_num, indices_list}, socket) do
+    # Load frames starting from the specified frame number
+    video_id = socket.assigns.video.id
+    end_frame_num = start_frame_num + 14  # 15 frames total (0-14 indices)
+    
+    frames = NathanForUs.Video.get_video_frames_in_range(video_id, start_frame_num, end_frame_num)
+    
+    # Update timeline position to the start of the sequence
+    frame_count = socket.assigns.frame_count
+    timeline_position = if frame_count > 0, do: start_frame_num / frame_count, else: 0.0
+    
+    socket =
+      socket
+      |> assign(:current_frames, frames)
+      |> assign(:selected_frame_indices, indices_list)
+      |> assign(:timeline_position, timeline_position)
+      |> assign(:is_caption_filtered, false)
+      |> assign(:is_context_view, false)
+
+    {:noreply, socket}
+  end
+
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gray-900 text-white" phx-hook="TimelineTutorial" id="timeline-container">
@@ -796,6 +943,59 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         gif_generation_status={@gif_generation_status}
         generated_gif_data={@generated_gif_data}
       />
+
+      <!-- Random Selection Controls (show when in random selection mode) -->
+      <%= if @is_random_selection do %>
+        <div class="px-6 py-4 bg-gray-800 border-b border-gray-700">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-bold font-mono text-purple-400 mb-2">🎲 Random Selection Mode</h3>
+              <p class="text-gray-400 text-sm font-mono">
+                Selected <%= length(@selected_frame_indices) %> frames starting from frame #<%= @random_start_frame %>
+              </p>
+            </div>
+            
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2">
+                <label class="text-gray-300 text-sm font-mono">Expand by:</label>
+                <select 
+                  phx-change="update_expand_count"
+                  name="expand_count"
+                  class="bg-gray-700 border border-gray-600 text-white px-2 py-1 rounded text-sm font-mono"
+                >
+                  <%= for count <- [1, 2, 3, 5, 10] do %>
+                    <option value={count} selected={@expand_count == count}><%= count %> frames</option>
+                  <% end %>
+                </select>
+              </div>
+              
+              <button
+                phx-click="expand_random_left"
+                class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded font-mono text-sm transition-colors"
+                title="Add frames to the left"
+              >
+                ← Add Left
+              </button>
+              
+              <button
+                phx-click="expand_random_right"
+                class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded font-mono text-sm transition-colors"
+                title="Add frames to the right"
+              >
+                Add Right →
+              </button>
+              
+              <button
+                phx-click="clear_random_selection"
+                class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded font-mono text-sm transition-colors"
+                title="Exit random selection mode"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      <% end %>
 
       <!-- Frame Display -->
       <FrameDisplay.frame_display
