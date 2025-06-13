@@ -1,28 +1,4 @@
-<%= if assigns[:current_user] do %>
-  <header class="bg-white border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-6">
-      <div class="flex items-center justify-between py-4">
-        <.link navigate={~p"/"} class="flex items-center space-x-3 text-gray-900 hover:text-gray-700 transition-colors">
-          <div class="w-8 h-8 bg-gray-900 text-white rounded flex items-center justify-center font-bold">
-            N
-          </div>
-          <span class="font-medium text-lg">Nathan For Us</span>
-        </.link>
-        <nav class="flex items-center space-x-4">
-          <.link href={~p"/users/log_out"} method="delete" class="text-gray-500 hover:text-gray-700 font-medium transition-colors">
-            Log Out
-          </.link>
-        </nav>
-      </div>
-    </div>
-  </header>
-  <main>
-    <.flash_group flash={@flash} />
-    {@inner_content}
-  </main>
-<% else %>
-  <main class="p-0 m-0">
-    <.flash_group flash={@flash} />
-    {@inner_content}
-  </main>
-<% end %>
+<main class="p-0 m-0">
+  <.flash_group flash={@flash} />
+  {@inner_content}
+</main>
