@@ -32,14 +32,6 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     start_frame = Map.get(params, "start_frame", "")
     selected_indices = Map.get(params, "selected_indices", "")
 
-    # Debug logging
-    Logger.info("handle_params debug:")
-    Logger.info("  all params: #{inspect(params)}")
-    Logger.info("  param keys: #{inspect(Map.keys(params))}")
-    Logger.info("  is_random: #{inspect(is_random)}")
-    Logger.info("  start_frame: #{inspect(start_frame)}")
-    Logger.info("  selected_indices: #{inspect(selected_indices)}")
-    Logger.info("  condition met: #{inspect(is_random and start_frame != "" and selected_indices != "")}")
 
     socket =
       cond do
@@ -70,18 +62,15 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           end)
         
         is_random and start_frame != "" and selected_indices != "" ->
-          Logger.info("Entering random GIF generation branch")
           # Handle random GIF generation
           try do
             start_frame_num = String.to_integer(start_frame)
             # Decode URL-encoded commas and parse indices
             decoded_indices = URI.decode(selected_indices)
-            Logger.info("Decoded indices: #{inspect(decoded_indices)}")
             indices_list = decoded_indices
             |> String.split(",")
             |> Enum.map(&String.to_integer/1)
             
-            Logger.info("Sending load_random_sequence message with start_frame: #{start_frame_num}, indices: #{inspect(indices_list)}")
             # Load frames starting from the specified frame and mark as random selection
             send(self(), {:load_random_sequence, start_frame_num, indices_list})
             socket
@@ -89,12 +78,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:random_start_frame, start_frame_num)
           rescue
             ArgumentError ->
-              Logger.error("ArgumentError in random parameter parsing")
               socket |> put_flash(:error, "Invalid random parameters")
           end
         
         true ->
-          Logger.info("No special parameter handling, using default")
           socket
       end
 
@@ -1005,11 +992,6 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     # Automatically check if GIF exists for the currently selected frames
     selected_frames = get_selected_frames(socket)
     video_id = socket.assigns.video.id
-    
-    # Debug logging
-    Logger.info("Auto-checking existing GIF for #{length(selected_frames)} selected frames")
-    Logger.info("Selected frame indices: #{inspect(socket.assigns.selected_frame_indices)}")
-    Logger.info("Current frames count: #{length(socket.assigns.current_frames)}")
     
     case selected_frames do
       frames when length(frames) >= 2 ->
