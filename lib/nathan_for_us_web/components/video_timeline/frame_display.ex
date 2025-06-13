@@ -12,6 +12,9 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
   attr :loading_frames, :boolean, required: true
   attr :selected_frame_indices, :list, required: true
   attr :timeline_position, :float, required: true
+  attr :is_context_view, :boolean, default: false
+  attr :is_caption_filtered, :boolean, default: false
+  attr :expand_count, :integer, default: 3
   
   def frame_display(assigns) do
     ~H"""
@@ -30,12 +33,95 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
       <% else %>
         <!-- Frame Grid -->
         <%= if length(@current_frames) > 0 do %>
+          <!-- Context View Instructions -->
+          <%= if @is_context_view do %>
+            <div class="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+              <h4 class="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wide">Context View Controls</h4>
+              
+              <!-- Legend -->
+              <div class="flex flex-wrap gap-4 text-xs font-mono mb-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-4 h-4 rounded border-2 border-yellow-500 bg-yellow-900/20"></div>
+                  <span class="text-gray-300">TARGET: Original search result</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-4 h-4 rounded border-2 border-blue-500 bg-blue-900/20"></div>
+                  <span class="text-gray-300">BEFORE: Frames before target</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-4 h-4 rounded border-2 border-green-500 bg-green-900/20"></div>
+                  <span class="text-gray-300">AFTER: Frames after target</span>
+                </div>
+              </div>
+              
+              <!-- Expand Controls -->
+              <div class="border-t border-gray-600 pt-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <button
+                      phx-click="expand_context_left"
+                      class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded font-mono text-xs transition-colors flex items-center gap-1"
+                      title="Add frames to the left"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      ← ADD
+                    </button>
+                    
+                    <span class="text-gray-400 text-xs font-mono">|</span>
+                    
+                    <button
+                      phx-click="expand_context_right"
+                      class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded font-mono text-xs transition-colors flex items-center gap-1"
+                      title="Add frames to the right"
+                    >
+                      ADD →
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div class="flex items-center gap-2">
+                    <label class="text-xs text-gray-400 font-mono">Frames:</label>
+                    <input
+                      type="number"
+                      value={@expand_count}
+                      min="1"
+                      max="20"
+                      phx-change="update_expand_count"
+                      name="expand_count"
+                      class="w-16 bg-gray-600 border border-gray-500 text-white px-2 py-1 rounded font-mono text-xs focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+                
+                <p class="text-xs text-gray-400 mt-2">
+                  💡 Expand context in either direction to fine-tune your GIF selection
+                </p>
+              </div>
+            </div>
+          <% end %>
+          
+          <!-- Caption Filter Instructions -->
+          <%= if @is_caption_filtered and not @is_context_view do %>
+            <div class="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+              <h4 class="text-sm font-bold text-blue-400 mb-2 uppercase tracking-wide">Caption Search Results</h4>
+              <p class="text-xs text-gray-300 font-mono">
+                💡 Click any frame image (not the checkbox) to see 5 frames before and after for better GIF context
+              </p>
+            </div>
+          <% end %>
+          
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
             <%= for {frame, index} <- Enum.with_index(@current_frames) do %>
               <.frame_card 
                 frame={frame} 
                 index={index} 
                 selected={index in @selected_frame_indices}
+                is_context_view={@is_context_view}
+                is_caption_filtered={@is_caption_filtered}
               />
             <% end %>
           </div>
@@ -80,12 +166,14 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
   attr :frame, :map, required: true
   attr :index, :integer, required: true
   attr :selected, :boolean, default: false
+  attr :is_context_view, :boolean, default: false
+  attr :is_caption_filtered, :boolean, default: false
   
   def frame_card(assigns) do
     ~H"""
     <div class={[
-      "relative bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-blue-500 group frame-card",
-      @selected && "ring-2 ring-blue-500 bg-blue-900/20"
+      "relative bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 group frame-card",
+      get_frame_ring_class(@frame, @is_context_view, @selected)
     ]}>
       <!-- Selection Checkbox -->
       <div class="absolute top-2 left-2 z-10">
@@ -109,7 +197,8 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
       
       <!-- Frame Image -->
       <button
-        phx-click="show_frame_modal"
+        phx-click={if @is_caption_filtered and not @is_context_view, do: "select_frame", else: "show_frame_modal"}
+        phx-value-frame_index={@index}
         phx-value-frame_id={@frame.id}
         class="w-full"
       >
@@ -130,6 +219,27 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
         </div>
       </button>
       
+      <!-- Context Type Indicator -->
+      <%= if @is_context_view and Map.has_key?(@frame, :context_type) do %>
+        <div class="absolute top-2 right-2 z-10">
+          <%= case @frame.context_type do %>
+            <% :target -> %>
+              <div class="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded font-mono">
+                TARGET
+              </div>
+            <% :before -> %>
+              <div class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded font-mono">
+                BEFORE
+              </div>
+            <% :after -> %>
+              <div class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded font-mono">
+                AFTER
+              </div>
+            <% _ -> %>
+          <% end %>
+        </div>
+      <% end %>
+      
       <!-- Frame Info -->
       <div class="p-3">
         <div class="flex items-center justify-between">
@@ -145,6 +255,13 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
         <%= if @frame.width != nil and @frame.height != nil do %>
           <div class="text-gray-500 font-mono text-xs mt-1">
             <%= @frame.width %>×<%= @frame.height %>
+          </div>
+        <% end %>
+        
+        <!-- Caption Text Preview -->
+        <%= if Map.has_key?(@frame, :caption_texts) and @frame.caption_texts do %>
+          <div class="text-blue-300 font-mono text-xs mt-2 truncate" title={@frame.caption_texts}>
+            📝 <%= String.slice(@frame.caption_texts, 0, 30) %><%= if String.length(@frame.caption_texts) > 30, do: "..." %>
           </div>
         <% end %>
       </div>
@@ -170,6 +287,24 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
   end
   
   # Helper functions
+
+  defp get_frame_ring_class(frame, is_context_view, selected) do
+    cond do
+      selected ->
+        "ring-2 ring-blue-500 bg-blue-900/20 hover:ring-2 hover:ring-blue-500"
+      
+      is_context_view and Map.has_key?(frame, :context_type) ->
+        case frame.context_type do
+          :target -> "ring-2 ring-yellow-500 bg-yellow-900/20 hover:ring-2 hover:ring-yellow-400"
+          :before -> "ring-2 ring-blue-500 bg-blue-900/20 hover:ring-2 hover:ring-blue-400"
+          :after -> "ring-2 ring-green-500 bg-green-900/20 hover:ring-2 hover:ring-green-400"
+          _ -> "hover:ring-2 hover:ring-blue-500"
+        end
+      
+      true ->
+        "hover:ring-2 hover:ring-blue-500"
+    end
+  end
   
   defp format_timestamp(nil), do: "0:00"
   defp format_timestamp(ms) when is_integer(ms) do

@@ -64,6 +64,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:caption_loading, false)
             |> assign(:caption_filtered_frames, [])
             |> assign(:is_caption_filtered, false)
+            |> assign(:context_frames, [])
+            |> assign(:is_context_view, false)
+            |> assign(:context_target_frame, nil)
+            |> assign(:expand_count, 3)
           
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -160,21 +164,48 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     try do
       frame_index = String.to_integer(frame_index_str)
       shift_key = Map.get(params, "shift_key", "false") == "true"
-      current_selected = socket.assigns.selected_frame_indices
       
-      new_selected = 
-        cond do
-          shift_key ->
-            # For shift-click, we'll handle it in select_frame_range
-            current_selected
-          frame_index in current_selected ->
-            List.delete(current_selected, frame_index)
-          true ->
-            [frame_index | current_selected] |> Enum.sort()
+      # If we're in caption filtered state, clicking a frame should show context
+      if socket.assigns.is_caption_filtered and not socket.assigns.is_context_view do
+        # Get the clicked frame
+        clicked_frame = Enum.at(socket.assigns.current_frames, frame_index)
+        
+        if clicked_frame do
+          # Load context frames around this frame
+          video_id = socket.assigns.video.id
+          context_frames = NathanForUs.Video.get_frames_with_context(video_id, clicked_frame.frame_number, 5, 5)
+          
+          socket =
+            socket
+            |> assign(:context_frames, context_frames)
+            |> assign(:is_context_view, true)
+            |> assign(:context_target_frame, clicked_frame)
+            |> assign(:current_frames, context_frames)
+            |> assign(:selected_frame_indices, [])  # Clear selection
+            |> put_flash(:info, "Showing context around frame ##{clicked_frame.frame_number} (#{length(context_frames)} frames)")
+          
+          {:noreply, socket}
+        else
+          {:noreply, socket}
         end
-      
-      socket = assign(socket, :selected_frame_indices, new_selected)
-      {:noreply, socket}
+      else
+        # Normal frame selection behavior
+        current_selected = socket.assigns.selected_frame_indices
+        
+        new_selected = 
+          cond do
+            shift_key ->
+              # For shift-click, we'll handle it in select_frame_range
+              current_selected
+            frame_index in current_selected ->
+              List.delete(current_selected, frame_index)
+            true ->
+              [frame_index | current_selected] |> Enum.sort()
+          end
+        
+        socket = assign(socket, :selected_frame_indices, new_selected)
+        {:noreply, socket}
+      end
     rescue
       ArgumentError ->
         {:noreply, socket}
@@ -354,11 +385,95 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       |> assign(:is_caption_filtered, false)
       |> assign(:caption_search_term, "")
       |> assign(:selected_frame_indices, [])
+      |> assign(:context_frames, [])
+      |> assign(:is_context_view, false)
+      |> assign(:context_target_frame, nil)
+      |> assign(:expand_count, 3)  # Reset to default
     
     # Reload frames at current position
     send(self(), {:load_frames_at_position, socket.assigns.timeline_position})
     
     {:noreply, socket}
+  end
+
+  def handle_event("back_to_search_results", _params, socket) do
+    # Go back from context view to the filtered search results
+    socket =
+      socket
+      |> assign(:current_frames, socket.assigns.caption_filtered_frames)
+      |> assign(:is_context_view, false)
+      |> assign(:context_frames, [])
+      |> assign(:context_target_frame, nil)
+      |> assign(:selected_frame_indices, [])
+    
+    {:noreply, socket}
+  end
+
+  def handle_event("update_expand_count", %{"expand_count" => count_str}, socket) do
+    try do
+      count = String.to_integer(count_str)
+      count = max(1, min(20, count))  # Clamp between 1 and 20
+      
+      socket = assign(socket, :expand_count, count)
+      {:noreply, socket}
+    rescue
+      ArgumentError ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("expand_context_left", _params, socket) do
+    if socket.assigns.is_context_view and socket.assigns.context_target_frame do
+      video_id = socket.assigns.video.id
+      current_frames = socket.assigns.current_frames
+      target_frame = socket.assigns.context_target_frame
+      expand_count = socket.assigns.expand_count
+      
+      expanded_frames = NathanForUs.Video.expand_context_left(
+        video_id, 
+        current_frames, 
+        target_frame.frame_number, 
+        expand_count
+      )
+      
+      socket =
+        socket
+        |> assign(:current_frames, expanded_frames)
+        |> assign(:context_frames, expanded_frames)
+        |> assign(:selected_frame_indices, [])  # Clear selection
+        |> put_flash(:info, "Added #{expand_count} frames to the left")
+      
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("expand_context_right", _params, socket) do
+    if socket.assigns.is_context_view and socket.assigns.context_target_frame do
+      video_id = socket.assigns.video.id
+      current_frames = socket.assigns.current_frames
+      target_frame = socket.assigns.context_target_frame
+      expand_count = socket.assigns.expand_count
+      
+      expanded_frames = NathanForUs.Video.expand_context_right(
+        video_id, 
+        current_frames, 
+        target_frame.frame_number, 
+        expand_count
+      )
+      
+      socket =
+        socket
+        |> assign(:current_frames, expanded_frames)
+        |> assign(:context_frames, expanded_frames)
+        |> assign(:selected_frame_indices, [])  # Clear selection
+        |> put_flash(:info, "Added #{expand_count} frames to the right")
+      
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
   
   def handle_info({:load_frames_at_position, position}, socket) do
@@ -478,6 +593,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           show_autocomplete={@show_caption_autocomplete}
           search_form={@caption_search_form}
           is_filtered={@is_caption_filtered}
+          is_context_view={@is_context_view}
+          context_target_frame={@context_target_frame}
+          expand_count={@expand_count}
         />
       </div>
       
@@ -506,6 +624,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         loading_frames={@loading_frames}
         selected_frame_indices={@selected_frame_indices}
         timeline_position={@timeline_position}
+        is_context_view={@is_context_view}
+        is_caption_filtered={@is_caption_filtered}
+        expand_count={@expand_count}
       />
       
       <!-- Tutorial Modal -->

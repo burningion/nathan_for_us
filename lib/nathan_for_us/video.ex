@@ -940,6 +940,126 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Gets frames with context around a specific frame.
+  Returns frames from (frame_number - context_before) to (frame_number + context_after).
+  Includes metadata about which frame was the original search result.
+  """
+  def get_frames_with_context(video_id, target_frame_number, context_before \\ 5, context_after \\ 5) do
+    start_frame = max(0, target_frame_number - context_before)
+    end_frame = target_frame_number + context_after
+    
+    frames = VideoFrame
+    |> where([f], f.video_id == ^video_id)
+    |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
+    |> order_by([f], f.frame_number)
+    |> Repo.all()
+    
+    # Add metadata to indicate which frame was the target
+    frames
+    |> Enum.map(fn frame ->
+      frame
+      |> Map.put(:is_target_frame, frame.frame_number == target_frame_number)
+      |> Map.put(:context_type, cond do
+        frame.frame_number < target_frame_number -> :before
+        frame.frame_number > target_frame_number -> :after
+        true -> :target
+      end)
+    end)
+  end
+
+  @doc """
+  Expands existing context frames by adding more frames to the left (before).
+  Takes current context frames and adds N more frames before the earliest frame.
+  """
+  def expand_context_left(video_id, current_frames, target_frame_number, expand_count) do
+    return_empty = fn -> current_frames end
+    
+    case current_frames do
+      [] -> return_empty.()
+      
+      frames ->
+        # Find the earliest frame number in current context
+        earliest_frame_number = frames |> Enum.map(& &1.frame_number) |> Enum.min()
+        
+        # Calculate new start frame (expand_count frames before the earliest)
+        new_start_frame = max(0, earliest_frame_number - expand_count)
+        
+        # If we can't expand (already at frame 0), return current frames
+        if new_start_frame >= earliest_frame_number do
+          return_empty.()
+        else
+          # Get the additional frames
+          additional_frames = VideoFrame
+          |> where([f], f.video_id == ^video_id)
+          |> where([f], f.frame_number >= ^new_start_frame and f.frame_number < ^earliest_frame_number)
+          |> order_by([f], f.frame_number)
+          |> Repo.all()
+          
+          # Add metadata to new frames
+          additional_with_metadata = additional_frames
+          |> Enum.map(fn frame ->
+            frame
+            |> Map.put(:is_target_frame, frame.frame_number == target_frame_number)
+            |> Map.put(:context_type, cond do
+              frame.frame_number < target_frame_number -> :before
+              frame.frame_number > target_frame_number -> :after
+              true -> :target
+            end)
+          end)
+          
+          # Combine with existing frames
+          additional_with_metadata ++ current_frames
+        end
+    end
+  end
+
+  @doc """
+  Expands existing context frames by adding more frames to the right (after).
+  Takes current context frames and adds N more frames after the latest frame.
+  """
+  def expand_context_right(video_id, current_frames, target_frame_number, expand_count) do
+    return_empty = fn -> current_frames end
+    
+    case current_frames do
+      [] -> return_empty.()
+      
+      frames ->
+        # Find the latest frame number in current context
+        latest_frame_number = frames |> Enum.map(& &1.frame_number) |> Enum.max()
+        
+        # Calculate new end frame (expand_count frames after the latest)
+        new_end_frame = latest_frame_number + expand_count
+        
+        # Get the additional frames
+        additional_frames = VideoFrame
+        |> where([f], f.video_id == ^video_id)
+        |> where([f], f.frame_number > ^latest_frame_number and f.frame_number <= ^new_end_frame)
+        |> order_by([f], f.frame_number)
+        |> Repo.all()
+        
+        # If no additional frames found, return current frames
+        if Enum.empty?(additional_frames) do
+          return_empty.()
+        else
+          # Add metadata to new frames
+          additional_with_metadata = additional_frames
+          |> Enum.map(fn frame ->
+            frame
+            |> Map.put(:is_target_frame, frame.frame_number == target_frame_number)
+            |> Map.put(:context_type, cond do
+              frame.frame_number < target_frame_number -> :before
+              frame.frame_number > target_frame_number -> :after
+              true -> :target
+            end)
+          end)
+          
+          # Combine with existing frames
+          current_frames ++ additional_with_metadata
+        end
+    end
+  end
+
+  @doc """
   Gets a frame sequence starting from a specific frame number.
   This is used for generating random clips.
   """
