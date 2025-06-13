@@ -36,6 +36,9 @@ defmodule NathanForUsWeb.VideoSearchLive do
     # Load random frames for the sliding background
     random_frames = Video.get_random_frames(30)
 
+    # Load sample caption suggestions for inspiration
+    sample_suggestions = Video.get_sample_caption_suggestions(6)
+
     search_form = %{"term" => ""}
 
     # Show welcome modal if explicitly set in session (for new users)
@@ -64,6 +67,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:ffmpeg_status, nil)
       |> assign(:client_download_url, nil)
       |> assign(:random_frames, random_frames)
+      |> assign(:sample_suggestions, sample_suggestions)
 
     {:ok, socket}
   end
@@ -652,6 +656,20 @@ defmodule NathanForUsWeb.VideoSearchLive do
     {:noreply, socket}
   end
 
+  def handle_event("select_sample_suggestion", %{"suggestion" => suggestion}, socket) do
+    # Populate the search field with the sample suggestion
+    search_form = %{"term" => suggestion}
+
+    socket =
+      socket
+      |> assign(:search_form, search_form)
+      |> assign(:search_term, suggestion)
+      |> assign(:show_autocomplete, false)
+      |> assign(:autocomplete_suggestions, [])
+
+    {:noreply, socket}
+  end
+
   def handle_event("hide_autocomplete", _params, socket) do
     socket = assign(socket, :show_autocomplete, false)
     {:noreply, socket}
@@ -1191,6 +1209,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
               selected_video_ids={@selected_video_ids}
               autocomplete_suggestions={@autocomplete_suggestions}
               show_autocomplete={@show_autocomplete}
+              sample_suggestions={@sample_suggestions}
             />
 
             <SearchResults.search_results

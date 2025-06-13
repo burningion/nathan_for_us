@@ -18,6 +18,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
   attr :autocomplete_suggestions, :list, default: []
   attr :show_autocomplete, :boolean, default: false
   attr :search_form, :map, default: %{}
+  attr :sample_suggestions, :list, default: []
   
   def search_interface(assigns) do
     ~H"""
@@ -34,6 +35,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
         loading={@loading}
         autocomplete_suggestions={@autocomplete_suggestions}
         show_autocomplete={@show_autocomplete}
+        sample_suggestions={@sample_suggestions}
       />
     </div>
     """
@@ -47,6 +49,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
   attr :loading, :boolean, required: true
   attr :autocomplete_suggestions, :list, default: []
   attr :show_autocomplete, :boolean, default: false
+  attr :sample_suggestions, :list, default: []
   
   def search_form(assigns) do
     ~H"""
@@ -88,6 +91,12 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
           </button>
         </div>
       </.form>
+      
+      <!-- Sample Suggestions - only show when search is empty and no autocomplete is showing -->
+      <.sample_suggestions_display 
+        :if={@search_term == "" and not @show_autocomplete and length(@sample_suggestions) > 0}
+        suggestions={@sample_suggestions}
+      />
     </div>
     """
   end
@@ -133,6 +142,32 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchInterface do
     >
       Random Clip
     </button>
+    """
+  end
+
+  @doc """
+  Renders sample caption suggestions to inspire searches.
+  """
+  attr :suggestions, :list, required: true
+
+  def sample_suggestions_display(assigns) do
+    ~H"""
+    <div class="mt-3 pt-3 border-t border-zinc-200">
+      <div class="text-xs text-zinc-500 mb-2 uppercase tracking-wide">TRY SEARCHING FOR</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <%= for suggestion <- @suggestions do %>
+          <button
+            type="button"
+            phx-click="select_sample_suggestion"
+            phx-value-suggestion={suggestion}
+            class="text-left px-3 py-2 text-sm text-zinc-700 bg-zinc-50 hover:bg-blue-50 hover:text-blue-700 border border-zinc-200 hover:border-blue-300 rounded-lg font-mono transition-colors"
+            title="Click to search for: #{suggestion}"
+          >
+            <%= suggestion %>
+          </button>
+        <% end %>
+      </div>
+    </div>
     """
   end
   

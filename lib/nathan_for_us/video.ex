@@ -790,6 +790,58 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
+  Gets sample caption suggestions to inspire user searches.
+  Returns interesting random caption phrases to display when search box is empty.
+  """
+  def get_sample_caption_suggestions(limit \\ 6) do
+    query = """
+    SELECT text FROM (
+      SELECT DISTINCT text, length(text) as text_length,
+        CASE 
+          WHEN text ILIKE '%business%' THEN 1
+          WHEN text ILIKE '%rehearsal%' THEN 1
+          WHEN text ILIKE '%plan%' THEN 1
+          WHEN text ILIKE '%strategy%' THEN 1
+          WHEN text ILIKE '%prepared%' THEN 1
+          WHEN text ILIKE '%nathan%' THEN 1
+          ELSE 2
+        END as priority
+      FROM video_captions 
+      WHERE text IS NOT NULL 
+        AND length(text) BETWEEN 10 AND 80
+        AND text NOT ILIKE '%[%'
+        AND text NOT ILIKE '%]%'
+        AND text NOT ILIKE '%♪%'
+        AND text NOT ILIKE '%music%'
+    ) sub 
+    ORDER BY priority, RANDOM()
+    LIMIT $1
+    """
+    
+    case Ecto.Adapters.SQL.query(Repo, query, [limit]) do
+      {:ok, %{rows: rows}} ->
+        rows
+        |> List.flatten()
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(String.length(&1) < 5))
+        |> Enum.uniq()
+        
+      {:error, reason} ->
+        require Logger
+        Logger.warning("Sample caption suggestions query failed: #{inspect(reason)}")
+        # Fallback suggestions
+        [
+          "I graduated from one of Canada's top business schools",
+          "The plan is working perfectly",
+          "I've been rehearsing for this moment",
+          "This is a business strategy",
+          "I'm prepared for anything",
+          "Let's get down to business"
+        ]
+    end
+  end
+
+  @doc """
   Migrates existing frames from file paths to binary storage with compression.
   """
   def migrate_frames_to_binary(video_id, jpeg_quality \\ 75) do
