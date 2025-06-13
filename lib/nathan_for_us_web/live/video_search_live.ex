@@ -75,12 +75,7 @@ defmodule NathanForUsWeb.VideoSearchLive do
   @impl true
   def handle_params(params, _url, socket) do
     # Check if this is a shared link and show a helpful message
-    socket =
-      if Map.get(params, "shared") == "1" && Map.has_key?(params, "frame_ids") do
-        put_flash(socket, :info, "Viewing shared frame selection! These are the frames someone wanted to show you.")
-      else
-        socket
-      end
+    socket = socket
 
     # Only handle URL params if we don't already have a frame sequence open
     # This prevents URL updates from overriding expanded sequences
@@ -189,7 +184,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
           |> assign(:selected_frame_indices, clip_data.selected_indices)
           |> assign(:show_sequence_modal, true)
           |> assign(:frame_sequence_version, socket.assigns.frame_sequence_version + 1)
-          |> put_flash(:info, "🎬 Random 5-second Nathan clip generated!")
 
         {:noreply, socket}
 
@@ -225,7 +219,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:search_term, search_term)
       |> assign(:loading, true)
       |> assign(:search_results, [])
-      |> put_flash(:info, "🎭 Searching for #{category} moments...")
 
     {:noreply, socket}
   end
@@ -304,7 +297,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
         {:ok, video} ->
           socket =
             socket
-            |> put_flash(:info, "Video '#{video.title}' queued for processing")
             |> assign(:videos, Video.list_videos())
 
           {:noreply, socket}
@@ -788,7 +780,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
       |> assign(:gif_generation_status, :completed)
       |> assign(:client_download_url, download_url)
       |> assign(:ffmpeg_status, nil)
-      |> put_flash(:info, "GIF generated successfully on client!")
 
     {:noreply, socket}
   end
@@ -1102,7 +1093,6 @@ defmodule NathanForUsWeb.VideoSearchLive do
             |> assign(:gif_generation_status, :completed)
             |> assign(:generated_gif_data, gif_base64)
             |> assign(:gif_generation_task, nil)
-            |> put_flash(:info, Enum.random(success_messages))
 
           {:noreply, socket}
 

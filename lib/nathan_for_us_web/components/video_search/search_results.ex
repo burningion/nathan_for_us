@@ -1,18 +1,18 @@
 defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
   @moduledoc """
   Search results components for video search functionality.
-  
+
   Handles displaying search results in a mosaic grid layout.
   """
-  
+
   use NathanForUsWeb, :html
-  
+
   @doc """
   Renders search results or empty state.
   """
   attr :search_results, :list, required: true
   attr :search_term, :string, required: true
-  
+
   def search_results(assigns) do
     ~H"""
     <%= if length(@search_results) > 0 do %>
@@ -22,24 +22,25 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
         </div>
         <div class="space-y-4">
           <%= for video_result <- @search_results do %>
-            <.video_group video_result={video_result} />
+            <.video_group video_result={video_result} search_term={@search_term} />
           <% end %>
         </div>
       </div>
     <% end %>
     """
   end
-  
+
   @doc """
   Renders a video group with expandable frame tiles.
   """
   attr :video_result, :map, required: true
-  
+  attr :search_term, :string, required: true
+
   def video_group(assigns) do
     ~H"""
     <div class="border border-zinc-200 rounded-lg overflow-hidden">
       <!-- Video Header - Always Visible -->
-      <div 
+      <div
         class="bg-zinc-50 p-3 cursor-pointer hover:bg-zinc-100 transition-colors border-b border-zinc-200"
         phx-click="toggle_video_expansion"
         phx-value-video_id={@video_result.video_id}
@@ -62,27 +63,33 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
               </p>
             </div>
           </div>
-          
+
           <div class="flex items-center gap-3">
             <!-- Timeline Browser Button -->
-            <.link 
-              navigate={~p"/video-timeline/#{@video_result.video_id}"}
+            <.link
+              navigate={
+                if @search_term != "" do
+                  ~p"/video-timeline/#{@video_result.video_id}?search=#{URI.encode(@search_term)}"
+                else
+                  ~p"/video-timeline/#{@video_result.video_id}"
+                end
+              }
               class="inline-flex items-center gap-1 px-3 py-1 text-xs font-mono text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
               title="Browse entire video on timeline"
             >
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
               </svg>
-              Timeline
+              Timeline (Rich Editor)
             </.link>
-            
+
             <div class="text-xs text-zinc-400 font-mono">
               <%= if @video_result.expanded, do: "COLLAPSE", else: "EXPAND" %>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- Frames Grid - Only Visible When Expanded -->
       <%= if @video_result.expanded do %>
         <div class="p-4 bg-white">
@@ -96,15 +103,15 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
     </div>
     """
   end
-  
+
   @doc """
   Renders an individual frame tile for mosaic view.
   """
   attr :frame, :map, required: true
-  
+
   def frame_tile(assigns) do
     ~H"""
-    <div 
+    <div
       class="border border-zinc-300 rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white cursor-pointer hover:border-blue-500"
       phx-click="show_frame_sequence"
       phx-value-frame_id={@frame.id}
@@ -114,12 +121,12 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
     </div>
     """
   end
-  
+
   @doc """
   Renders the frame image within a tile.
   """
   attr :frame, :map, required: true
-  
+
   def frame_tile_image(assigns) do
     ~H"""
     <div class="aspect-video bg-zinc-100 relative">
@@ -135,7 +142,7 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
           <.icon name="hero-photo" class="w-8 h-8" />
         </div>
       <% end %>
-      
+
       <!-- Timestamp overlay -->
       <div class="absolute bottom-1 right-1 bg-black/70 text-white px-1 py-0.5 rounded text-xs font-mono">
         <%= format_timestamp(@frame.timestamp_ms) %>
@@ -143,12 +150,12 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
     </div>
     """
   end
-  
+
   @doc """
   Renders frame information within a tile.
   """
   attr :frame, :map, required: true
-  
+
   def frame_tile_info(assigns) do
     ~H"""
     <div class="p-2">
@@ -157,14 +164,14 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
           <%= String.slice(@frame.video_title, 0..40) %><%= if String.length(@frame.video_title) > 40, do: "..." %>
         </div>
       <% end %>
-      
+
       <div class="flex items-center justify-between mb-2">
         <span class="text-zinc-500 text-xs font-mono">FRAME #<%= @frame.frame_number %></span>
         <%= if @frame.file_size do %>
           <span class="text-zinc-400 text-xs font-mono"><%= format_file_size(@frame.file_size) %></span>
         <% end %>
       </div>
-      
+
       <%= if Map.get(@frame, :caption_texts) do %>
         <div class="border-l-2 border-blue-600 pl-2">
           <div class="text-zinc-800 text-xs leading-relaxed line-clamp-3">
@@ -175,19 +182,19 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
     </div>
     """
   end
-  
-  
+
+
   @doc """
   Renders loading state with Nathan-esque messages.
   """
   attr :search_term, :string, required: true
-  
+
   def loading_state(assigns) do
     # Random Nathan-esque loading messages
     loading_messages = [
       "Calculating business strategy...",
       "Consulting with my team...",
-      "Running this through my rehearsal process...", 
+      "Running this through my rehearsal process...",
       "Preparing for the unexpected...",
       "The plan is working perfectly...",
       "This is going exactly as planned...",
@@ -198,10 +205,10 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
       "Getting into character...",
       "Preparing my next move..."
     ]
-    
+
     random_message = Enum.random(loading_messages)
     assigns = assign(assigns, :loading_message, random_message)
-    
+
     ~H"""
     <div class="bg-white border border-zinc-300 rounded-lg p-8 text-center shadow-sm">
       <div class="text-blue-600 text-lg mb-2 font-mono">
@@ -220,9 +227,9 @@ defmodule NathanForUsWeb.Components.VideoSearch.SearchResults do
     </div>
     """
   end
-  
+
   # Helper functions
-  
+
   defp format_timestamp(ms) when is_integer(ms) do
     total_seconds = div(ms, 1000)
     minutes = div(total_seconds, 60)

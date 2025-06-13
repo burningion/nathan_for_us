@@ -124,7 +124,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
             socket =
               cond do
                 successes > 0 && Enum.empty?(errors) ->
-                  put_flash(socket, :info, "#{successes} word(s) submitted for approval!")
+                  socket
 
                 successes > 0 ->
                   error_messages =
@@ -133,7 +133,7 @@ defmodule NathanForUsWeb.ChatRoomLive do
                     |> Enum.uniq()
                     |> Enum.join(", ")
 
-                  put_flash(socket, :info, "#{successes} word(s) submitted. Some errors: #{error_messages}")
+                  put_flash(socket, :error, "Some errors: #{error_messages}")
 
                 true ->
                   error_messages =
