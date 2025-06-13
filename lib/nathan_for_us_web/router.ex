@@ -32,6 +32,7 @@ defmodule NathanForUsWeb.Router do
 
     get "/", PageController, :redirect_to_timeline
     live "/public-timeline", PublicTimelineLive
+    live "/browse-gifs", GifBrowseLive
     live "/video-timeline", VideoTimelineSearchLive
     live "/video-timeline/:video_id", VideoTimelineLive
     live "/skeets", SkeetsLive

@@ -12,8 +12,10 @@ defmodule NathanForUsWeb.PublicTimelineLive do
   alias NathanForUs.Viral
   alias NathanForUs.Accounts.User
 
+  on_mount {NathanForUsWeb.UserAuth, :mount_current_user}
+
   def mount(_params, _session, socket) do
-    # Load 25 most recent GIFs
+    # Load 25 most recent GIFs with all associations for GIF display
     recent_gifs = Viral.get_recent_gifs(25)
     
     socket =
@@ -22,7 +24,6 @@ defmodule NathanForUsWeb.PublicTimelineLive do
       |> assign(:gifs, recent_gifs)
       |> assign(:show_post_modal, false)
       |> assign(:loading, false)
-      |> assign(:current_user, Map.get(socket.assigns, :current_user))
 
     {:ok, socket}
   end
@@ -97,18 +98,19 @@ defmodule NathanForUsWeb.PublicTimelineLive do
           </div>
         <% else %>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-            <%= for gif <- @gifs do %>
+            <%= for gif <- @gifs, gif.gif && gif.gif.gif_data do %>
               <div 
                 class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors"
                 phx-click="view_gif"
                 phx-value-gif_id={gif.id}
               >
                 <!-- Just the GIF - no metadata -->
-                <div class="aspect-video bg-gray-700 flex items-center justify-center">
-                  <div class="text-gray-400 font-mono text-sm">
-                    Nathan GIF #<%= gif.id %>
-                  </div>
-                  <!-- TODO: Replace with actual GIF when we integrate with Gif binary data -->
+                <div class="aspect-video bg-gray-700">
+                  <img 
+                    src={"data:image/gif;base64,#{NathanForUs.Gif.to_base64(gif.gif)}"}
+                    alt="Nathan GIF"
+                    class="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             <% end %>

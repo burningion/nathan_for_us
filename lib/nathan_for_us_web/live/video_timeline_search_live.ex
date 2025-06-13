@@ -133,6 +133,12 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
 
           <div class="flex items-center gap-4">
             <.link
+              navigate={~p"/browse-gifs"}
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+            >
+              Browse GIFs
+            </.link>
+            <.link
               navigate={~p"/public-timeline"}
               class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
             >

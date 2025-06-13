@@ -9,6 +9,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   use NathanForUsWeb, :live_view
 
   alias NathanForUs.{Repo, AdminService}
+
+  on_mount {NathanForUsWeb.UserAuth, :mount_current_user}
   alias NathanForUs.Video.VideoFrame
   alias NathanForUs.Gif
   alias NathanForUsWeb.Components.VideoTimeline.{
@@ -137,7 +139,6 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:is_admin, is_admin?(socket))
             |> assign(:gif_cache_status, nil)
             |> assign(:gif_from_cache, false)
-            |> assign(:current_user, Map.get(socket.assigns, :current_user))
 
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -672,6 +673,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                   # Save the generated GIF to database
                   case Gif.save_generated_gif(hash, video_id, frame_ids, gif_binary) do
                     {:ok, saved_gif} ->
+                      # Also create a browseable GIF entry automatically
+                      create_browseable_gif_from_generation(frames, socket.assigns.video, socket.assigns[:current_user], saved_gif)
                       {:ok, gif_binary, saved_gif}
                     {:error, _reason} ->
                       # Still return the GIF even if saving failed
@@ -1283,12 +1286,17 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       first_frame = List.first(frames)
       last_frame = List.last(frames)
       
+      # Find the GIF in the database by generating hash
+      frame_ids = Enum.map(frames, & &1.id)
+      hash = NathanForUs.Gif.generate_hash(video.id, frame_ids)
+      gif = NathanForUs.Gif.find_by_hash(hash)
+      
       # Determine category based on frame content or default
       category = determine_gif_category(frames)
       
       # Create frame data for storage
       frame_data = Jason.encode!(%{
-        frame_ids: Enum.map(frames, & &1.id),
+        frame_ids: frame_ids,
         frame_numbers: Enum.map(frames, & &1.frame_number),
         timestamps: Enum.map(frames, & &1.timestamp_ms)
       })
@@ -1296,6 +1304,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       attrs = %{
         video_id: video.id,
         created_by_user_id: user.id,
+        gif_id: gif && gif.id, # Link to actual GIF binary
         start_frame_index: first_frame.frame_number,
         end_frame_index: last_frame.frame_number,
         category: category,
@@ -1320,6 +1329,39 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   defp generate_gif_title(category, video_title) do
     base_title = NathanForUs.Viral.ViralGif.generate_title(category)
     "#{base_title} (#{video_title})"
+  end
+
+  # Create browseable GIF from generation (automatically called on every GIF generation)
+  defp create_browseable_gif_from_generation(frames, video, user, saved_gif) do
+    if length(frames) >= 2 do
+      first_frame = List.first(frames)
+      last_frame = List.last(frames)
+      category = determine_gif_category(frames)
+      
+      frame_data = Jason.encode!(%{
+        frame_ids: Enum.map(frames, & &1.id),
+        frame_numbers: Enum.map(frames, & &1.frame_number),
+        timestamps: Enum.map(frames, & &1.timestamp_ms)
+      })
+      
+      attrs = %{
+        video_id: video.id,
+        created_by_user_id: user && user.id, # Allow anonymous for now
+        gif_id: saved_gif.id,
+        start_frame_index: first_frame.frame_number,
+        end_frame_index: last_frame.frame_number,
+        category: category,
+        frame_data: frame_data,
+        title: NathanForUs.Viral.BrowseableGif.generate_title(category, video.title),
+        is_public: true
+      }
+      
+      # Don't fail the main flow if this fails
+      case NathanForUs.Viral.create_browseable_gif(attrs) do
+        {:ok, _browseable_gif} -> :ok
+        {:error, _reason} -> :ok
+      end
+    end
   end
 
 

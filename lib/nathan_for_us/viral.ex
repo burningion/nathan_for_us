@@ -5,7 +5,7 @@ defmodule NathanForUs.Viral do
 
   import Ecto.Query, warn: false
   alias NathanForUs.Repo
-  alias NathanForUs.Viral.{ViralGif, GifInteraction}
+  alias NathanForUs.Viral.{ViralGif, GifInteraction, BrowseableGif}
 
   @doc """
   Returns trending GIFs for public display (no auth required).
@@ -31,7 +31,7 @@ defmodule NathanForUs.Viral do
     from(g in ViralGif,
       order_by: [desc: g.inserted_at],
       limit: ^limit,
-      preload: [:video, :created_by_user]
+      preload: [:video, :created_by_user, :gif]
     )
     |> Repo.all()
   end
@@ -151,5 +151,54 @@ defmodule NathanForUs.Viral do
       "rehearsal_prep",
       "uncomfortable_truth"
     ]
+  end
+
+  @doc """
+  Creates a browseable GIF entry automatically when someone generates a GIF.
+  This makes ALL generated GIFs browseable for inspiration, regardless of posting.
+  """
+  def create_browseable_gif(attrs \\ %{}) do
+    %BrowseableGif{}
+    |> BrowseableGif.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Gets recent browseable GIFs for the browse page.
+  """
+  def get_recent_browseable_gifs(limit \\ 50) do
+    from(g in BrowseableGif,
+      where: g.is_public == true,
+      order_by: [desc: g.inserted_at],
+      limit: ^limit,
+      preload: [:video, :created_by_user, :gif]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets browseable GIFs by category.
+  """
+  def get_browseable_gifs_by_category(category, limit \\ 20) do
+    from(g in BrowseableGif,
+      where: g.category == ^category and g.is_public == true,
+      order_by: [desc: g.inserted_at],
+      limit: ^limit,
+      preload: [:video, :created_by_user, :gif]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets browseable GIFs for a specific video.
+  """
+  def get_browseable_gifs_for_video(video_id, limit \\ 20) do
+    from(g in BrowseableGif,
+      where: g.video_id == ^video_id and g.is_public == true,
+      order_by: [desc: g.inserted_at],
+      limit: ^limit,
+      preload: [:video, :created_by_user, :gif]
+    )
+    |> Repo.all()
   end
 end
