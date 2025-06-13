@@ -8,7 +8,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
 
   use NathanForUsWeb, :live_view
 
-  alias NathanForUs.Repo
+  alias NathanForUs.{Repo, AdminService}
   alias NathanForUs.Video.VideoFrame
   alias NathanForUs.Gif
   alias NathanForUsWeb.Components.VideoTimeline.{
@@ -122,6 +122,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:generated_gif_data, nil)
             |> assign(:is_random_selection, false)
             |> assign(:random_start_frame, nil)
+            |> assign(:is_admin, is_admin?(socket))
+            |> assign(:gif_cache_status, nil)
+            |> assign(:gif_from_cache, false)
 
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -639,6 +642,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               |> assign(:gif_generation_status, :completed)
               |> assign(:generated_gif_data, gif_base64)
               |> assign(:gif_generation_task, nil)
+              |> assign(:gif_from_cache, true)
+              |> assign(:gif_cache_status, "Loaded from database cache (ID: #{existing_gif.id})")
 
             {:noreply, socket}
 
@@ -791,15 +796,22 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       Process.demonitor(ref, [:flush])
 
       case result do
-        {:ok, gif_binary, _saved_gif} ->
+        {:ok, gif_binary, saved_gif} ->
           # Convert binary data to base64 for embedding
           gif_base64 = Base.encode64(gif_binary)
+
+          {cache_status, from_cache} = case saved_gif do
+            nil -> {"Generated fresh (save to DB failed)", false}
+            gif -> {"Generated fresh, saved to DB (ID: #{gif.id})", false}
+          end
 
           socket =
             socket
             |> assign(:gif_generation_status, :completed)
             |> assign(:generated_gif_data, gif_base64)
             |> assign(:gif_generation_task, nil)
+            |> assign(:gif_from_cache, from_cache)
+            |> assign(:gif_cache_status, cache_status)
 
           {:noreply, socket}
 
@@ -942,6 +954,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         selected_frame_indices={@selected_frame_indices}
         gif_generation_status={@gif_generation_status}
         generated_gif_data={@generated_gif_data}
+        is_admin={@is_admin}
+        gif_cache_status={@gif_cache_status}
+        gif_from_cache={@gif_from_cache}
       />
 
       <!-- Random Selection Controls (show when in random selection mode) -->
@@ -1165,6 +1180,14 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   end
 
   # Helper functions
+
+  # Check if current user is admin
+  defp is_admin?(socket) do
+    case Map.get(socket.assigns, :current_user) do
+      nil -> false
+      user -> AdminService.validate_admin_access(user) == :ok
+    end
+  end
 
   # Get selected frames based on current indices
   defp get_selected_frames(socket) do

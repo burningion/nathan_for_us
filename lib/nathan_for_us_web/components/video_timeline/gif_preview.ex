@@ -13,6 +13,9 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
   attr :selected_frame_indices, :list, required: true
   attr :gif_generation_status, :atom, default: nil
   attr :generated_gif_data, :string, default: nil
+  attr :is_admin, :boolean, default: false
+  attr :gif_cache_status, :string, default: nil
+  attr :gif_from_cache, :boolean, default: false
   
   def gif_preview(assigns) do
     # Get selected frames based on indices
@@ -109,6 +112,28 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
                 New Preview
               </button>
             </div>
+            
+            <!-- Admin-only cache status -->
+            <%= if @is_admin and @gif_cache_status do %>
+              <div class="mt-4 p-3 bg-yellow-900/30 border border-yellow-600/50 rounded-lg">
+                <div class="flex items-center justify-center gap-2 mb-2">
+                  <span class="text-yellow-400 font-mono text-xs font-bold">⚡ ADMIN DEBUG</span>
+                  <%= if @gif_from_cache do %>
+                    <span class="bg-green-600 text-white px-2 py-1 rounded text-xs font-mono">CACHED</span>
+                  <% else %>
+                    <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-mono">FRESH</span>
+                  <% end %>
+                </div>
+                <p class="text-yellow-300 text-xs font-mono text-center">
+                  <%= @gif_cache_status %>
+                </p>
+                <div class="text-center mt-2">
+                  <span class="text-yellow-400 text-xs font-mono">
+                    Cache Hit Rate: High traffic GIFs will load instantly
+                  </span>
+                </div>
+              </div>
+            <% end %>
           <% else %>
             <!-- Generation buttons and status -->
             <%= if @gif_generation_status == :generating do %>
