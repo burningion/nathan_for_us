@@ -148,7 +148,7 @@ defmodule NathanForUsWeb.PublicTimelineLive do
             <% end %>
           </div>
         <% else %>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+          <div class="max-w-2xl mx-auto space-y-6">
             <%= for gif <- @gifs, gif.gif && gif.gif.gif_data do %>
               <div 
                 class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors"
