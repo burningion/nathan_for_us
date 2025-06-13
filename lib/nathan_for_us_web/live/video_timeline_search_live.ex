@@ -132,6 +132,14 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
           </div>
 
           <div class="flex items-center gap-4">
+            <button
+              phx-click="random_gif"
+              class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors shadow-lg"
+              title="Generate random GIF from any video"
+            >
+              🎲 Random GIF
+            </button>
+
             <.link
               navigate={~p"/browse-gifs"}
               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
@@ -227,8 +235,22 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
           <%= if @has_searched and not @loading do %>
             <%= if Enum.empty?(@search_results) do %>
               <div class="text-center py-12">
-                <div class="text-gray-400 font-mono">No quotes found for "<%= @search_term %>"</div>
-                <p class="text-gray-500 text-sm mt-2">Try a different search term or browse the suggestions above.</p>
+                <div class="text-gray-400 font-mono mb-4">No quotes found for "<%= @search_term %>"</div>
+                <p class="text-gray-500 text-sm mb-6">Try a different search term or browse the suggestions above.</p>
+                
+                <!-- Feeling Lucky Section -->
+                <div class="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-md mx-auto">
+                  <h3 class="text-lg font-bold font-mono text-yellow-400 mb-3">🎲 Feeling Lucky?</h3>
+                  <p class="text-gray-300 text-sm mb-4 font-mono">
+                    Can't find what you're looking for? Let us surprise you with a random Nathan moment!
+                  </p>
+                  <button
+                    phx-click="random_gif"
+                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg font-mono font-bold transition-colors shadow-lg text-lg"
+                  >
+                    🎲 Generate Random GIF
+                  </button>
+                </div>
               </div>
             <% else %>
               <div class="space-y-8">

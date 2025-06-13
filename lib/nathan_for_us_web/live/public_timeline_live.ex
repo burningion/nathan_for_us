@@ -43,6 +43,24 @@ defmodule NathanForUsWeb.PublicTimelineLive do
     {:noreply, socket}
   end
 
+  def handle_event("random_gif", _params, socket) do
+    case NathanForUs.Video.get_random_video_sequence(15) do
+      {:ok, video_id, start_frame} ->
+        # Generate a range of 15 frame indices starting from the random frame
+        frame_indices = Enum.to_list(0..14)
+        indices_param = Enum.join(frame_indices, ",")
+        
+        # Navigate to the video timeline with pre-selected frames
+        path = ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
+        socket = redirect(socket, to: path)
+        {:noreply, socket}
+      
+      {:error, _reason} ->
+        socket = put_flash(socket, :error, "No suitable videos found for random GIF generation")
+        {:noreply, socket}
+    end
+  end
+
   def handle_event("view_gif", %{"gif_id" => gif_id}, socket) do
     # Record view interaction
     Viral.record_interaction(gif_id, "view", 
@@ -62,6 +80,14 @@ defmodule NathanForUsWeb.PublicTimelineLive do
           <h1 class="text-2xl font-bold font-mono">Nathan Timeline</h1>
           
           <div class="flex items-center gap-4">
+            <button
+              phx-click="random_gif"
+              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+              title="Generate random GIF from any video"
+            >
+              🎲 Random GIF
+            </button>
+
             <%= if @current_user do %>
               <button
                 phx-click="show_post_modal"
@@ -70,6 +96,12 @@ defmodule NathanForUsWeb.PublicTimelineLive do
                 Post GIF
               </button>
             <% else %>
+              <.link
+                navigate={~p"/video-timeline"}
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+              >
+                MAKE A GIF
+              </.link>
               <.link
                 navigate={~p"/users/register"}
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
@@ -91,9 +123,14 @@ defmodule NathanForUsWeb.PublicTimelineLive do
                 Create the first GIF →
               </.link>
             <% else %>
-              <.link navigate={~p"/users/register"} class="text-blue-400 hover:text-blue-300 font-mono">
-                Sign up to post GIFs →
-              </.link>
+              <div class="space-y-3">
+                <.link navigate={~p"/video-timeline"} class="text-green-400 hover:text-green-300 font-mono font-bold text-lg block">
+                  Make a GIF (no signup required) →
+                </.link>
+                <.link navigate={~p"/users/register"} class="text-blue-400 hover:text-blue-300 font-mono text-sm block">
+                  Or sign up to post GIFs to timeline →
+                </.link>
+              </div>
             <% end %>
           </div>
         <% else %>
@@ -115,6 +152,33 @@ defmodule NathanForUsWeb.PublicTimelineLive do
               </div>
             <% end %>
           </div>
+
+          <!-- Call-to-Action for Signed Out Users -->
+          <%= unless @current_user do %>
+            <div class="mt-12 max-w-2xl mx-auto">
+              <div class="bg-gradient-to-r from-green-900/20 to-blue-900/20 border border-green-600/30 rounded-lg p-6 text-center">
+                <h3 class="text-xl font-bold font-mono text-green-400 mb-3">Ready to Create Your Own Nathan GIFs?</h3>
+                <p class="text-gray-300 font-mono text-sm mb-6">
+                  Join the conversation! Create hilarious Nathan moments and share them with the world.
+                  No signup required to start making GIFs.
+                </p>
+                <div class="flex items-center justify-center gap-4">
+                  <.link
+                    navigate={~p"/video-timeline"}
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-mono font-bold transition-colors shadow-lg"
+                  >
+                    🎬 START MAKING GIFS
+                  </.link>
+                  <.link
+                    navigate={~p"/users/register"}
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-mono font-medium transition-colors"
+                  >
+                    Sign Up to Post
+                  </.link>
+                </div>
+              </div>
+            </div>
+          <% end %>
         <% end %>
       </div>
 

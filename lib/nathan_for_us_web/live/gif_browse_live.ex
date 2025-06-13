@@ -25,6 +25,24 @@ defmodule NathanForUsWeb.GifBrowseLive do
     {:ok, socket}
   end
 
+  def handle_event("random_gif", _params, socket) do
+    case NathanForUs.Video.get_random_video_sequence(15) do
+      {:ok, video_id, start_frame} ->
+        # Generate a range of 15 frame indices starting from the random frame
+        frame_indices = Enum.to_list(0..14)
+        indices_param = Enum.join(frame_indices, ",")
+        
+        # Navigate to the video timeline with pre-selected frames
+        path = ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
+        socket = redirect(socket, to: path)
+        {:noreply, socket}
+      
+      {:error, _reason} ->
+        socket = put_flash(socket, :error, "No suitable videos found for random GIF generation")
+        {:noreply, socket}
+    end
+  end
+
   def handle_event("repost_gif", %{"gif_id" => browseable_gif_id}, socket) do
     if socket.assigns.current_user do
       # Find the browseable GIF
@@ -76,6 +94,14 @@ defmodule NathanForUsWeb.GifBrowseLive do
           </div>
 
           <div class="flex items-center gap-4">
+            <button
+              phx-click="random_gif"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+              title="Generate random GIF from any video"
+            >
+              🎲 Random GIF
+            </button>
+
             <.link
               navigate={~p"/public-timeline"}
               class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"

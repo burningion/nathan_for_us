@@ -705,6 +705,24 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     {:noreply, socket}
   end
 
+  def handle_event("random_gif", _params, socket) do
+    case NathanForUs.Video.get_random_video_sequence(15) do
+      {:ok, video_id, start_frame} ->
+        # Generate a range of 15 frame indices starting from the random frame
+        frame_indices = Enum.to_list(0..14)
+        indices_param = Enum.join(frame_indices, ",")
+        
+        # Navigate to the video timeline with pre-selected frames
+        path = ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
+        socket = redirect(socket, to: path)
+        {:noreply, socket}
+      
+      {:error, _reason} ->
+        socket = put_flash(socket, :error, "No suitable videos found for random GIF generation")
+        {:noreply, socket}
+    end
+  end
+
   def handle_event("post_to_timeline", _params, socket) do
     # Only allow authenticated users
     if socket.assigns[:current_user] do
@@ -973,6 +991,14 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             >
               ← Back to Search
             </.link>
+
+            <button
+              phx-click="random_gif"
+              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-mono font-medium transition-colors text-sm"
+              title="Generate random GIF from any video"
+            >
+              🎲 Random GIF
+            </button>
 
             <button
               phx-click="reload_all_frames"
