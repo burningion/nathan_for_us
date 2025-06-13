@@ -30,7 +30,7 @@ defmodule NathanForUsWeb.Router do
   scope "/", NathanForUsWeb do
     pipe_through :browser
 
-    get "/", PageController, :redirect_to_timeline
+    get "/", PageController, :redirect_to_public_timeline
     live "/public-timeline", PublicTimelineLive
     live "/browse-gifs", GifBrowseLive
     live "/video-timeline", VideoTimelineSearchLive

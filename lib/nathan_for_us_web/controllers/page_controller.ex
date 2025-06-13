@@ -7,7 +7,7 @@ defmodule NathanForUsWeb.PageController do
     render(conn, :home, layout: false)
   end
 
-  def redirect_to_timeline(conn, _params) do
-    redirect(conn, to: ~p"/video-timeline")
+  def redirect_to_public_timeline(conn, _params) do
+    redirect(conn, to: ~p"/public-timeline")
   end
 end
