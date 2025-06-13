@@ -26,6 +26,7 @@ import topbar from "../vendor/topbar"
 import ClientGifGenerator from './hooks/client_gif_generator.js'
 import TimelineScrubber from './hooks/timeline_scrubber.js'
 import FrameMultiSelect from './hooks/frame_multi_select.js'
+import FrameSelection from './hooks/frame_selection.js'
 import { SlidingBackground } from './hooks/sliding_background.js'
 
 // Frame Animator Hook for cycling through frame sequences
@@ -39,6 +40,9 @@ Hooks.TimelineScrubber = TimelineScrubber
 
 // Frame multi-select hook
 Hooks.FrameMultiSelect = FrameMultiSelect
+
+// Individual frame selection hook
+Hooks.FrameSelection = FrameSelection
 
 // Sliding background hook
 Hooks.SlidingBackground = SlidingBackground

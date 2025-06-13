@@ -169,33 +169,45 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
       "relative bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 group frame-card",
       get_frame_ring_class(@frame, @is_context_view, @selected)
     ]}>
-      <!-- Selection Checkbox -->
-      <div class="absolute top-2 left-2 z-10">
-        <button
-          phx-click="select_frame"
-          phx-value-frame_index={@index}
-          phx-value-shift_key="false"
-          class={[
-            "w-6 h-6 rounded border-2 flex items-center justify-center transition-colors frame-select-btn",
-            @selected && "bg-blue-500 border-blue-500" || "bg-gray-700/80 border-gray-500 group-hover:border-blue-400"
-          ]}
-          data-frame-index={@index}
-        >
-          <%= if @selected do %>
-            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-            </svg>
-          <% end %>
-        </button>
+      <!-- Mobile-friendly Selection Area with Multi-select Support -->
+      <div 
+        id={"frame-selection-#{@index}"}
+        phx-click="select_frame"
+        phx-value-frame_index={@index}
+        phx-hook="FrameSelection"
+        data-frame-index={@index}
+        class="absolute inset-0 z-10 cursor-pointer touch-manipulation frame-selection-area"
+        style="touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none;"
+      >
+        <!-- Selection Checkbox -->
+        <div class="absolute top-2 left-2 pointer-events-none">
+          <div class={[
+            "w-8 h-8 rounded border-2 flex items-center justify-center transition-colors",
+            @selected && "bg-blue-500 border-blue-500" || "bg-gray-700/90 border-gray-400"
+          ]}>
+            <%= if @selected do %>
+              <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            <% end %>
+          </div>
+        </div>
+        
+        <!-- Modal trigger for non-caption views -->
+        <%= if not (@is_caption_filtered and not @is_context_view) do %>
+          <button
+            phx-click="show_frame_modal"
+            phx-value-frame_id={@frame.id}
+            class="absolute top-2 right-2 bg-gray-700/90 hover:bg-gray-600 text-white p-1 rounded text-xs font-mono transition-colors pointer-events-auto"
+            onclick="event.stopPropagation();"
+          >
+            🔍
+          </button>
+        <% end %>
       </div>
       
-      <!-- Frame Image -->
-      <button
-        phx-click={if @is_caption_filtered and not @is_context_view, do: "select_frame", else: "show_frame_modal"}
-        phx-value-frame_index={@index}
-        phx-value-frame_id={@frame.id}
-        class="w-full"
-      >
+      <!-- Frame Image (no longer clickable separately) -->
+      <div class="w-full pointer-events-none">
         <div class="aspect-video bg-gray-700 relative overflow-hidden">
           <%= if @frame.image_data do %>
             <img
@@ -211,7 +223,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
             </div>
           <% end %>
         </div>
-      </button>
+      </div>
       
       <!-- Context Type Indicator -->
       <%= if @is_context_view and Map.has_key?(@frame, :context_type) do %>
@@ -275,6 +287,52 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
       
       .frame-card.drag-selecting .drag-selection-overlay {
         opacity: 1 !important;
+      }
+      
+      /* Mobile Safari touch optimizations */
+      @media (hover: none) and (pointer: coarse) {
+        .frame-card {
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        
+        /* Larger touch targets on mobile */
+        .frame-card .absolute.inset-0 {
+          min-height: 44px; /* iOS recommended minimum touch target */
+        }
+        
+        /* Better visual feedback for touch */
+        .frame-card:active {
+          transform: scale(0.98);
+          transition: transform 0.1s ease;
+        }
+        
+        /* Ensure checkboxes are large enough for touch */
+        .frame-card .w-8.h-8 {
+          min-width: 32px;
+          min-height: 32px;
+        }
+      }
+      
+      /* Prevent zoom on double tap for frame selection */
+      .frame-card {
+        touch-action: manipulation;
+      }
+      
+      /* Tap feedback for mobile interactions */
+      .frame-card.tap-feedback {
+        transform: scale(0.95);
+        background-color: rgba(59, 130, 246, 0.2);
+        transition: transform 0.1s ease, background-color 0.1s ease;
+      }
+      
+      .frame-card.long-press-feedback {
+        transform: scale(0.98);
+        background-color: rgba(34, 197, 94, 0.2);
+        box-shadow: 0 0 0 2px #22c55e;
+        transition: transform 0.1s ease, background-color 0.1s ease, box-shadow 0.1s ease;
       }
     </style>
     """

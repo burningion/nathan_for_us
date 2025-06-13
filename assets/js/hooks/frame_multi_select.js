@@ -13,6 +13,9 @@ const FrameMultiSelect = {
     // Store reference to the container
     this.container = this.el;
     
+    // Store reference to this hook instance for frame selection hooks to access
+    this.el.phxHook = this;
+    
     // Bind event handlers to store references for cleanup
     this.boundFrameClick = this.handleFrameClick.bind(this);
     this.boundMouseDown = this.handleMouseDown.bind(this);
@@ -96,10 +99,10 @@ const FrameMultiSelect = {
   },
   
   handleFrameClick(e) {
-    const frameBtn = e.target.closest('.frame-select-btn');
-    if (!frameBtn) return;
+    const frameSelection = e.target.closest('.frame-selection-area');
+    if (!frameSelection) return;
     
-    const frameIndex = parseInt(frameBtn.dataset.frameIndex);
+    const frameIndex = parseInt(frameSelection.dataset.frameIndex);
     const shiftKey = e.shiftKey;
     
     e.preventDefault();
@@ -140,8 +143,8 @@ const FrameMultiSelect = {
   
   handleMouseDown(e) {
     // Only start drag selection if clicking on empty space in the grid
-    if (e.target.closest('.frame-card') || e.target.closest('.frame-select-btn')) {
-      console.log('Click on frame card or button - not starting drag selection');
+    if (e.target.closest('.frame-card') || e.target.closest('.frame-selection-area')) {
+      console.log('Click on frame card or selection area - not starting drag selection');
       return;
     }
     
@@ -284,9 +287,9 @@ const FrameMultiSelect = {
     
     dragSelectedCards.forEach((card, index) => {
       // Find the actual index of this card in the grid
-      const frameSelectBtn = card.querySelector('.frame-select-btn');
-      if (frameSelectBtn && frameSelectBtn.dataset.frameIndex) {
-        selectedIndices.push(parseInt(frameSelectBtn.dataset.frameIndex));
+      const frameSelectionArea = card.querySelector('.frame-selection-area');
+      if (frameSelectionArea && frameSelectionArea.dataset.frameIndex) {
+        selectedIndices.push(parseInt(frameSelectionArea.dataset.frameIndex));
       }
     });
     
@@ -295,14 +298,14 @@ const FrameMultiSelect = {
 
   // Touch event handlers for mobile
   handleTouchStart(e) {
-    const frameBtn = e.target.closest('.frame-select-btn');
+    const frameSelectionArea = e.target.closest('.frame-selection-area');
     const frameCard = e.target.closest('.frame-card');
     
     this.touchStartTime = Date.now();
     this.longPressActive = false;
     
-    if (frameBtn) {
-      const frameIndex = parseInt(frameBtn.dataset.frameIndex);
+    if (frameSelectionArea) {
+      const frameIndex = parseInt(frameSelectionArea.dataset.frameIndex);
       
       // Start long press timer for range selection
       this.longPressTimer = setTimeout(() => {
@@ -378,13 +381,13 @@ const FrameMultiSelect = {
     }
     
     // Handle tap on frame
-    const frameBtn = e.target.closest('.frame-select-btn');
-    if (frameBtn) {
+    const frameSelectionArea = e.target.closest('.frame-selection-area');
+    if (frameSelectionArea) {
       const touchDuration = Date.now() - this.touchStartTime;
       
       // Only trigger tap if it was a quick touch (not a long press)
       if (touchDuration < 500) {
-        const frameIndex = parseInt(frameBtn.dataset.frameIndex);
+        const frameIndex = parseInt(frameSelectionArea.dataset.frameIndex);
         this.handleFrameTap(frameIndex);
       }
     }
@@ -415,9 +418,9 @@ const FrameMultiSelect = {
   },
 
   showTapFeedback(frameIndex) {
-    const frameBtn = this.container.querySelector(`[data-frame-index="${frameIndex}"]`);
-    if (frameBtn) {
-      const frameCard = frameBtn.closest('.frame-card');
+    const frameSelectionArea = this.container.querySelector(`.frame-selection-area[data-frame-index="${frameIndex}"]`);
+    if (frameSelectionArea) {
+      const frameCard = frameSelectionArea.closest('.frame-card');
       if (frameCard) {
         frameCard.classList.add('tap-feedback');
         setTimeout(() => {
