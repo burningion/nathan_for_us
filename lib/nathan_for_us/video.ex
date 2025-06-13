@@ -721,24 +721,58 @@ defmodule NathanForUs.Video do
   Gets autocomplete suggestions for search phrases based on video captions.
   Returns full caption phrases that contain the given term.
   """
-  def get_autocomplete_suggestions(search_term, _video_ids \\ nil, limit \\ 5) when is_binary(search_term) do
+  def get_autocomplete_suggestions(search_term, video_ids \\ nil, limit \\ 5) when is_binary(search_term) do
     if String.length(search_term) < 3 do
       []
     else
       search_pattern = "%#{search_term}%"
       
-      # Fixed query: SELECT DISTINCT with ORDER BY in subquery
-      query = """
-      SELECT text FROM (
-        SELECT DISTINCT text, length(text) as text_length 
-        FROM video_captions 
-        WHERE text ILIKE $1
-      ) sub 
-      ORDER BY text_length 
-      LIMIT $2
-      """
+      # Query with optional video ID filtering
+      {query, params} = case video_ids do
+        nil ->
+          # Global search across all videos
+          query = """
+          SELECT text FROM (
+            SELECT DISTINCT text, length(text) as text_length 
+            FROM video_captions 
+            WHERE text ILIKE $1
+          ) sub 
+          ORDER BY text_length 
+          LIMIT $2
+          """
+          {query, [search_pattern, limit]}
+        
+        video_id when is_integer(video_id) ->
+          # Search within specific video
+          query = """
+          SELECT text FROM (
+            SELECT DISTINCT text, length(text) as text_length 
+            FROM video_captions vc
+            JOIN video_frames vf ON vc.video_frame_id = vf.id
+            WHERE vf.video_id = $1 AND vc.text ILIKE $2
+          ) sub 
+          ORDER BY text_length 
+          LIMIT $3
+          """
+          {query, [video_id, search_pattern, limit]}
+        
+        video_ids when is_list(video_ids) ->
+          # Search within multiple videos
+          placeholders = Enum.map_join(1..length(video_ids), ", ", &"$#{&1}")
+          query = """
+          SELECT text FROM (
+            SELECT DISTINCT text, length(text) as text_length 
+            FROM video_captions vc
+            JOIN video_frames vf ON vc.video_frame_id = vf.id
+            WHERE vf.video_id IN (#{placeholders}) AND vc.text ILIKE $#{length(video_ids) + 1}
+          ) sub 
+          ORDER BY text_length 
+          LIMIT $#{length(video_ids) + 2}
+          """
+          {query, video_ids ++ [search_pattern, limit]}
+      end
       
-      case Ecto.Adapters.SQL.query(Repo, query, [search_pattern, limit]) do
+      case Ecto.Adapters.SQL.query(Repo, query, params) do
         {:ok, %{rows: rows}} ->
           rows
           |> List.flatten()
@@ -826,6 +860,83 @@ defmodule NathanForUs.Video do
     |> where([f], f.frame_number >= ^start_frame and f.frame_number <= ^end_frame)
     |> order_by([f], f.frame_number)
     |> Repo.all()
+  end
+
+  @doc """
+  Gets video frames that contain specific caption text, ordered by frame number.
+  Returns frames with matching captions for timeline filtering.
+  """
+  def get_video_frames_with_caption_text(video_id, search_term) when is_binary(search_term) do
+    if String.length(search_term) < 3 do
+      []
+    else
+      search_pattern = "%#{search_term}%"
+      
+      query = """
+      SELECT DISTINCT f.*, 
+             string_agg(DISTINCT c.text, ' | ') as caption_texts
+      FROM video_frames f
+      JOIN frame_captions fc ON fc.frame_id = f.id
+      JOIN video_captions c ON c.id = fc.caption_id
+      WHERE f.video_id = $1 AND c.text ILIKE $2
+      GROUP BY f.id, f.video_id, f.frame_number, f.timestamp_ms, f.file_path, f.file_size, f.width, f.height, f.image_data, f.compression_ratio, f.inserted_at, f.updated_at
+      ORDER BY f.frame_number
+      """
+      
+      case Ecto.Adapters.SQL.query(Repo, query, [video_id, search_pattern]) do
+        {:ok, %{rows: rows, columns: columns}} ->
+          rows
+          |> Enum.map(fn row ->
+            # Convert the row data back to a VideoFrame struct
+            frame_data = Enum.zip(columns, row) |> Enum.into(%{})
+            
+            %VideoFrame{
+              id: frame_data["id"],
+              video_id: frame_data["video_id"],
+              frame_number: frame_data["frame_number"],
+              timestamp_ms: frame_data["timestamp_ms"],
+              file_path: frame_data["file_path"],
+              file_size: frame_data["file_size"],
+              width: frame_data["width"],
+              height: frame_data["height"],
+              image_data: frame_data["image_data"],
+              compression_ratio: frame_data["compression_ratio"],
+              inserted_at: frame_data["inserted_at"],
+              updated_at: frame_data["updated_at"]
+            }
+            |> Map.put(:caption_texts, frame_data["caption_texts"])
+          end)
+        
+        {:error, reason} ->
+          require Logger
+          Logger.warning("Caption search query failed: #{inspect(reason)}")
+          []
+      end
+    end
+  end
+
+  @doc """
+  Gets captions for a specific frame.
+  Returns a list of caption texts associated with the frame.
+  """
+  def get_frame_captions(frame_id) do
+    query = """
+    SELECT c.text
+    FROM video_captions c
+    JOIN frame_captions fc ON fc.caption_id = c.id
+    WHERE fc.frame_id = $1
+    ORDER BY c.start_time_ms
+    """
+    
+    case Ecto.Adapters.SQL.query(Repo, query, [frame_id]) do
+      {:ok, %{rows: rows}} ->
+        rows |> List.flatten()
+      
+      {:error, reason} ->
+        require Logger
+        Logger.warning("Frame captions query failed: #{inspect(reason)}")
+        []
+    end
   end
 
   @doc """

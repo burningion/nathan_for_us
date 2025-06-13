@@ -13,7 +13,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   alias NathanForUsWeb.Components.VideoTimeline.{
     TimelinePlayer,
     FrameDisplay,
-    TimelineControls
+    TimelineControls,
+    CaptionSearch
   }
   
   require Logger
@@ -51,10 +52,18 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:timeline_zoom, 1.0)
             |> assign(:show_frame_modal, false)
             |> assign(:modal_frame, nil)
+            |> assign(:modal_frame_captions, [])
             |> assign(:timeline_playing, false)
             |> assign(:playback_speed, 1.0)
             |> assign(:page_title, "Timeline: #{video.title}")
             |> assign(:show_tutorial_modal, false)
+            |> assign(:caption_search_term, "")
+            |> assign(:caption_search_form, to_form(%{}))
+            |> assign(:caption_autocomplete_suggestions, [])
+            |> assign(:show_caption_autocomplete, false)
+            |> assign(:caption_loading, false)
+            |> assign(:caption_filtered_frames, [])
+            |> assign(:is_caption_filtered, false)
           
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -206,10 +215,14 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           {:noreply, put_flash(socket, :error, "Frame not found")}
         
         frame ->
+          # Get captions for this frame
+          captions = NathanForUs.Video.get_frame_captions(frame_id)
+          
           socket =
             socket
             |> assign(:show_frame_modal, true)
             |> assign(:modal_frame, frame)
+            |> assign(:modal_frame_captions, captions)
           
           {:noreply, socket}
       end
@@ -224,6 +237,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       socket
       |> assign(:show_frame_modal, false)
       |> assign(:modal_frame, nil)
+      |> assign(:modal_frame_captions, [])
     
     {:noreply, socket}
   end
@@ -267,32 +281,122 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         end
     end
   end
+
+  def handle_event("caption_autocomplete", %{"caption_search" => %{"term" => term}}, socket) do
+    term = String.trim(term)
+    
+    socket = assign(socket, :caption_search_term, term)
+    
+    if String.length(term) >= 3 do
+      video_id = socket.assigns.video.id
+      suggestions = NathanForUs.Video.get_autocomplete_suggestions(term, video_id, 5)
+      
+      socket =
+        socket
+        |> assign(:caption_autocomplete_suggestions, suggestions)
+        |> assign(:show_caption_autocomplete, length(suggestions) > 0)
+    else
+      socket =
+        socket
+        |> assign(:caption_autocomplete_suggestions, [])
+        |> assign(:show_caption_autocomplete, false)
+    end
+    
+    {:noreply, socket}
+  end
+
+  def handle_event("select_caption_suggestion", %{"suggestion" => suggestion}, socket) do
+    socket =
+      socket
+      |> assign(:caption_search_term, suggestion)
+      |> assign(:show_caption_autocomplete, false)
+    
+    {:noreply, socket}
+  end
+
+  def handle_event("hide_caption_autocomplete", _params, socket) do
+    socket = assign(socket, :show_caption_autocomplete, false)
+    {:noreply, socket}
+  end
+
+  def handle_event("caption_search", %{"caption_search" => %{"term" => term}}, socket) do
+    term = String.trim(term)
+    
+    if String.length(term) >= 3 do
+      socket = assign(socket, :caption_loading, true)
+      
+      # Search for frames with matching captions in this video
+      video_id = socket.assigns.video.id
+      filtered_frames = NathanForUs.Video.get_video_frames_with_caption_text(video_id, term)
+      
+      socket =
+        socket
+        |> assign(:caption_filtered_frames, filtered_frames)
+        |> assign(:is_caption_filtered, true)
+        |> assign(:current_frames, filtered_frames)
+        |> assign(:caption_loading, false)
+        |> assign(:show_caption_autocomplete, false)
+        |> assign(:selected_frame_indices, [])  # Clear selection
+        |> put_flash(:info, "Found #{length(filtered_frames)} frames with \"#{term}\"")
+      
+      {:noreply, socket}
+    else
+      socket = put_flash(socket, :error, "Search term must be at least 3 characters")
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("clear_caption_filter", _params, socket) do
+    # Clear the caption filter and reload frames at current timeline position
+    socket =
+      socket
+      |> assign(:caption_filtered_frames, [])
+      |> assign(:is_caption_filtered, false)
+      |> assign(:caption_search_term, "")
+      |> assign(:selected_frame_indices, [])
+    
+    # Reload frames at current position
+    send(self(), {:load_frames_at_position, socket.assigns.timeline_position})
+    
+    {:noreply, socket}
+  end
   
   def handle_info({:load_frames_at_position, position}, socket) do
     # Only load if this is the current position (debouncing)
     if position == socket.assigns.timeline_position do
       socket = assign(socket, :loading_frames, true)
       
-      # Calculate which frames to load based on position
-      frame_count = socket.assigns.frame_count
-      frames_per_view = socket.assigns.frames_per_view
-      
-      # Convert position (0.0-1.0) to frame range
-      start_frame = round(position * (frame_count - frames_per_view))
-      start_frame = max(0, start_frame)
-      
-      end_frame = min(start_frame + frames_per_view - 1, frame_count - 1)
-      
-      # Load frames in this range
-      frames = NathanForUs.Video.get_video_frames_in_range(socket.assigns.video.id, start_frame, end_frame)
-      
-      socket =
-        socket
-        |> assign(:current_frames, frames)
-        |> assign(:loading_frames, false)
-        |> assign(:selected_frame_indices, [])  # Clear selection when moving
-      
-      {:noreply, socket}
+      # If caption filtered, don't load new frames - keep the filtered ones
+      if socket.assigns.is_caption_filtered do
+        socket =
+          socket
+          |> assign(:current_frames, socket.assigns.caption_filtered_frames)
+          |> assign(:loading_frames, false)
+          |> assign(:selected_frame_indices, [])  # Clear selection when moving
+        
+        {:noreply, socket}
+      else
+        # Normal timeline navigation - load frames in range
+        frame_count = socket.assigns.frame_count
+        frames_per_view = socket.assigns.frames_per_view
+        
+        # Convert position (0.0-1.0) to frame range
+        start_frame = round(position * (frame_count - frames_per_view))
+        start_frame = max(0, start_frame)
+        
+        end_frame = min(start_frame + frames_per_view - 1, frame_count - 1)
+        
+        # Load frames in this range
+        frames = NathanForUs.Video.get_video_frames_in_range(socket.assigns.video.id, start_frame, end_frame)
+        
+        socket =
+          socket
+          |> assign(:current_frames, frames)
+          |> assign(:loading_frames, false)
+          |> assign(:selected_frame_indices, [])  # Clear selection when moving
+        
+        {:noreply, socket}
+      end
     else
       {:noreply, socket}
     end
@@ -362,6 +466,19 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             <% end %>
           </div>
         </div>
+      </div>
+      
+      <!-- Caption Search -->
+      <div class="px-6">
+        <CaptionSearch.caption_search 
+          search_term={@caption_search_term}
+          loading={@caption_loading}
+          video_id={@video.id}
+          autocomplete_suggestions={@caption_autocomplete_suggestions}
+          show_autocomplete={@show_caption_autocomplete}
+          search_form={@caption_search_form}
+          is_filtered={@is_caption_filtered}
+        />
       </div>
       
       <!-- Timeline Controls -->
@@ -503,6 +620,25 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                     <p>Resolution: <%= @modal_frame.width %>x<%= @modal_frame.height %></p>
                   <% end %>
                 </div>
+                
+                <!-- Frame Captions -->
+                <%= if length(@modal_frame_captions) > 0 do %>
+                  <div class="mt-6 bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wide">Captions</h4>
+                    <div class="space-y-2">
+                      <%= for caption <- @modal_frame_captions do %>
+                        <div class="bg-gray-600 rounded p-3 text-left">
+                          <p class="text-gray-200 text-sm leading-relaxed"><%= caption %></p>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% else %>
+                  <div class="mt-6 bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wide">Captions</h4>
+                    <p class="text-gray-400 text-sm italic">No captions found for this frame</p>
+                  </div>
+                <% end %>
               </div>
             </div>
           </div>
