@@ -143,6 +143,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:gif_cache_status, nil)
             |> assign(:gif_from_cache, false)
             |> assign(:selected_frame_captions, [])
+            |> assign(:show_posted_success_flash, false)
 
           # Load initial frames
           send(self(), {:load_frames_at_position, 0.0})
@@ -733,6 +734,11 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     end
   end
 
+  def handle_event("close_posted_success_flash", _params, socket) do
+    socket = assign(socket, :show_posted_success_flash, false)
+    {:noreply, socket}
+  end
+
   def handle_event("post_to_timeline", _params, socket) do
     # Only allow authenticated users
     if socket.assigns[:current_user] do
@@ -747,7 +753,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           {:ok, _viral_gif} ->
             socket =
               socket
-              |> put_flash(:info, "GIF posted to timeline! Check it out in the public timeline.")
+              |> assign(:show_posted_success_flash, true)
               |> assign(:gif_generation_status, nil)
               |> assign(:generated_gif_data, nil)
             
@@ -1039,14 +1045,14 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               navigate={~p"/video-timeline"}
               class="text-blue-400 hover:text-blue-300 font-mono text-sm"
             >
-              ← Back to Search
+              ← Back to timeline editor
             </.link>
 
             <.link
               navigate={~p"/public-timeline"}
               class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-mono font-medium transition-colors text-sm"
             >
-              TIMELINE
+              NATHAN POST TIMELINE
             </.link>
 
             <.link
@@ -1089,6 +1095,37 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           </div>
         </div>
       </div>
+
+      <!-- Custom Posted Success Flash -->
+      <%= if @show_posted_success_flash do %>
+        <div class="fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1 bg-emerald-50 text-emerald-800 ring-emerald-500 fill-cyan-900">
+          <p class="flex items-center gap-1.5 text-sm font-semibold leading-6">
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+            </svg>
+            Success!
+          </p>
+          <p class="mt-2 text-sm leading-5">
+            GIF posted to timeline! 
+            <.link 
+              navigate={~p"/public-timeline"} 
+              class="font-semibold underline hover:no-underline"
+            >
+              Check it out in the Nathan timeline →
+            </.link>
+          </p>
+          <button 
+            type="button" 
+            class="group absolute top-1 right-1 p-2" 
+            phx-click="close_posted_success_flash"
+            aria-label="close"
+          >
+            <svg class="h-5 w-5 opacity-40 group-hover:opacity-70" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      <% end %>
 
       <!-- Caption Search -->
       <div class="px-6">

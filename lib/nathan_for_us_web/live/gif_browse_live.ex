@@ -21,10 +21,13 @@ defmodule NathanForUsWeb.GifBrowseLive do
     # Get session ID for anonymous voting
     session_id = Map.get(session, "live_socket_id")
 
+    # Add caption data to GIFs
+    gifs_with_captions = add_caption_data_to_gifs(gifs)
+
     socket =
       socket
       |> assign(:page_title, "Browse Nathan GIFs")
-      |> assign(:gifs, gifs)
+      |> assign(:gifs, gifs_with_captions)
       |> assign(:loading, false)
       |> assign(:sort, sort)
       |> assign(:session_id, session_id)
@@ -38,11 +41,14 @@ defmodule NathanForUsWeb.GifBrowseLive do
     sort = Map.get(params, "sort", "hot")
     
     if sort != socket.assigns.sort do
+      gifs = load_gifs_by_sort(sort)
+      gifs_with_captions = add_caption_data_to_gifs(gifs)
+      
       socket = 
         socket
         |> assign(:sort, sort)
         |> assign(:loading, true)
-        |> assign(:gifs, load_gifs_by_sort(sort))
+        |> assign(:gifs, gifs_with_captions)
         |> assign(:loading, false)
         |> load_user_votes()
         
@@ -162,7 +168,7 @@ defmodule NathanForUsWeb.GifBrowseLive do
               navigate={~p"/public-timeline"}
               class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
             >
-              Nathan Timeline
+              NATHAN POST TIMELINE
             </.link>
             <.link
               navigate={~p"/video-timeline"}
@@ -285,8 +291,12 @@ defmodule NathanForUsWeb.GifBrowseLive do
                       <%= gif.title || "Untitled Nathan GIF" %>
                     </h3>
 
-                    <div class="text-gray-400 text-xs font-mono mb-3">
-                      From: <%= gif.video.title %>
+                    <div class="text-gray-400 text-xs font-mono mb-3 leading-relaxed">
+                      <%= if gif.caption_preview && gif.caption_preview != "" do %>
+                        "<%= gif.caption_preview %>"
+                      <% else %>
+                        From: <%= gif.video.title %>
+                      <% end %>
                     </div>
 
                     <!-- Vote and Action Row -->
@@ -396,6 +406,50 @@ defmodule NathanForUsWeb.GifBrowseLive do
       diff < 86400 -> "#{div(diff, 3600)}h ago"
       diff < 2592000 -> "#{div(diff, 86400)}d ago"
       true -> "#{div(diff, 2592000)}mo ago"
+    end
+  end
+
+  defp add_caption_data_to_gifs(gifs) do
+    Enum.map(gifs, fn gif ->
+      caption_text = extract_gif_captions(gif)
+      Map.put(gif, :caption_preview, caption_text)
+    end)
+  end
+
+  defp extract_gif_captions(gif) do
+    case gif.frame_data do
+      nil -> ""
+      frame_data_json ->
+        try do
+          case Jason.decode(frame_data_json) do
+            {:ok, %{"frame_ids" => frame_ids}} when is_list(frame_ids) ->
+              # Get captions for all frames
+              case NathanForUs.Video.get_frames_captions(frame_ids) do
+                {:ok, captions_map} ->
+                  # Flatten all captions from all frames and get unique ones
+                  caption_text = captions_map
+                  |> Map.values()
+                  |> List.flatten()
+                  |> Enum.uniq()
+                  |> Enum.join(" ")
+                  |> String.slice(0, 250)
+                  
+                  if String.length(caption_text) == 250 do
+                    caption_text <> "..."
+                  else
+                    caption_text
+                  end
+                
+                _ ->
+                  ""
+              end
+              
+            _ ->
+              ""
+          end
+        rescue
+          _ -> ""
+        end
     end
   end
 end
