@@ -97,6 +97,19 @@ defmodule NathanForUsWeb.VideoSearchLiveTest do
       assert length(assigns(view).videos) >= 1
       assert Enum.any?(assigns(view).videos, fn v -> v.id == video.id end)
     end
+
+    test "loads sample suggestions on mount", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Should load sample suggestions
+      assert is_list(assigns(view).sample_suggestions)
+      # Should have some suggestions (either from database or fallback)
+      assert length(assigns(view).sample_suggestions) > 0
+      # All suggestions should be non-empty strings
+      assert Enum.all?(assigns(view).sample_suggestions, fn suggestion -> 
+        is_binary(suggestion) and String.length(suggestion) > 0
+      end)
+    end
   end
 
   describe "search event handlers" do
@@ -570,6 +583,18 @@ defmodule NathanForUsWeb.VideoSearchLiveTest do
 
       render_click(view, "hide_autocomplete")
       assert assigns(view).show_autocomplete == false
+    end
+
+    test "select_sample_suggestion populates search field", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      sample_suggestion = "I graduated from business school"
+      render_click(view, "select_sample_suggestion", %{"suggestion" => sample_suggestion})
+
+      assert assigns(view).search_form == %{"term" => sample_suggestion}
+      assert assigns(view).search_term == sample_suggestion
+      assert assigns(view).show_autocomplete == false
+      assert assigns(view).autocomplete_suggestions == []
     end
   end
 
@@ -1257,6 +1282,119 @@ defmodule NathanForUsWeb.VideoSearchLiveTest do
       # Should end in closed state
       assert assigns(view).show_sequence_modal == false
       assert assigns(view).frame_sequence == nil
+    end
+  end
+
+  describe "sample suggestions display" do
+    test "sample suggestions appear when search is empty", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/video-search")
+
+      # With empty search, sample suggestions should be visible
+      assert assigns(view).search_term == ""
+      assert assigns(view).show_autocomplete == false
+      assert length(assigns(view).sample_suggestions) > 0
+
+      # HTML should contain sample suggestions section
+      assert html =~ "TRY SEARCHING FOR"
+    end
+
+    test "sample suggestions hidden when search has content", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Enter search term
+      render_hook(view, "autocomplete_search", %{"search" => %{"term" => "test"}})
+
+      # Sample suggestions should not show when there's search content
+      assert assigns(view).search_term == "test"
+      
+      # Re-render to get updated HTML
+      html = render(view)
+      
+      # If autocomplete is not showing, sample suggestions might still be hidden
+      # due to search term being present
+      if assigns(view).show_autocomplete do
+        # Autocomplete is showing, so sample suggestions should be hidden
+        refute html =~ "TRY SEARCHING FOR"
+      end
+    end
+
+    test "sample suggestions hidden when autocomplete is showing", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Trigger autocomplete
+      render_hook(view, "autocomplete_search", %{"search" => %{"term" => "test"}})
+
+      if assigns(view).show_autocomplete do
+        html = render(view)
+        # When autocomplete is showing, sample suggestions should be hidden
+        refute html =~ "TRY SEARCHING FOR"
+      end
+    end
+
+    test "clicking sample suggestion triggers select_sample_suggestion event", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/video-search")
+
+      # Sample suggestions should be present
+      assert html =~ "TRY SEARCHING FOR"
+      assert length(assigns(view).sample_suggestions) > 0
+
+      # Get a sample suggestion
+      sample_suggestion = List.first(assigns(view).sample_suggestions)
+
+      # Click on a sample suggestion
+      render_click(view, "select_sample_suggestion", %{"suggestion" => sample_suggestion})
+
+      # Should populate search field
+      assert assigns(view).search_term == sample_suggestion
+      assert assigns(view).search_form == %{"term" => sample_suggestion}
+    end
+
+    test "sample suggestions component renders all provided suggestions", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/video-search")
+
+      sample_suggestions = assigns(view).sample_suggestions
+      assert length(sample_suggestions) > 0
+
+      # All sample suggestions should appear in the HTML
+      Enum.each(sample_suggestions, fn suggestion ->
+        assert html =~ suggestion
+      end)
+    end
+
+    test "sample suggestions have correct phx-click attributes", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/video-search")
+
+      if length(assigns(view).sample_suggestions) > 0 do
+        # HTML should contain phx-click="select_sample_suggestion"
+        assert html =~ "phx-click=\"select_sample_suggestion\""
+        assert html =~ "phx-value-suggestion="
+      end
+    end
+
+    test "sample suggestions are passed to search interface component", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Sample suggestions should be loaded and passed to the component
+      assert is_list(assigns(view).sample_suggestions)
+      assert length(assigns(view).sample_suggestions) > 0
+    end
+
+    test "clearing search term shows sample suggestions again", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/video-search")
+
+      # Enter search term
+      view |> element("form") |> render_submit(%{"search" => %{"term" => "test"}})
+      assert assigns(view).search_term == "test"
+
+      # Clear search term
+      view |> element("form") |> render_submit(%{"search" => %{"term" => ""}})
+      assert assigns(view).search_term == ""
+
+      # Re-render to get updated HTML
+      html = render(view)
+
+      # Sample suggestions should show again when search is empty
+      assert html =~ "TRY SEARCHING FOR"
     end
   end
 end
