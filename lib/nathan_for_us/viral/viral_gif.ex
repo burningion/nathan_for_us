@@ -24,7 +24,7 @@ defmodule NathanForUs.Viral.ViralGif do
     viral_gif
     |> cast(attrs, [:title, :description, :start_frame_index, :end_frame_index, 
                     :video_id, :created_by_user_id, :is_featured, :category, :frame_data])
-    |> validate_required([:start_frame_index, :end_frame_index, :video_id])
+    |> validate_required([:start_frame_index, :end_frame_index, :video_id, :created_by_user_id])
     |> validate_number(:start_frame_index, greater_than_or_equal_to: 0)
     |> validate_number(:end_frame_index, greater_than: 0)
     |> validate_frame_sequence()

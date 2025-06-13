@@ -16,6 +16,8 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
   attr :is_admin, :boolean, default: false
   attr :gif_cache_status, :string, default: nil
   attr :gif_from_cache, :boolean, default: false
+  attr :current_user, :map, default: nil
+  attr :video_id, :integer, default: nil
   
   def gif_preview(assigns) do
     # Get selected frames based on indices
@@ -95,8 +97,8 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
         
         <div class="mt-4 text-center">
           <%= if @gif_generation_status == :completed do %>
-            <!-- Download and reset buttons -->
-            <div class="flex justify-center gap-4">
+            <!-- Download, post, and reset buttons -->
+            <div class="flex justify-center gap-4 flex-wrap">
               <a
                 href={"data:image/gif;base64,#{@generated_gif_data}"}
                 download="nathan-gif.gif"
@@ -104,6 +106,22 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
               >
                 Download GIF
               </a>
+              
+              <%= if @current_user do %>
+                <button
+                  phx-click="post_to_timeline"
+                  class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded font-mono text-sm transition-colors"
+                >
+                  Post to Timeline
+                </button>
+              <% else %>
+                <.link
+                  navigate={~p"/users/register"}
+                  class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded font-mono text-sm transition-colors"
+                >
+                  Sign Up to Post
+                </.link>
+              <% end %>
               
               <button
                 phx-click="reset_gif_generation"

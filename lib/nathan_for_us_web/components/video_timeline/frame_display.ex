@@ -134,12 +134,6 @@ defmodule NathanForUsWeb.Components.VideoTimeline.FrameDisplay do
                   <%= length(@selected_frame_indices) %> frames selected
                 </div>
                 
-                <button
-                  phx-click="create_sequence_from_selection"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-mono text-sm"
-                >
-                  Create Sequence →
-                </button>
               </div>
             </div>
           <% end %>

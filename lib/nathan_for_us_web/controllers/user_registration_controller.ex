@@ -27,7 +27,7 @@ defmodule NathanForUsWeb.UserRegistrationController do
         |> put_flash(:info, "Welcome! Let's start by finding some Nathan quotes to make GIFs.")
         |> put_session(:show_welcome_modal, true)
         |> UserAuth.log_in_user(user)
-        |> redirect(to: ~p"/video-search")
+        |> redirect(to: ~p"/video-timeline")
 
       {:error, %Ecto.Changeset{} = changeset} ->
         conn

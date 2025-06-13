@@ -19,7 +19,19 @@ defmodule NathanForUs.Viral do
       group_by: g.id,
       order_by: [desc: fragment("COUNT(?) + ? * 2", i.id, g.share_count), desc: g.view_count],
       limit: ^limit,
-      preload: [:video]
+      preload: [:video, :created_by_user]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns most recent GIFs for public timeline.
+  """
+  def get_recent_gifs(limit \\ 25) do
+    from(g in ViralGif,
+      order_by: [desc: g.inserted_at],
+      limit: ^limit,
+      preload: [:video, :created_by_user]
     )
     |> Repo.all()
   end
@@ -32,7 +44,7 @@ defmodule NathanForUs.Viral do
       where: g.is_featured == true,
       order_by: [desc: g.view_count],
       limit: ^limit,
-      preload: [:video]
+      preload: [:video, :created_by_user]
     )
     |> Repo.all()
   end
@@ -51,7 +63,7 @@ defmodule NathanForUs.Viral do
           where: g.view_count > 0,
           order_by: fragment("RANDOM()"),
           limit: 1,
-          preload: [:video]
+          preload: [:video, :created_by_user]
         )
         |> Repo.one()
     end
@@ -108,7 +120,7 @@ defmodule NathanForUs.Viral do
       where: g.category == ^category,
       order_by: [desc: g.view_count],
       limit: ^limit,
-      preload: [:video]
+      preload: [:video, :created_by_user]
     )
     |> Repo.all()
   end

@@ -30,12 +30,13 @@ defmodule NathanForUsWeb.Router do
   scope "/", NathanForUsWeb do
     pipe_through :browser
 
-    live "/", FeedLive
-    live "/video-search", VideoSearchLive
+    get "/", PageController, :redirect_to_timeline
+    live "/public-timeline", PublicTimelineLive
     live "/video-timeline", VideoTimelineSearchLive
     live "/video-timeline/:video_id", VideoTimelineLive
     live "/skeets", SkeetsLive
     live "/chat", ChatRoomLive
+    live "/feed", FeedLive
   end
 
   # Other scopes may use custom stacks.

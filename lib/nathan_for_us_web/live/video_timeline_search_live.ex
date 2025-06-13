@@ -133,10 +133,16 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
 
           <div class="flex items-center gap-4">
             <.link
-              navigate={~p"/video-search"}
-              class="text-blue-400 hover:text-blue-300 font-mono text-sm"
+              navigate={~p"/public-timeline"}
+              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
             >
-              Advanced Search
+              Nathan Timeline
+            </.link>
+            <.link
+              navigate={~p"/users/register"}
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+            >
+              Sign Up
             </.link>
           </div>
         </div>
@@ -247,14 +253,19 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
                       <%= for frame <- Enum.take(frames, 12) do %>
                         <div class="group">
                           <%= if frame.image_data do %>
-                            <div class="relative">
+                            <div class="relative cursor-pointer" onclick={"window.location.href = '#{build_frame_context_link(video.id, frame, @search_term)}'"}>
                               <img
                                 src={"data:image/jpeg;base64,#{encode_frame_image(frame.image_data)}"}
                                 alt={"Frame ##{frame.frame_number}"}
-                                class="w-full aspect-video object-cover rounded-lg border border-gray-600 group-hover:border-blue-500 transition-colors"
+                                class="w-full aspect-video object-cover rounded-lg border border-gray-600 group-hover:border-blue-500 transition-colors hover:scale-105 transform transition-transform duration-200"
                               />
                               <div class="absolute bottom-1 right-1 bg-black bg-opacity-75 text-white text-xs px-1 py-0.5 rounded font-mono">
                                 #<%= frame.frame_number %>
+                              </div>
+                              <div class="absolute inset-0 bg-blue-500 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                                <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs font-mono">
+                                  Click to compose GIF
+                                </div>
                               </div>
                             </div>
                           <% else %>
@@ -325,6 +336,11 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
   defp build_timeline_link(video_id, _frames, search_term) do
     encoded_search_term = URI.encode(search_term)
     ~p"/video-timeline/#{video_id}?search=#{encoded_search_term}"
+  end
+
+  defp build_frame_context_link(video_id, frame, search_term) do
+    encoded_search_term = URI.encode(search_term)
+    ~p"/video-timeline/#{video_id}?search=#{encoded_search_term}&context_frame=#{frame.frame_number}"
   end
 
   defp encode_frame_image(nil), do: ""

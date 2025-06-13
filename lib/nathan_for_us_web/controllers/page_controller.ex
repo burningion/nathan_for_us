@@ -6,4 +6,8 @@ defmodule NathanForUsWeb.PageController do
     # so skip the default app layout.
     render(conn, :home, layout: false)
   end
+
+  def redirect_to_timeline(conn, _params) do
+    redirect(conn, to: ~p"/video-timeline")
+  end
 end
