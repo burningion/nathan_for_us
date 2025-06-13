@@ -3,7 +3,8 @@ defmodule NathanForUs.Gif do
   import Ecto.Changeset
   import Ecto.Query
 
-  alias NathanForUs.{Repo, Video}
+  alias NathanForUs.{Repo}
+  alias NathanForUs.Video.Video
 
   @primary_key {:id, :id, autogenerate: true}
   @foreign_key_type :id

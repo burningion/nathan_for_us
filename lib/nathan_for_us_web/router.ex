@@ -32,6 +32,7 @@ defmodule NathanForUsWeb.Router do
 
     live "/", FeedLive
     live "/video-search", VideoSearchLive
+    live "/video-timeline", VideoTimelineSearchLive
     live "/video-timeline/:video_id", VideoTimelineLive
     live "/skeets", SkeetsLive
     live "/chat", ChatRoomLive
