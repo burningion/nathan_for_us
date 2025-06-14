@@ -28,6 +28,13 @@ defmodule NathanForUs.CacheManager do
   end
   
   @doc """
+  Get comprehensive cache statistics including public timeline cache.
+  """
+  def detailed_stats() do
+    GenServer.call(__MODULE__, :detailed_stats)
+  end
+  
+  @doc """
   Force memory cleanup across all caches.
   """
   def force_cleanup() do
@@ -86,6 +93,37 @@ defmodule NathanForUs.CacheManager do
     }
     
     {:reply, combined_stats, state}
+  end
+  
+  @impl true
+  def handle_call(:detailed_stats, _from, state) do
+    gif_stats = NathanForUs.GifCache.stats()
+    frame_stats = NathanForUs.FrameCache.stats()
+    
+    # Get public timeline cache stats
+    timeline_stats = try do
+      NathanForUs.PublicTimelineCache.stats()
+    rescue
+      _ -> %{error: "Public timeline cache unavailable"}
+    end
+    
+    total_memory_mb = gif_stats.memory_usage_mb + frame_stats.memory_usage_mb
+    memory_usage_percent = (total_memory_mb / @total_cache_memory_mb) * 100
+    
+    detailed_stats = %{
+      total_memory_mb: Float.round(total_memory_mb, 2),
+      total_budget_mb: @total_cache_memory_mb,
+      memory_usage_percent: Float.round(memory_usage_percent, 1),
+      memory_status: get_memory_status(memory_usage_percent),
+      gif_cache: gif_stats,
+      frame_cache: frame_stats,
+      public_timeline_cache: timeline_stats,
+      cache_efficiency: calculate_overall_efficiency(gif_stats, frame_stats),
+      last_cleanup: state.last_cleanup,
+      system_recommendations: get_system_recommendations(memory_usage_percent, gif_stats, frame_stats)
+    }
+    
+    {:reply, detailed_stats, state}
   end
   
   @impl true

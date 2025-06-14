@@ -17,7 +17,9 @@ defmodule NathanForUs.Application do
       # Start cache processes for memory-efficient GIF and frame storage
       NathanForUs.GifCache,
       NathanForUs.FrameCache,
-      NathanForUs.CacheManager
+      NathanForUs.CacheManager,
+      # Start public timeline cache for fast page loads
+      NathanForUs.PublicTimelineCache
     ]
 
     # Conditionally add services based on environment

@@ -16,11 +16,15 @@ defmodule NathanForUsWeb.AdminCacheLive do
         
         # Get gif cache stats if available
         gif_stats = get_gif_cache_stats()
+        
+        # Get public timeline cache stats
+        public_timeline_stats = get_public_timeline_cache_stats()
 
         {:ok,
          assign(socket,
            frame_stats: frame_stats,
            gif_stats: gif_stats,
+           public_timeline_stats: public_timeline_stats,
            cache_entries: cache_entries,
            page_title: "Cache Admin",
            page_description: "Cache management and inspection",
@@ -39,12 +43,14 @@ defmodule NathanForUsWeb.AdminCacheLive do
   def handle_event("refresh_stats", _params, socket) do
     frame_stats = FrameCache.stats()
     gif_stats = get_gif_cache_stats()
+    public_timeline_stats = get_public_timeline_cache_stats()
     cache_entries = get_cache_entries_sample(socket.assigns.entries_limit)
 
     socket =
       socket
       |> assign(:frame_stats, frame_stats)
       |> assign(:gif_stats, gif_stats)
+      |> assign(:public_timeline_stats, public_timeline_stats)
       |> assign(:cache_entries, cache_entries)
       |> put_flash(:info, "Cache statistics refreshed")
 
@@ -267,6 +273,38 @@ defmodule NathanForUsWeb.AdminCacheLive do
           </div>
         <% end %>
 
+        <!-- Public Timeline Cache Stats -->
+        <%= if @public_timeline_stats do %>
+          <div class="bg-white rounded-lg p-6 shadow-sm border border-zinc-200 mb-8">
+            <h2 class="text-xl font-bold text-zinc-900 mb-4">Public Timeline Cache</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span class="font-medium text-zinc-600">Cached GIFs:</span>
+                <span class="ml-2"><%= @public_timeline_stats.cached_gifs_count %></span>
+              </div>
+              <div>
+                <span class="font-medium text-zinc-600">Cache Age:</span>
+                <span class="ml-2"><%= @public_timeline_stats.cache_age_display %></span>
+              </div>
+              <div>
+                <span class="font-medium text-zinc-600">Last Refresh:</span>
+                <span class="ml-2"><%= @public_timeline_stats.last_refresh_display %></span>
+              </div>
+              <div>
+                <span class="font-medium text-zinc-600">Status:</span>
+                <span class={[
+                  "ml-2 px-2 py-1 text-xs rounded",
+                  if(@public_timeline_stats.cache_age_seconds < 120, 
+                    do: "bg-green-100 text-green-800", 
+                    else: "bg-yellow-100 text-yellow-800")
+                ]}>
+                  <%= if @public_timeline_stats.cache_age_seconds < 120, do: "Fresh", else: "Stale" %>
+                </span>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
         <!-- Cached Entries Browser -->
         <div class="bg-white rounded-lg p-6 shadow-sm border border-zinc-200">
           <div class="flex justify-between items-center mb-4">
@@ -386,6 +424,35 @@ defmodule NathanForUsWeb.AdminCacheLive do
         total_gifs: total_gifs,
         recent_gifs: recent_gifs,
         popular_gifs: popular_gifs
+      }
+    rescue
+      _ -> nil
+    end
+  end
+
+  defp get_public_timeline_cache_stats do
+    try do
+      stats = NathanForUs.PublicTimelineCache.stats()
+      
+      # Format cache age for display
+      cache_age_display = cond do
+        stats.cache_age_seconds < 60 -> "#{stats.cache_age_seconds}s"
+        stats.cache_age_seconds < 3600 -> "#{div(stats.cache_age_seconds, 60)}m"
+        true -> "#{div(stats.cache_age_seconds, 3600)}h"
+      end
+      
+      # Format last refresh time
+      last_refresh_display = if stats.last_refresh do
+        time_ago(stats.last_refresh)
+      else
+        "Never"
+      end
+      
+      %{
+        cached_gifs_count: stats.cached_gifs_count,
+        cache_age_seconds: stats.cache_age_seconds,
+        cache_age_display: cache_age_display,
+        last_refresh_display: last_refresh_display
       }
     rescue
       _ -> nil

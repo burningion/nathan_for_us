@@ -96,6 +96,12 @@ defmodule NathanForUsWeb.Telemetry do
       ),
       last_value("nathan_for_us.cache.frame.cached_items",
         description: "Number of frames in cache"
+      ),
+      last_value("nathan_for_us.cache.public_timeline.cached_gifs",
+        description: "Number of GIFs cached for public timeline"
+      ),
+      last_value("nathan_for_us.cache.public_timeline.cache_age_seconds",
+        description: "Age of public timeline cache in seconds"
       )
     ]
   end
@@ -114,6 +120,13 @@ defmodule NathanForUsWeb.Telemetry do
       gif_stats = NathanForUs.GifCache.stats()
       frame_stats = NathanForUs.FrameCache.stats()
       cache_manager_stats = NathanForUs.CacheManager.stats()
+      
+      # Get public timeline cache stats
+      timeline_stats = try do
+        NathanForUs.PublicTimelineCache.stats()
+      rescue
+        _ -> %{cached_gifs_count: 0, cache_age_seconds: 0}
+      end
 
       # Emit telemetry events
       :telemetry.execute([:nathan_for_us, :cache, :gif], %{
@@ -128,6 +141,11 @@ defmodule NathanForUsWeb.Telemetry do
 
       :telemetry.execute([:nathan_for_us, :cache, :total], %{
         memory_usage_percent: cache_manager_stats.memory_usage_percent
+      })
+      
+      :telemetry.execute([:nathan_for_us, :cache, :public_timeline], %{
+        cached_gifs: timeline_stats.cached_gifs_count || 0,
+        cache_age_seconds: timeline_stats.cache_age_seconds || 0
       })
     rescue
       _error ->

@@ -76,9 +76,26 @@ defmodule NathanForUs.Viral do
   Creates a viral GIF from frame selection.
   """
   def create_viral_gif(attrs \\ %{}) do
-    %ViralGif{}
+    result = %ViralGif{}
     |> ViralGif.changeset(attrs)
     |> Repo.insert()
+    
+    # Refresh public timeline cache when new GIF is posted
+    case result do
+      {:ok, _viral_gif} ->
+        try do
+          NathanForUs.PublicTimelineCache.refresh_cache()
+        rescue
+          error ->
+            # Don't fail the main operation if cache refresh fails
+            require Logger
+            Logger.warning("Failed to refresh public timeline cache: #{inspect(error)}")
+        end
+      _ ->
+        :ok
+    end
+    
+    result
   end
 
   @doc """

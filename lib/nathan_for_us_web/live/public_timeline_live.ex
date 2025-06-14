@@ -11,12 +11,13 @@ defmodule NathanForUsWeb.PublicTimelineLive do
 
   alias NathanForUs.Viral
   alias NathanForUs.Accounts.User
+  alias NathanForUs.PublicTimelineCache
 
   on_mount {NathanForUsWeb.UserAuth, :mount_current_user}
 
   def mount(params, session, socket) do
-    # Load 25 most recent GIFs with all associations for GIF display
-    recent_gifs = Viral.get_recent_gifs(25)
+    # Load 25 most recent GIFs from cache for fast page loads
+    recent_gifs = PublicTimelineCache.get_timeline_gifs(25)
 
     # Get session ID for interaction tracking
     session_id = Map.get(session, "live_socket_id")
