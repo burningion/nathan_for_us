@@ -23,6 +23,9 @@ defmodule NathanForUsWeb.PublicTimelineLive do
       |> assign(:page_title, "Nathan Timeline")
       |> assign(:gifs, recent_gifs)
       |> assign(:show_post_modal, false)
+      |> assign(:show_gif_modal, false)
+      |> assign(:modal_gif, nil)
+      |> assign(:modal_captions, [])
       |> assign(:loading, false)
 
     {:ok, socket}
@@ -70,6 +73,46 @@ defmodule NathanForUsWeb.PublicTimelineLive do
       session_id: get_connect_info(socket, :session)["live_socket_id"]
     )
 
+    # Find the GIF data
+    gif_id_int = String.to_integer(gif_id)
+    modal_gif = Enum.find(socket.assigns.gifs, fn gif -> gif.id == gif_id_int end)
+
+    if modal_gif && modal_gif.gif && modal_gif.gif.frame_ids do
+      # Get captions for this GIF
+      captions = NathanForUs.Video.get_gif_captions(modal_gif.gif.frame_ids)
+      
+      socket = 
+        socket
+        |> assign(:show_gif_modal, true)
+        |> assign(:modal_gif, modal_gif)
+        |> assign(:modal_captions, captions)
+      
+      {:noreply, socket}
+    else
+      # GIF not found or missing data, just record the interaction
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_gif_modal", _params, socket) do
+    socket = 
+      socket
+      |> assign(:show_gif_modal, false)
+      |> assign(:modal_gif, nil)
+      |> assign(:modal_captions, [])
+    
+    {:noreply, socket}
+  end
+
+  def handle_event("share_gif", %{"gif_id" => _gif_id}, socket) do
+    # This could redirect to share functionality if needed
+    # For now, just close the modal
+    socket = 
+      socket
+      |> assign(:show_gif_modal, false)
+      |> assign(:modal_gif, nil)
+      |> assign(:modal_captions, [])
+    
     {:noreply, socket}
   end
 
@@ -246,6 +289,15 @@ defmodule NathanForUsWeb.PublicTimelineLive do
             </div>
           </div>
         </div>
+      <% end %>
+      
+      <!-- GIF Modal -->
+      <%= if @show_gif_modal and @modal_gif do %>
+        <NathanForUsWeb.Components.GifModal.render 
+          gif_data={@modal_gif}
+          captions={@modal_captions}
+          show_share_button={false}
+        />
       <% end %>
     </div>
     """

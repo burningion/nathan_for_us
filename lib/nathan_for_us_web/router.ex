@@ -93,6 +93,17 @@ defmodule NathanForUsWeb.Router do
 
     live "/frames", AdminFrameBrowserLive
     live "/upload", AdminVideoUploadLive
+    live "/cache", AdminCacheLive
+  end
+
+  # LiveDashboard with authentication for production
+  scope "/admin" do
+    pipe_through [:browser, :require_authenticated_user, :require_admin_user]
+    
+    import Phoenix.LiveDashboard.Router
+    live_dashboard "/dashboard", 
+      metrics: NathanForUsWeb.Telemetry,
+      live_session_name: :admin_dashboard
   end
 
   scope "/", NathanForUsWeb do

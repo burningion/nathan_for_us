@@ -359,18 +359,75 @@ defmodule NathanForUs.Video do
   end
 
   @doc """
-  Gets the binary image data for a specific frame.
+  Records that frames were used in GIF generation to boost cache priority.
+  """
+  def record_frames_gif_usage(frame_ids) when is_list(frame_ids) do
+    Enum.each(frame_ids, fn frame_id ->
+      NathanForUs.FrameCache.record_gif_usage(frame_id)
+    end)
+  end
+
+  @doc """
+  Gets frames by their IDs for cache warming.
+  """
+  def get_frames_by_ids(frame_ids) when is_list(frame_ids) do
+    VideoFrame
+    |> where([f], f.id in ^frame_ids)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets captions for a GIF based on its frame IDs.
+  Returns unique caption texts that appear during the GIF timeframe.
+  """
+  def get_gif_captions(frame_ids) when is_list(frame_ids) and length(frame_ids) > 0 do
+    query = """
+    SELECT DISTINCT c.text
+    FROM video_captions c
+    JOIN frame_captions fc ON fc.caption_id = c.id
+    WHERE fc.frame_id = ANY($1)
+    ORDER BY c.text
+    """
+
+    case Ecto.Adapters.SQL.query(Repo, query, [frame_ids]) do
+      {:ok, %{rows: rows}} ->
+        rows |> Enum.map(fn [text] -> text end) |> Enum.take(10)  # Limit to prevent overwhelming UI
+      {:error, _reason} ->
+        []
+    end
+  end
+
+  def get_gif_captions(_), do: []
+
+  @doc """
+  Gets the binary image data for a specific frame with ETS caching.
   """
   def get_frame_image_data(frame_id) do
-    case Repo.get(VideoFrame, frame_id) do
-      %VideoFrame{image_data: image_data} when not is_nil(image_data) ->
-        {:ok, image_data}
-
-      %VideoFrame{image_data: nil} ->
-        {:error, :no_image_data}
-
+    # Try cache first
+    case NathanForUs.FrameCache.get(frame_id) do
       nil ->
-        {:error, :not_found}
+        # Not in cache, get from database
+        case Repo.get(VideoFrame, frame_id) do
+          %VideoFrame{image_data: image_data} = frame when not is_nil(image_data) ->
+            # Cache the frame data for future access
+            metadata = %{
+              frame_number: frame.frame_number,
+              video_id: frame.video_id,
+              timestamp_ms: frame.timestamp_ms
+            }
+            NathanForUs.FrameCache.put(frame_id, image_data, metadata)
+            {:ok, image_data}
+
+          %VideoFrame{image_data: nil} ->
+            {:error, :no_image_data}
+
+          nil ->
+            {:error, :not_found}
+        end
+      
+      cached_data ->
+        # Got it from cache
+        {:ok, cached_data}
     end
   end
 

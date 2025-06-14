@@ -227,6 +227,18 @@ defmodule NathanForUsWeb.AdminLive do
             >
               Browse Frames
             </.link>
+            <.link
+              navigate={~p"/admin/cache"}
+              class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Cache Admin
+            </.link>
+            <.link
+              navigate={~p"/admin/dashboard"}
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              🔍 System Monitor
+            </.link>
           </nav>
         </div>
         

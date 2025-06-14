@@ -13,7 +13,11 @@ defmodule NathanForUs.Application do
       {DNSCluster, query: Application.get_env(:nathan_for_us, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: NathanForUs.PubSub},
       # Start the Finch HTTP client for sending emails
-      {Finch, name: NathanForUs.Finch}
+      {Finch, name: NathanForUs.Finch},
+      # Start cache processes for memory-efficient GIF and frame storage
+      NathanForUs.GifCache,
+      NathanForUs.FrameCache,
+      NathanForUs.CacheManager
     ]
 
     # Conditionally add services based on environment

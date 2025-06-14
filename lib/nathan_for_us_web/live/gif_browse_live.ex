@@ -32,6 +32,9 @@ defmodule NathanForUsWeb.GifBrowseLive do
       |> assign(:sort, sort)
       |> assign(:session_id, session_id)
       |> assign(:show_register_flash, false)
+      |> assign(:show_gif_modal, false)
+      |> assign(:modal_gif, nil)
+      |> assign(:modal_captions, [])
       |> load_user_votes()
 
     {:ok, socket}
@@ -48,6 +51,9 @@ defmodule NathanForUsWeb.GifBrowseLive do
         socket
         |> assign(:sort, sort)
         |> assign(:loading, true)
+        |> assign(:show_gif_modal, false)
+        |> assign(:modal_gif, nil)
+        |> assign(:modal_captions, [])
         |> assign(:gifs, gifs_with_captions)
         |> assign(:loading, false)
         |> load_user_votes()
@@ -108,18 +114,55 @@ defmodule NathanForUsWeb.GifBrowseLive do
     {:noreply, socket}
   end
 
+  def handle_event("view_gif", %{"gif_id" => gif_id}, socket) do
+    # Find the GIF data
+    gif_id_int = String.to_integer(gif_id)
+    modal_gif = Enum.find(socket.assigns.gifs, fn gif -> gif.id == gif_id_int end)
+
+    if modal_gif && modal_gif.gif && modal_gif.gif.frame_ids do
+      # Get captions for this GIF
+      captions = NathanForUs.Video.get_gif_captions(modal_gif.gif.frame_ids)
+      
+      socket = 
+        socket
+        |> assign(:show_gif_modal, true)
+        |> assign(:modal_gif, modal_gif)
+        |> assign(:modal_captions, captions)
+      
+      {:noreply, socket}
+    else
+      # GIF not found or missing data
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_gif_modal", _params, socket) do
+    socket = 
+      socket
+      |> assign(:show_gif_modal, false)
+      |> assign(:modal_gif, nil)
+      |> assign(:modal_captions, [])
+    
+    {:noreply, socket}
+  end
+
+  def handle_event("share_gif", %{"gif_id" => gif_id}, socket) do
+    # Map to the existing repost_gif functionality
+    handle_event("repost_gif", %{"gif_id" => gif_id}, socket)
+  end
+
   def handle_event("repost_gif", %{"gif_id" => browseable_gif_id}, socket) do
     if socket.assigns.current_user do
       # Find the browseable GIF
+      browseable_gif_id_int = String.to_integer(browseable_gif_id)
       browseable_gif =
-        Enum.find(socket.assigns.gifs, &(&1.id == String.to_integer(browseable_gif_id)))
+        Enum.find(socket.assigns.gifs, &(&1.id == browseable_gif_id_int))
 
       if browseable_gif do
         # Create a viral GIF post from this browseable GIF
         attrs = %{
           video_id: browseable_gif.video_id,
           created_by_user_id: socket.assigns.current_user.id,
-          # Link to actual GIF binary
           gif_id: browseable_gif.gif_id,
           start_frame_index: browseable_gif.start_frame_index,
           end_frame_index: browseable_gif.end_frame_index,
@@ -130,11 +173,22 @@ defmodule NathanForUsWeb.GifBrowseLive do
 
         case Viral.create_viral_gif(attrs) do
           {:ok, _viral_gif} ->
-            socket = put_flash(socket, :info, "GIF posted to public timeline!")
+            socket = 
+              socket
+              |> put_flash(:info, "✅ GIF posted to public timeline! Check the NATHAN POST TIMELINE to see it.")
+              |> push_navigate(to: ~p"/public-timeline")
             {:noreply, socket}
 
-          {:error, _reason} ->
-            socket = put_flash(socket, :error, "Failed to post GIF to timeline")
+          {:error, changeset} ->
+            error_msg = 
+              case changeset.errors do
+                [] -> "Unknown error occurred"
+                errors -> 
+                  errors
+                  |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end)
+                  |> Enum.join(", ")
+              end
+            socket = put_flash(socket, :error, "Failed to post GIF: #{error_msg}")
             {:noreply, socket}
         end
       else
@@ -142,7 +196,8 @@ defmodule NathanForUsWeb.GifBrowseLive do
         {:noreply, socket}
       end
     else
-      socket = put_flash(socket, :error, "Please log in to post GIFs")
+      # Show register prompt for unauthenticated users
+      socket = assign(socket, :show_register_flash, true)
       {:noreply, socket}
     end
   end
@@ -291,7 +346,12 @@ defmodule NathanForUsWeb.GifBrowseLive do
               <%= for gif <- @gifs do %>
                 <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors">
                   <!-- GIF Display -->
-                  <div class="aspect-video bg-gray-700 flex items-center justify-center relative">
+                  <div 
+                    class="aspect-video bg-gray-700 flex items-center justify-center relative cursor-pointer hover:bg-gray-600 transition-colors"
+                    phx-click="view_gif"
+                    phx-value-gif_id={gif.id}
+                    title="Click to view GIF details"
+                  >
                     <%= if gif.gif && gif.gif.gif_data do %>
                       <img
                         src={"data:image/gif;base64,#{NathanForUs.Gif.to_base64(gif.gif)}"}
@@ -359,10 +419,19 @@ defmodule NathanForUsWeb.GifBrowseLive do
                         <button
                           phx-click="repost_gif"
                           phx-value-gif_id={gif.id}
-                          class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-mono transition-colors"
-                          title="Post to public timeline"
+                          class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-mono transition-colors flex items-center gap-1"
+                          title="Share this GIF to the public Nathan timeline"
                         >
-                          Repost
+                          <span>📤</span> Share
+                        </button>
+                      <% else %>
+                        <button
+                          phx-click="repost_gif"
+                          phx-value-gif_id={gif.id}
+                          class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-xs font-mono transition-colors flex items-center gap-1"
+                          title="Login to share this GIF to the public timeline"
+                        >
+                          <span>📤</span> Share
                         </button>
                       <% end %>
                     </div>
@@ -373,6 +442,15 @@ defmodule NathanForUsWeb.GifBrowseLive do
           <% end %>
         <% end %>
       </div>
+      
+      <!-- GIF Modal -->
+      <%= if @show_gif_modal and @modal_gif do %>
+        <NathanForUsWeb.Components.GifModal.render 
+          gif_data={@modal_gif}
+          captions={@modal_captions}
+          show_share_button={@current_user != nil}
+        />
+      <% end %>
     </div>
     """
   end

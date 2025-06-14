@@ -66,15 +66,20 @@ defmodule NathanForUs.Gif do
   end
 
   @doc """
-  Get GIF data as base64 with caching optimization hint.
-  In high-traffic scenarios, consider adding application-level cache here.
+  Get GIF data as base64 with ETS caching optimization.
   """
-  def to_base64_cached(%__MODULE__{gif_data: gif_data, id: _id}) when is_binary(gif_data) do
-    # Future optimization: Add process cache for frequently accessed GIFs
-    # For now, we rely on database-level caching
-    # TODO: Implement ETS/GenServer cache for top 100 most popular GIFs
-
-    Base.encode64(gif_data)
+  def to_base64_cached(%__MODULE__{gif_data: gif_data, id: gif_id}) when is_binary(gif_data) do
+    # Try to get from cache first, fall back to provided data
+    case NathanForUs.GifCache.get(gif_id) do
+      nil ->
+        # Not in cache, store it for future access
+        NathanForUs.GifCache.put(gif_id, gif_data)
+        Base.encode64(gif_data)
+      
+      cached_data ->
+        # Got it from cache
+        Base.encode64(cached_data)
+    end
   end
 
   @doc """
@@ -104,7 +109,7 @@ defmodule NathanForUs.Gif do
   end
 
   @doc """
-  Save a generated GIF to the database.
+  Save a generated GIF to the database and cache both GIF and frame data.
   """
   def save_generated_gif(hash, video_id, frame_ids, gif_binary) do
     attrs = %{
@@ -116,14 +121,36 @@ defmodule NathanForUs.Gif do
       file_size: byte_size(gif_binary)
     }
 
-    create_gif(attrs)
+    case create_gif(attrs) do
+      {:ok, gif} = result ->
+        # Cache the GIF data immediately
+        NathanForUs.GifCache.put(gif.id, gif_binary, byte_size(gif_binary))
+        
+        # Record frame usage to boost their cache priority
+        NathanForUs.Video.record_frames_gif_usage(frame_ids)
+        
+        result
+        
+      error ->
+        error
+    end
   end
 
   @doc """
-  Get GIF data as base64 string for embedding.
+  Get GIF data as base64 string for embedding with caching.
   """
-  def to_base64(%__MODULE__{gif_data: gif_data}) when is_binary(gif_data) do
-    Base.encode64(gif_data)
+  def to_base64(%__MODULE__{gif_data: gif_data, id: gif_id}) when is_binary(gif_data) do
+    # Always use cache for performance
+    case NathanForUs.GifCache.get(gif_id) do
+      nil ->
+        # Not in cache, store it for future access
+        NathanForUs.GifCache.put(gif_id, gif_data)
+        Base.encode64(gif_data)
+      
+      cached_data ->
+        # Got it from cache
+        Base.encode64(cached_data)
+    end
   end
 
   @doc """

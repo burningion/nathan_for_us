@@ -1125,7 +1125,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               navigate={~p"/video-timeline"}
               class="text-blue-400 hover:text-blue-300 font-mono font-medium text-sm px-4 py-2"
             >
-              ← Back to timeline editor
+              ← Back to search
             </.link>
 
             <.link
@@ -1175,7 +1175,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           </div>
         </div>
       </div>
-      
+
     <!-- Custom Posted Success Flash -->
       <%= if @show_posted_success_flash do %>
         <div class="fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1 bg-emerald-50 text-emerald-800 ring-emerald-500 fill-cyan-900">
@@ -1217,7 +1217,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           </button>
         </div>
       <% end %>
-      
+
     <!-- Caption Search -->
       <div class="px-6">
         <CaptionSearch.caption_search
@@ -1233,7 +1233,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           expand_count={@expand_count}
         />
       </div>
-      
+
     <!-- Timeline Controls (hidden when searching or in context view) -->
       <%= unless @is_caption_filtered or @is_context_view do %>
         <TimelineControls.timeline_controls
@@ -1244,7 +1244,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           frame_count={@frame_count}
           video_duration_ms={@video_duration_ms}
         />
-        
+
     <!-- Timeline Player -->
         <TimelinePlayer.timeline_player
           timeline_position={@timeline_position}
@@ -1254,7 +1254,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           video={@video}
         />
       <% end %>
-      
+
     <!-- GIF Preview (shows when frames are selected) -->
       <GifPreview.gif_preview
         current_frames={@current_frames}
@@ -1268,7 +1268,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         video_id={@video.id}
         selected_frame_captions={@selected_frame_captions}
       />
-      
+
     <!-- Random Selection Controls (show when in random selection mode) -->
       <%= if @is_random_selection do %>
         <div class="px-6 py-4 bg-gray-800 border-b border-gray-700">
@@ -1323,7 +1323,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           </div>
         </div>
       <% end %>
-      
+
     <!-- Frame Display -->
       <FrameDisplay.frame_display
         current_frames={@current_frames}
@@ -1334,7 +1334,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         is_caption_filtered={@is_caption_filtered}
         expand_count={@expand_count}
       />
-      
+
     <!-- Tutorial Modal -->
       <%= if @show_tutorial_modal do %>
         <div class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
@@ -1445,7 +1445,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           </div>
         </div>
       <% end %>
-      
+
     <!-- Frame Modal -->
       <%= if @show_frame_modal and @modal_frame do %>
         <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
@@ -1485,7 +1485,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                     <p>Resolution: {@modal_frame.width}x{@modal_frame.height}</p>
                   <% end %>
                 </div>
-                
+
     <!-- Frame Captions -->
                 <%= if length(@modal_frame_captions) > 0 do %>
                   <div class="mt-6 bg-gray-700 rounded-lg p-4">
