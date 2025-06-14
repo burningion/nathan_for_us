@@ -25,7 +25,15 @@ defmodule NathanForUs.Gif do
   @doc false
   def changeset(gif, attrs) do
     gif
-    |> cast(attrs, [:hash, :video_id, :frame_ids, :gif_data, :frame_count, :duration_ms, :file_size])
+    |> cast(attrs, [
+      :hash,
+      :video_id,
+      :frame_ids,
+      :gif_data,
+      :frame_count,
+      :duration_ms,
+      :file_size
+    ])
     |> validate_required([:hash, :video_id, :frame_ids, :gif_data, :frame_count])
     |> unique_constraint(:hash)
     |> foreign_key_constraint(:video_id)
@@ -37,10 +45,10 @@ defmodule NathanForUs.Gif do
   def generate_hash(video_id, frame_ids) when is_list(frame_ids) do
     # Sort frame IDs to ensure consistent hashing regardless of selection order
     sorted_frame_ids = Enum.sort(frame_ids)
-    
+
     # Create a string representation to hash
     hash_string = "#{video_id}:#{Enum.join(sorted_frame_ids, ",")}"
-    
+
     # Generate SHA256 hash
     :crypto.hash(:sha256, hash_string)
     |> Base.encode16(case: :lower)
@@ -50,7 +58,7 @@ defmodule NathanForUs.Gif do
   Find an existing GIF by hash with optimized query for high-traffic scenarios.
   """
   def find_by_hash(hash) do
-    from(g in __MODULE__, 
+    from(g in __MODULE__,
       where: g.hash == ^hash,
       select: g
     )
@@ -65,7 +73,7 @@ defmodule NathanForUs.Gif do
     # Future optimization: Add process cache for frequently accessed GIFs
     # For now, we rely on database-level caching
     # TODO: Implement ETS/GenServer cache for top 100 most popular GIFs
-    
+
     Base.encode64(gif_data)
   end
 
@@ -89,6 +97,7 @@ defmodule NathanForUs.Gif do
     case find_by_hash(hash) do
       nil ->
         {:generate, hash, frame_ids}
+
       gif ->
         {:ok, gif}
     end
@@ -148,49 +157,54 @@ defmodule NathanForUs.Gif do
   """
   def cache_stats do
     base_stats = stats()
-    
+
     # Get top videos by GIF count (most popular for GIF creation)
-    top_videos = from(g in __MODULE__,
-      join: v in Video, on: g.video_id == v.id,
-      group_by: [g.video_id, v.title],
-      select: %{
-        video_id: g.video_id,
-        video_title: v.title,
-        gif_count: count(g.id),
-        total_size: sum(g.file_size)
-      },
-      order_by: [desc: count(g.id)],
-      limit: 10
-    )
-    |> Repo.all()
-    
+    top_videos =
+      from(g in __MODULE__,
+        join: v in Video,
+        on: g.video_id == v.id,
+        group_by: [g.video_id, v.title],
+        select: %{
+          video_id: g.video_id,
+          video_title: v.title,
+          gif_count: count(g.id),
+          total_size: sum(g.file_size)
+        },
+        order_by: [desc: count(g.id)],
+        limit: 10
+      )
+      |> Repo.all()
+
     # Get GIF size distribution
-    size_stats = from(g in __MODULE__,
-      select: %{
-        min_size: min(g.file_size),
-        max_size: max(g.file_size),
-        avg_size: avg(g.file_size)
-      }
-    )
-    |> Repo.one()
-    
+    size_stats =
+      from(g in __MODULE__,
+        select: %{
+          min_size: min(g.file_size),
+          max_size: max(g.file_size),
+          avg_size: avg(g.file_size)
+        }
+      )
+      |> Repo.one()
+
     # Get frame count distribution
-    frame_stats = from(g in __MODULE__,
-      select: %{
-        min_frames: min(g.frame_count),
-        max_frames: max(g.frame_count),
-        avg_frames: avg(g.frame_count)
-      }
-    )
-    |> Repo.one()
-    
+    frame_stats =
+      from(g in __MODULE__,
+        select: %{
+          min_frames: min(g.frame_count),
+          max_frames: max(g.frame_count),
+          avg_frames: avg(g.frame_count)
+        }
+      )
+      |> Repo.one()
+
     # Recent GIF generation activity
-    recent_activity = from(g in __MODULE__,
-      where: g.inserted_at >= ago(24, "hour"),
-      select: count(g.id)
-    )
-    |> Repo.one()
-    
+    recent_activity =
+      from(g in __MODULE__,
+        where: g.inserted_at >= ago(24, "hour"),
+        select: count(g.id)
+      )
+      |> Repo.one()
+
     %{
       total_gifs: base_stats.total_count || 0,
       total_size_bytes: base_stats.total_size || 0,
@@ -207,11 +221,11 @@ defmodule NathanForUs.Gif do
       cache_efficiency: calculate_cache_efficiency()
     }
   end
-  
+
   # Calculate estimated cache efficiency based on duplicate frame patterns.
   defp calculate_cache_efficiency do
     total_gifs = from(g in __MODULE__, select: count(g.id)) |> Repo.one() || 0
-    
+
     if total_gifs == 0 do
       0.0
     else

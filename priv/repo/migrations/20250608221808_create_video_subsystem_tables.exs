@@ -9,9 +9,11 @@ defmodule NathanForUs.Repo.Migrations.CreateVideoSubsystemTables do
       add :duration_ms, :integer
       add :fps, :float
       add :frame_count, :integer
-      add :status, :string, default: "pending" # pending, processing, completed, failed
+      # pending, processing, completed, failed
+      add :status, :string, default: "pending"
       add :processed_at, :utc_datetime
-      add :metadata, :map # Store additional ffprobe metadata as JSON
+      # Store additional ffprobe metadata as JSON
+      add :metadata, :map
 
       timestamps()
     end
@@ -44,7 +46,8 @@ defmodule NathanForUs.Repo.Migrations.CreateVideoSubsystemTables do
       add :start_time_ms, :integer, null: false
       add :end_time_ms, :integer, null: false
       add :text, :text, null: false
-      add :caption_index, :integer # Original subtitle index number
+      # Original subtitle index number
+      add :caption_index, :integer
 
       timestamps()
     end
@@ -56,12 +59,13 @@ defmodule NathanForUs.Repo.Migrations.CreateVideoSubsystemTables do
     # Full-text search index on caption text
     # PostgreSQL specific - creates GIN index for text search
     execute """
-    CREATE INDEX video_captions_text_search_idx 
-    ON video_captions 
-    USING GIN (to_tsvector('english', text))
-    """, """
-    DROP INDEX video_captions_text_search_idx
-    """
+            CREATE INDEX video_captions_text_search_idx 
+            ON video_captions 
+            USING GIN (to_tsvector('english', text))
+            """,
+            """
+            DROP INDEX video_captions_text_search_idx
+            """
 
     # Frame-caption associations - links frames to their captions
     create table(:frame_captions) do

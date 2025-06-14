@@ -25,10 +25,11 @@ defmodule NathanForUs.Social.PostTest do
 
     test "valid changeset with both content and image_url", %{user: user} do
       attrs = %{
-        content: "Check out this chart", 
-        image_url: "/uploads/chart.png", 
+        content: "Check out this chart",
+        image_url: "/uploads/chart.png",
         user_id: user.id
       }
+
       changeset = Post.changeset(%Post{}, attrs)
       assert changeset.valid?
     end
@@ -92,11 +93,12 @@ defmodule NathanForUs.Social.PostTest do
   describe "associations" do
     test "post belongs to user" do
       user = user_fixture()
-      
-      {:ok, post} = %Post{}
-      |> Post.changeset(%{content: "Test post", user_id: user.id})
-      |> Repo.insert()
-      
+
+      {:ok, post} =
+        %Post{}
+        |> Post.changeset(%{content: "Test post", user_id: user.id})
+        |> Repo.insert()
+
       post_with_user = Repo.preload(post, :user)
       assert post_with_user.user.id == user.id
       assert post_with_user.user.email == user.email
@@ -105,25 +107,26 @@ defmodule NathanForUs.Social.PostTest do
 
   describe "database constraints" do
     test "user_id foreign key constraint" do
-      invalid_user_id = 999999
+      invalid_user_id = 999_999
       attrs = %{content: "Test content", user_id: invalid_user_id}
-      
+
       changeset = Post.changeset(%Post{}, attrs)
       assert changeset.valid?
-      
+
       assert {:error, changeset} = Repo.insert(changeset)
       assert %{user_id: ["does not exist"]} = errors_on(changeset)
     end
 
     test "post can be created and deleted" do
       user = user_fixture()
-      
-      {:ok, post} = %Post{}
-      |> Post.changeset(%{content: "Test post", user_id: user.id})
-      |> Repo.insert()
-      
+
+      {:ok, post} =
+        %Post{}
+        |> Post.changeset(%{content: "Test post", user_id: user.id})
+        |> Repo.insert()
+
       assert Repo.get(Post, post.id)
-      
+
       {:ok, _deleted_post} = Repo.delete(post)
       refute Repo.get(Post, post.id)
     end

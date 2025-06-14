@@ -2,9 +2,9 @@ defmodule NathanForUsWeb.Components.VideoTimeline.TimelineControls do
   @moduledoc """
   Timeline playback and zoom controls.
   """
-  
+
   use NathanForUsWeb, :html
-  
+
   @doc """
   Renders timeline control buttons and settings.
   """
@@ -14,7 +14,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.TimelineControls do
   attr :timeline_zoom, :float, required: true
   attr :frame_count, :integer, required: true
   attr :video_duration_ms, :integer, required: true
-  
+
   def timeline_controls(assigns) do
     ~H"""
     <div class="bg-gray-800 border-b border-gray-700 px-6 py-3">
@@ -58,24 +58,27 @@ defmodule NathanForUsWeb.Components.VideoTimeline.TimelineControls do
           --%>
         </div>
         
-        <!-- Position Info -->
+    <!-- Position Info -->
         <div class="flex items-center gap-6 text-sm font-mono text-gray-300">
           <div>
-            Frame: <span class="text-white"><%= round(@timeline_position * @frame_count) %></span>
-            <span class="text-gray-500">/ <%= @frame_count %></span>
+            Frame: <span class="text-white">{round(@timeline_position * @frame_count)}</span>
+            <span class="text-gray-500">/ {@frame_count}</span>
           </div>
-          
+
           <div>
-            Time: <span class="text-white"><%= format_current_time(@timeline_position * @video_duration_ms) %></span>
-            <span class="text-gray-500">/ <%= format_duration(@video_duration_ms) %></span>
+            Time:
+            <span class="text-white">
+              {format_current_time(@timeline_position * @video_duration_ms)}
+            </span>
+            <span class="text-gray-500">/ {format_duration(@video_duration_ms)}</span>
           </div>
-          
+
           <div>
-            Progress: <span class="text-white"><%= Float.round(@timeline_position * 100, 1) %>%</span>
+            Progress: <span class="text-white">{Float.round(@timeline_position * 100, 1)}%</span>
           </div>
         </div>
         
-        <!-- Zoom Controls -->
+    <!-- Zoom Controls -->
         <div class="flex items-center gap-4">
           <!-- Zoom Control -->
           <div class="flex items-center gap-2">
@@ -93,7 +96,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.TimelineControls do
             </select>
           </div>
           
-          <!-- Reset Button -->
+    <!-- Reset Button -->
           <button
             phx-click="zoom_timeline"
             phx-value-zoom="1.0"
@@ -106,17 +109,18 @@ defmodule NathanForUsWeb.Components.VideoTimeline.TimelineControls do
     </div>
     """
   end
-  
+
   # Helper functions
-  
+
   defp format_current_time(ms) when is_number(ms) do
     total_seconds = round(ms / 1000)
     minutes = div(total_seconds, 60)
     seconds = rem(total_seconds, 60)
     "#{minutes}:#{String.pad_leading(to_string(seconds), 2, "0")}"
   end
-  
+
   defp format_duration(nil), do: "0:00"
+
   defp format_duration(ms) when is_integer(ms) do
     total_seconds = div(ms, 1000)
     minutes = div(total_seconds, 60)

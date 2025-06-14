@@ -29,22 +29,25 @@ defmodule NathanForUs.BlueskyHose do
           # Extract DID from the top-level message
           repo_did = full_msg["did"]
           Logger.info("Found Nathan Fielder mention from DID: #{inspect(repo_did)}")
-          
+
           # Check for embeds
           embed_info = get_in(record, ["record", "embed"])
+
           if embed_info do
             Logger.info("Post contains embed: #{inspect(embed_info)}")
           end
-          
+
           record_with_did = Map.put(record, "repo", repo_did)
-          
+
           case Social.create_bluesky_post_from_record(record_with_did) do
             {:ok, _post} ->
               Logger.info("Saved Nathan Fielder mention: #{String.slice(skeet, 0, 100)}...")
+
             {:error, reason} ->
               Logger.error("Failed to save Nathan Fielder mention: #{inspect(reason)}")
           end
         end
+
       _ ->
         nil
     end
@@ -56,7 +59,6 @@ defmodule NathanForUs.BlueskyHose do
     downcased = String.downcase(text)
     String.contains?(downcased, "nathan fielder")
   end
-
 
   def handle_disconnect(%{reason: {:local, reason}}, state) do
     Logger.info("Local close with reason: #{inspect(reason)}")

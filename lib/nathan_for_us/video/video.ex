@@ -45,7 +45,9 @@ defmodule NathanForUs.Video.Video do
 
   defp validate_file_path(changeset) do
     case get_field(changeset, :file_path) do
-      nil -> changeset
+      nil ->
+        changeset
+
       file_path ->
         if String.ends_with?(file_path, [".mp4", ".mov", ".avi", ".mkv", ".webm"]) do
           changeset

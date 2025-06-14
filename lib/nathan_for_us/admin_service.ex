@@ -1,17 +1,17 @@
 defmodule NathanForUs.AdminService do
   @moduledoc """
   Service module providing business logic for administrative operations.
-  
+
   This module handles all admin-related business logic separate from LiveView concerns:
-  
+
   - User access validation and authorization
   - Administrative statistics collection and enrichment
   - Profile backfill operations with validation and error handling
   - Task management and completion processing
   - Parameter parsing and validation
-  
+
   ## Examples
-  
+
       # Validate admin access
       :ok = AdminService.validate_admin_access(user)
       
@@ -26,30 +26,30 @@ defmodule NathanForUs.AdminService do
       # Handle completion
       {:ok, results} = AdminService.handle_backfill_completion({:ok, raw_results})
   """
-  
+
   alias NathanForUs.Admin
-  
+
   @type backfill_options :: %{
-    limit: integer(),
-    dry_run: boolean()
-  }
-  
+          limit: integer(),
+          dry_run: boolean()
+        }
+
   @type backfill_result :: %{
-    posts_found: integer(),
-    unique_dids: integer(),
-    successful: integer(),
-    failed: integer(),
-    dry_run: boolean()
-  }
-  
+          posts_found: integer(),
+          unique_dids: integer(),
+          successful: integer(),
+          failed: integer(),
+          dry_run: boolean()
+        }
+
   @type admin_stats :: %{
-    total_posts: integer(),
-    posts_with_users: integer(),
-    posts_without_users: integer(),
-    total_users: integer(),
-    unique_dids_in_posts: integer()
-  }
-  
+          total_posts: integer(),
+          posts_with_users: integer(),
+          posts_without_users: integer(),
+          total_users: integer(),
+          unique_dids_in_posts: integer()
+        }
+
   @doc """
   Validates admin access for a user.
   """
@@ -61,7 +61,7 @@ defmodule NathanForUs.AdminService do
       {:error, :access_denied}
     end
   end
-  
+
   @doc """
   Gets comprehensive admin statistics.
   """
@@ -82,7 +82,7 @@ defmodule NathanForUs.AdminService do
         }
     end
   end
-  
+
   @doc """
   Validates backfill parameters and starts the operation.
   """
@@ -90,16 +90,18 @@ defmodule NathanForUs.AdminService do
   def start_backfill(%{limit: limit, dry_run: dry_run} = options) do
     case validate_backfill_options(options) do
       :ok ->
-        task = Task.async(fn ->
-          execute_backfill(limit, dry_run)
-        end)
+        task =
+          Task.async(fn ->
+            execute_backfill(limit, dry_run)
+          end)
+
         {:ok, task}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
   end
-  
+
   @doc """
   Processes backfill task completion.
   """
@@ -108,20 +110,21 @@ defmodule NathanForUs.AdminService do
     enriched_results = enrich_backfill_results(results)
     {:ok, enriched_results}
   end
-  
+
   def handle_backfill_completion({:error, reason}) do
     {:error, format_backfill_error(reason)}
   end
-  
+
   @doc """
   Calculates coverage percentage for profile completion.
   """
   @spec calculate_profile_coverage(admin_stats()) :: float()
   def calculate_profile_coverage(%{total_posts: 0}), do: 0.0
+
   def calculate_profile_coverage(%{total_posts: total, posts_with_users: with_users}) do
     Float.round(with_users / total * 100, 1)
   end
-  
+
   @doc """
   Validates if a backfill operation can be started.
   """
@@ -129,7 +132,7 @@ defmodule NathanForUs.AdminService do
   def can_start_backfill?(backfill_running) do
     not backfill_running
   end
-  
+
   @doc """
   Formats backfill options from form parameters.
   """
@@ -138,7 +141,7 @@ defmodule NathanForUs.AdminService do
     try do
       limit = String.to_integer(limit_str)
       dry_run = dry_run_str == "true"
-      
+
       options = %{limit: limit, dry_run: dry_run}
       {:ok, options}
     rescue
@@ -146,57 +149,57 @@ defmodule NathanForUs.AdminService do
         {:error, "Invalid limit parameter"}
     end
   end
-  
+
   def parse_backfill_params(_params) do
     {:error, "Missing required parameters"}
   end
-  
+
   # Private functions
-  
+
   defp validate_backfill_options(%{limit: limit, dry_run: dry_run}) do
     cond do
       not is_integer(limit) ->
         {:error, "Limit must be an integer"}
-      
+
       limit <= 0 ->
         {:error, "Limit must be greater than 0"}
-      
+
       limit > 1000 ->
         {:error, "Limit cannot exceed 1000"}
-      
+
       not is_boolean(dry_run) ->
         {:error, "Dry run must be true or false"}
-      
+
       true ->
         :ok
     end
   end
-  
+
   defp execute_backfill(limit, dry_run) do
     Admin.backfill_bluesky_profiles(limit: limit, dry_run: dry_run)
   end
-  
+
   defp enrich_stats(stats) do
     Map.merge(stats, %{
       coverage_percentage: calculate_profile_coverage(stats),
       last_updated: DateTime.utc_now()
     })
   end
-  
+
   defp enrich_backfill_results(results) do
     Map.merge(results, %{
       completion_rate: calculate_completion_rate(results),
       timestamp: DateTime.utc_now()
     })
   end
-  
-  defp calculate_completion_rate(%{successful: successful, failed: failed}) 
+
+  defp calculate_completion_rate(%{successful: successful, failed: failed})
        when successful + failed > 0 do
     Float.round(successful / (successful + failed) * 100, 1)
   end
-  
+
   defp calculate_completion_rate(_), do: 0.0
-  
+
   defp format_backfill_error(reason) do
     case reason do
       {:timeout, _} -> "Backfill operation timed out"
@@ -228,16 +231,17 @@ defmodule NathanForUs.AdminService do
       case System.cmd("which", ["ffmpeg"]) do
         {path, 0} ->
           path = String.trim(path)
+
           case System.cmd("ffmpeg", ["-version"]) do
             {version_output, 0} ->
               # Extract version from first line
               version_line = version_output |> String.split("\n") |> List.first()
               {:ok, "FFMPEG found at #{path}. #{version_line}"}
-            
+
             {error_output, _exit_code} ->
               {:error, "FFMPEG found at #{path} but failed to get version: #{error_output}"}
           end
-        
+
         {_output, _exit_code} ->
           {:error, "FFMPEG not found in system PATH"}
       end
@@ -249,7 +253,7 @@ defmodule NathanForUs.AdminService do
 
   @doc """
   Generates a GIF from selected frame sequence using FFMPEG.
-  
+
   Takes a frame sequence and selected frame indices, extracts the frames
   in order, and creates an animated GIF with appropriate framerate based
   on the source video's timing.
@@ -262,16 +266,19 @@ defmodule NathanForUs.AdminService do
         {:error, "No frames selected for GIF generation"}
       else
         # Create temporary directory for frame processing
-        temp_dir = System.tmp_dir!() |> Path.join("gif_generation_#{:os.system_time(:millisecond)}")
+        temp_dir =
+          System.tmp_dir!() |> Path.join("gif_generation_#{:os.system_time(:millisecond)}")
+
         File.mkdir_p!(temp_dir)
 
         try do
           # Extract selected frames and write to temp files
-          frame_paths = extract_selected_frames_to_temp(frame_sequence, selected_frame_indices, temp_dir)
-          
+          frame_paths =
+            extract_selected_frames_to_temp(frame_sequence, selected_frame_indices, temp_dir)
+
           # Calculate framerate from video metadata or timestamps
           framerate = calculate_gif_framerate(frame_sequence, selected_frame_indices)
-          
+
           # Generate GIF using FFMPEG
           generate_gif_with_ffmpeg(frame_paths, framerate, temp_dir)
         after
@@ -293,15 +300,19 @@ defmodule NathanForUs.AdminService do
     |> Enum.with_index()
     |> Enum.map(fn {frame_index, output_index} ->
       frame = Enum.at(frame_sequence.sequence_frames, frame_index)
-      
+
       if frame && frame.image_data do
         # Decode image data and write to temp file
         # FFmpeg expects 1-based numbering, so add 1 to output_index
-        output_path = Path.join(temp_dir, "frame_#{String.pad_leading(to_string(output_index + 1), 4, "0")}.jpg")
-        
+        output_path =
+          Path.join(
+            temp_dir,
+            "frame_#{String.pad_leading(to_string(output_index + 1), 4, "0")}.jpg"
+          )
+
         image_binary = decode_frame_image_data(frame.image_data)
         File.write!(output_path, image_binary)
-        
+
         require Logger
         Logger.debug("Created frame file: #{output_path}")
         output_path
@@ -318,10 +329,12 @@ defmodule NathanForUs.AdminService do
       true ->
         # Remove the \x prefix and decode from hex
         hex_string = String.slice(hex_data, 2..-1//1)
+
         case Base.decode16(hex_string, case: :lower) do
           {:ok, binary_data} -> binary_data
           :error -> <<>>
         end
+
       false ->
         # Already binary data
         hex_data
@@ -338,25 +351,28 @@ defmodule NathanForUs.AdminService do
       # Single frame gets reasonable default
       4.0
     else
-      selected_frames = selected_frame_indices
+      selected_frames =
+        selected_frame_indices
         |> Enum.sort()
         |> Enum.map(&Enum.at(frame_sequence.sequence_frames, &1))
         |> Enum.reject(&is_nil/1)
-      
+
       if length(selected_frames) >= 2 do
         # Calculate average time difference between frames
         timestamps = Enum.map(selected_frames, &Map.get(&1, :timestamp_ms, 0))
-        
-        time_diffs = timestamps
+
+        time_diffs =
+          timestamps
           |> Enum.chunk_every(2, 1, :discard)
           |> Enum.map(fn [t1, t2] -> t2 - t1 end)
-          |> Enum.reject(& &1 <= 0)
-        
+          |> Enum.reject(&(&1 <= 0))
+
         if Enum.empty?(time_diffs) do
-          4.0  # Default fallback
+          # Default fallback
+          4.0
         else
           avg_diff_ms = Enum.sum(time_diffs) / length(time_diffs)
-          
+
           # Since frames are extracted at 1fps (1000ms intervals) from 30fps source,
           # we need to play them faster to feel natural
           # Think of it as "key moments" that should flow smoothly
@@ -364,15 +380,15 @@ defmodule NathanForUs.AdminService do
             avg_diff_ms >= 1000 ->
               # 1-second extracted intervals: play at 4-6 fps for smooth flow
               5.0
-            
+
             avg_diff_ms >= 500 ->
               # 0.5-second intervals: play at 3-4 fps
               4.0
-            
+
             avg_diff_ms >= 200 ->
               # Faster extractions: moderate speed
               3.0
-            
+
             true ->
               # Very fast extractions: calculate normally
               fps = 1000.0 / avg_diff_ms
@@ -380,7 +396,8 @@ defmodule NathanForUs.AdminService do
           end
         end
       else
-        4.0  # Default fallback
+        # Default fallback
+        4.0
       end
     end
   end
@@ -395,47 +412,64 @@ defmodule NathanForUs.AdminService do
       palette_path = Path.join(temp_dir, "palette.png")
       # Use 1-based numbering pattern to match our file naming
       input_pattern = Path.join(temp_dir, "frame_%04d.jpg")
-      
+
       # Step 1: Generate optimized palette
       palette_args = [
-        "-y",  # Overwrite output file
-        "-framerate", Float.to_string(framerate),
-        "-start_number", "1",  # Start numbering from 1
-        "-i", input_pattern,
-        "-vf", "scale=640:-1:flags=lanczos,palettegen=max_colors=256:reserve_transparent=0",
+        # Overwrite output file
+        "-y",
+        "-framerate",
+        Float.to_string(framerate),
+        # Start numbering from 1
+        "-start_number",
+        "1",
+        "-i",
+        input_pattern,
+        "-vf",
+        "scale=640:-1:flags=lanczos,palettegen=max_colors=256:reserve_transparent=0",
         palette_path
       ]
-      
+
       Logger.info("Running palette generation: ffmpeg #{Enum.join(palette_args, " ")}")
+
       case System.cmd("ffmpeg", palette_args, stderr_to_stdout: true) do
         {_palette_output, 0} ->
           # Step 2: Create GIF using the generated palette
           gif_args = [
-            "-y",  # Overwrite output file
-            "-framerate", Float.to_string(framerate),
-            "-start_number", "1",  # Start numbering from 1
-            "-i", input_pattern,
-            "-i", palette_path,
-            "-lavfi", "scale=640:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5",
-            "-r", Float.to_string(framerate),
+            # Overwrite output file
+            "-y",
+            "-framerate",
+            Float.to_string(framerate),
+            # Start numbering from 1
+            "-start_number",
+            "1",
+            "-i",
+            input_pattern,
+            "-i",
+            palette_path,
+            "-lavfi",
+            "scale=640:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5",
+            "-r",
+            Float.to_string(framerate),
             output_path
           ]
-          
+
           Logger.info("Running GIF generation: ffmpeg #{Enum.join(gif_args, " ")}")
+
           case System.cmd("ffmpeg", gif_args, stderr_to_stdout: true) do
             {_gif_output, 0} ->
               # Read the generated GIF file
               case File.read(output_path) do
                 {:ok, gif_data} ->
                   {:ok, gif_data}
+
                 {:error, reason} ->
                   {:error, "Failed to read generated GIF: #{reason}"}
               end
-            
+
             {error_output, exit_code} ->
               {:error, "GIF creation failed (exit code #{exit_code}): #{error_output}"}
           end
-        
+
         {error_output, exit_code} ->
           {:error, "Palette generation failed (exit code #{exit_code}): #{error_output}"}
       end

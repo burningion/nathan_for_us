@@ -13,8 +13,9 @@ defmodule NathanForUs.Repo.Migrations.AddGifTracking do
       add :created_by_user_id, references(:users, on_delete: :delete_all)
       add :is_featured, :boolean, default: false
       add :category, :string
-      add :frame_data, :text # JSON of frame sequence for quick access
-      
+      # JSON of frame sequence for quick access
+      add :frame_data, :text
+
       timestamps(type: :utc_datetime)
     end
 
@@ -30,9 +31,11 @@ defmodule NathanForUs.Repo.Migrations.AddGifTracking do
       add :viral_gif_id, references(:viral_gifs, on_delete: :delete_all), null: false
       add :user_id, references(:users, on_delete: :delete_all)
       add :session_id, :string
-      add :interaction_type, :string # "view", "share", "download"
-      add :platform, :string # "twitter", "instagram", "tiktok", etc.
-      
+      # "view", "share", "download"
+      add :interaction_type, :string
+      # "twitter", "instagram", "tiktok", etc.
+      add :platform, :string
+
       timestamps(type: :utc_datetime)
     end
 

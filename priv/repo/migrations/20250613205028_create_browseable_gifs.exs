@@ -7,9 +7,10 @@ defmodule NathanForUs.Repo.Migrations.CreateBrowseableGifs do
       add :start_frame_index, :integer, null: false
       add :end_frame_index, :integer, null: false
       add :category, :string
-      add :frame_data, :text # JSON encoded frame data
+      # JSON encoded frame data
+      add :frame_data, :text
       add :is_public, :boolean, default: true, null: false
-      
+
       add :video_id, references(:videos, on_delete: :delete_all), null: false
       add :created_by_user_id, references(:users, on_delete: :nilify_all)
       add :gif_id, references(:gifs, on_delete: :delete_all), null: false

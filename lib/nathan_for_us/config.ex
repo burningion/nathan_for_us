@@ -1,7 +1,7 @@
 defmodule NathanForUs.Config do
   @moduledoc """
   Centralized configuration management for Nathan For Us.
-  
+
   This module provides a clean interface for accessing application configuration
   with proper defaults and environment-specific overrides.
   """
@@ -120,7 +120,7 @@ defmodule NathanForUs.Config do
 
   @doc """
   Validates that required configuration is present.
-  
+
   Should be called during application startup to fail fast if config is missing.
   """
   def validate_config! do
@@ -133,6 +133,7 @@ defmodule NathanForUs.Config do
       case Application.get_env(app, key) do
         nil ->
           raise "Missing required configuration: #{app}.#{key}"
+
         _config ->
           :ok
       end
@@ -140,6 +141,7 @@ defmodule NathanForUs.Config do
 
     # Validate database configuration
     repo_config = Application.get_env(:nathan_for_us, NathanForUs.Repo, [])
+
     unless Keyword.has_key?(repo_config, :database) do
       raise "Missing database configuration"
     end

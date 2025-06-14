@@ -8,33 +8,42 @@
       {assigns[:page_title]}
     </.live_title>
     
-    <!-- Open Graph / Facebook -->
+<!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content={"https://#{@conn.host}/"} />
     <meta property="og:title" content={assigns[:page_title] || "Nathan For Us"} />
-    <meta property="og:description" content={assigns[:page_description] || "Join a group of like minded people"} />
+    <meta
+      property="og:description"
+      content={assigns[:page_description] || "Join a group of like minded people"}
+    />
     <meta property="og:image" content={"https://#{@conn.host}/images/fellow-pilot.png"} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Nathan For Us - Join a group of like minded people" />
     <meta property="og:site_name" content="Nathan For Us" />
-
-    <!-- Twitter -->
+    
+<!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content={"https://#{@conn.host}/"} />
     <meta property="twitter:title" content={assigns[:page_title] || "Nathan For Us"} />
-    <meta property="twitter:description" content={assigns[:page_description] || "Join a group of like minded people"} />
+    <meta
+      property="twitter:description"
+      content={assigns[:page_description] || "Join a group of like minded people"}
+    />
     <meta property="twitter:image" content={"https://#{@conn.host}/images/fellow-pilot.png"} />
-
-    <!-- Apple / iMessage -->
+    
+<!-- Apple / iMessage -->
     <meta name="apple-mobile-web-app-title" content="Nathan For Us" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="apple-touch-icon" href={~p"/images/fellow-pilot.png"} />
-
-    <!-- General -->
-    <meta name="description" content={assigns[:page_description] || "Join a group of like minded people"} />
     
+<!-- General -->
+    <meta
+      name="description"
+      content={assigns[:page_description] || "Join a group of like minded people"}
+    />
+
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>

@@ -19,7 +19,14 @@ defmodule NathanForUs.Chat.Word do
   @doc false
   def changeset(word, attrs) do
     word
-    |> cast(attrs, [:text, :status, :submission_count, :banned_forever, :submitted_by_id, :approved_by_id])
+    |> cast(attrs, [
+      :text,
+      :status,
+      :submission_count,
+      :banned_forever,
+      :submitted_by_id,
+      :approved_by_id
+    ])
     |> validate_required([:text, :status, :submitted_by_id])
     |> validate_inclusion(:status, ["pending", "approved", "denied"])
     |> validate_length(:text, min: 1, max: 50)

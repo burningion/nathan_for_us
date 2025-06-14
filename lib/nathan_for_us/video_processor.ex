@@ -17,8 +17,10 @@ defmodule NathanForUs.VideoProcessor do
     :quality,
     :use_hardware_accel,
     :scene_detection,
-    jpeg_quality: 75,  # JPEG compression quality (0-100)
-    store_binary: false  # Whether to return binary data instead of file paths
+    # JPEG compression quality (0-100)
+    jpeg_quality: 75,
+    # Whether to return binary data instead of file paths
+    store_binary: false
   ]
 
   @type t :: %__MODULE__{
@@ -79,8 +81,10 @@ defmodule NathanForUs.VideoProcessor do
   def get_video_info(video_path) do
     cmd = [
       "ffprobe",
-      "-v", "quiet",
-      "-print_format", "json",
+      "-v",
+      "quiet",
+      "-print_format",
+      "json",
       "-show_format",
       "-show_streams",
       video_path
@@ -132,7 +136,7 @@ defmodule NathanForUs.VideoProcessor do
     cmd = build_ffmpeg_command(config)
     Logger.info("Running ffmpeg: #{Enum.join(cmd, " ")}")
 
-    System.cmd("ffmpeg", cmd, stderr_to_stdout: true) |> IO.inspect
+    System.cmd("ffmpeg", cmd, stderr_to_stdout: true) |> IO.inspect()
   end
 
   defp build_ffmpeg_command(%__MODULE__{} = config) do
@@ -149,6 +153,7 @@ defmodule NathanForUs.VideoProcessor do
   defp maybe_add_hardware_accel(cmd, true) do
     cmd ++ ["-hwaccel", "videotoolbox"]
   end
+
   defp maybe_add_hardware_accel(cmd, false), do: cmd
 
   defp add_input_file(cmd, video_path) do
@@ -160,6 +165,7 @@ defmodule NathanForUs.VideoProcessor do
     filter = "select=gt(scene\\,0.4),fps=#{fps}"
     cmd ++ ["-vf", filter, "-vsync", "vfr"]
   end
+
   defp add_video_filters(cmd, %{scene_detection: false, fps: fps}) do
     cmd ++ ["-vf", "fps=#{fps}"]
   end
@@ -192,6 +198,7 @@ defmodule NathanForUs.VideoProcessor do
       :error -> {:error, "Invalid duration format"}
     end
   end
+
   defp extract_duration(_metadata) do
     {:error, "Duration not found in metadata"}
   end
@@ -222,12 +229,15 @@ defmodule NathanForUs.VideoProcessor do
       :ok = File.write!(temp_input, binary_data)
 
       # Use ImageMagick to compress (use 'magick' instead of deprecated 'convert')
-      {_output, 0} = System.cmd("magick", [
-        temp_input,
-        "-quality", "#{quality}",
-        "-strip",  # Remove metadata
-        temp_output
-      ])
+      {_output, 0} =
+        System.cmd("magick", [
+          temp_input,
+          "-quality",
+          "#{quality}",
+          # Remove metadata
+          "-strip",
+          temp_output
+        ])
 
       # Read compressed data
       {:ok, compressed_data} = File.read(temp_output)
@@ -259,11 +269,13 @@ defmodule NathanForUs.VideoProcessor do
           frame_paths
           |> Enum.with_index()
           |> Enum.map(fn {path, index} ->
-            {:ok, compressed_data, compression_ratio} = compress_jpeg_file(path, config.jpeg_quality)
+            {:ok, compressed_data, compression_ratio} =
+              compress_jpeg_file(path, config.jpeg_quality)
 
             %{
               frame_number: index,
-              timestamp_ms: index * 1000,  # Assuming 1 fps
+              # Assuming 1 fps
+              timestamp_ms: index * 1000,
               image_data: compressed_data,
               compression_ratio: compression_ratio,
               file_size: byte_size(compressed_data)
@@ -276,7 +288,8 @@ defmodule NathanForUs.VideoProcessor do
 
         {:ok, frames_with_binary}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -306,9 +319,10 @@ defmodule NathanForUs.VideoProcessor do
       {:ok, metadata} = get_video_info(video_path)
 
       # Extract video stream info
-      video_stream = Enum.find(metadata["streams"], fn stream ->
-        stream["codec_type"] == "video"
-      end)
+      video_stream =
+        Enum.find(metadata["streams"], fn stream ->
+          stream["codec_type"] == "video"
+        end)
 
       duration_ms = round(String.to_float(metadata["format"]["duration"]) * 1000)
       width = video_stream["width"]
@@ -317,12 +331,14 @@ defmodule NathanForUs.VideoProcessor do
 
       # Update video with metadata
       video = Video.get_video!(video_id)
-      {:ok, video} = Video.update_video(video, %{
-        duration_ms: duration_ms,
-        width: width,
-        height: height,
-        frame_rate: frame_rate
-      })
+
+      {:ok, video} =
+        Video.update_video(video, %{
+          duration_ms: duration_ms,
+          width: width,
+          height: height,
+          frame_rate: frame_rate
+        })
 
       Logger.info("Updated video metadata: #{width}x#{height}, #{duration_ms}ms")
 
@@ -331,26 +347,30 @@ defmodule NathanForUs.VideoProcessor do
       {:ok, captions} = SrtParser.parse_file(caption_path)
 
       # Store captions in database
-      caption_records = Enum.map(captions, fn caption ->
-        %{
-          video_id: video_id,
-          text: caption.text,
-          start_time_ms: caption.start_time_ms,
-          end_time_ms: caption.end_time_ms,
-          inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
-          updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
-        }
-      end)
+      caption_records =
+        Enum.map(captions, fn caption ->
+          %{
+            video_id: video_id,
+            text: caption.text,
+            start_time_ms: caption.start_time_ms,
+            end_time_ms: caption.end_time_ms,
+            inserted_at:
+              DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+            updated_at:
+              DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+          }
+        end)
 
       {_count, caption_records} = Repo.insert_all(VideoCaption, caption_records, returning: true)
       Logger.info("Inserted #{length(caption_records)} captions")
 
       # Extract frames with binary data
-      config = new(video_path, [
-        fps: 1,
-        store_binary: true,
-        jpeg_quality: 85
-      ])
+      config =
+        new(video_path,
+          fps: 1,
+          store_binary: true,
+          jpeg_quality: 85
+        )
 
       Logger.info("Extracting frames from video...")
       {:ok, frames} = extract_frames_as_binary(config)
@@ -365,20 +385,23 @@ defmodule NathanForUs.VideoProcessor do
       |> Enum.chunk_every(batch_size)
       |> Enum.each(fn batch ->
         # Prepare frame records for batch insert
-        frame_records = Enum.map(batch, fn {frame_data, frame_number} ->
-          %{
-            video_id: video_id,
-            frame_number: frame_number,
-            timestamp_ms: round(frame_data.timestamp_ms),
-            image_data: frame_data.image_data,
-            file_size: frame_data.file_size,
-            width: width,
-            height: height,
-            compression_ratio: frame_data.compression_ratio,
-            inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
-            updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
-          }
-        end)
+        frame_records =
+          Enum.map(batch, fn {frame_data, frame_number} ->
+            %{
+              video_id: video_id,
+              frame_number: frame_number,
+              timestamp_ms: round(frame_data.timestamp_ms),
+              image_data: frame_data.image_data,
+              file_size: frame_data.file_size,
+              width: width,
+              height: height,
+              compression_ratio: frame_data.compression_ratio,
+              inserted_at:
+                DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+              updated_at:
+                DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+            }
+          end)
 
         # Insert frames
         {_count, inserted_frames} = Repo.insert_all(VideoFrame, frame_records, returning: true)
@@ -387,18 +410,21 @@ defmodule NathanForUs.VideoProcessor do
         frame_caption_links =
           for frame <- inserted_frames do
             # Find captions that overlap with this frame's timestamp
-            matching_captions = Enum.filter(caption_records, fn caption ->
-              frame.timestamp_ms >= caption.start_time_ms and
-              frame.timestamp_ms <= caption.end_time_ms
-            end)
+            matching_captions =
+              Enum.filter(caption_records, fn caption ->
+                frame.timestamp_ms >= caption.start_time_ms and
+                  frame.timestamp_ms <= caption.end_time_ms
+              end)
 
             # Create frame-caption links
             Enum.map(matching_captions, fn caption ->
               %{
                 frame_id: frame.id,
                 caption_id: caption.id,
-                inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
-                updated_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+                inserted_at:
+                  DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second),
+                updated_at:
+                  DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
               }
             end)
           end
@@ -410,7 +436,10 @@ defmodule NathanForUs.VideoProcessor do
         end
 
         batch_end = List.last(batch) |> elem(1)
-        Logger.info("Processed batch: frames #{batch_end - length(batch) + 1}-#{batch_end} of #{total_frames}")
+
+        Logger.info(
+          "Processed batch: frames #{batch_end - length(batch) + 1}-#{batch_end} of #{total_frames}"
+        )
       end)
 
       # Update video frame count
@@ -419,7 +448,6 @@ defmodule NathanForUs.VideoProcessor do
 
       Logger.info("Video processing complete: #{frame_count} frames processed")
       {:ok, %{video: video, frame_count: frame_count, caption_count: length(caption_records)}}
-
     rescue
       error ->
         Logger.error("Video processing failed: #{inspect(error)}")
@@ -431,13 +459,15 @@ defmodule NathanForUs.VideoProcessor do
     case String.split(frame_rate_str, "/") do
       [numerator, denominator] ->
         String.to_float(numerator) / String.to_float(denominator)
+
       [single_value] ->
         String.to_float(single_value)
+
       _ ->
-        1.0  # Default fallback
+        # Default fallback
+        1.0
     end
   end
 
   defp parse_frame_rate(_), do: 1.0
-
 end

@@ -81,7 +81,7 @@ defmodule NathanForUsWeb.Router do
 
   scope "/", NathanForUsWeb do
     pipe_through [:browser, :require_authenticated_user]
-    
+
     live "/admin", AdminLive
     get "/users/settings", UserSettingsController, :edit
     put "/users/settings", UserSettingsController, :update
@@ -90,7 +90,7 @@ defmodule NathanForUsWeb.Router do
 
   scope "/admin", NathanForUsWeb do
     pipe_through [:browser, :require_authenticated_user, :require_admin_user]
-    
+
     live "/frames", AdminFrameBrowserLive
     live "/upload", AdminVideoUploadLive
   end

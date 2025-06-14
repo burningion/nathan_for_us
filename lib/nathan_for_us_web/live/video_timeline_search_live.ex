@@ -87,12 +87,14 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
         # Generate a range of 15 frame indices starting from the random frame
         frame_indices = Enum.to_list(0..14)
         indices_param = Enum.join(frame_indices, ",")
-        
+
         # Navigate to the video timeline with pre-selected frames
-        path = ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
+        path =
+          ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
+
         socket = redirect(socket, to: path)
         {:noreply, socket}
-      
+
       {:error, _reason} ->
         socket = put_flash(socket, :error, "No suitable videos found for random GIF generation")
         {:noreply, socket}
@@ -161,8 +163,8 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
           </div>
         </div>
       </div>
-
-      <!-- Search Section -->
+      
+    <!-- Search Section -->
       <div class="px-6 py-6">
         <div class="max-w-4xl mx-auto">
           <.form for={@search_form} phx-submit="search" class="mb-8">
@@ -204,11 +206,13 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
               <% end %>
             </div>
           </.form>
-
-          <!-- Random Quote Suggestions (show when no search) -->
+          
+    <!-- Random Quote Suggestions (show when no search) -->
           <%= unless @has_searched do %>
             <div class="mb-8">
-              <h2 class="text-lg font-bold font-mono text-blue-400 mb-4">Try searching for these quotes:</h2>
+              <h2 class="text-lg font-bold font-mono text-blue-400 mb-4">
+                Try searching for these quotes:
+              </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 <%= for quote <- @random_quotes do %>
                   <button
@@ -217,15 +221,15 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
                     class="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg p-4 text-left transition-all hover:border-blue-500 group"
                   >
                     <p class="text-gray-200 text-sm leading-relaxed group-hover:text-white font-mono">
-                      "<%= quote %>"
+                      "{quote}"
                     </p>
                   </button>
                 <% end %>
               </div>
             </div>
           <% end %>
-
-          <!-- Search Results -->
+          
+    <!-- Search Results -->
           <%= if @loading do %>
             <div class="text-center py-12">
               <div class="text-gray-400 font-mono">Searching for quotes...</div>
@@ -235,10 +239,12 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
           <%= if @has_searched and not @loading do %>
             <%= if Enum.empty?(@search_results) do %>
               <div class="text-center py-12">
-                <div class="text-gray-400 font-mono mb-4">No quotes found for "<%= @search_term %>"</div>
-                <p class="text-gray-500 text-sm mb-6">Try a different search term or browse the suggestions above.</p>
+                <div class="text-gray-400 font-mono mb-4">No quotes found for "{@search_term}"</div>
+                <p class="text-gray-500 text-sm mb-6">
+                  Try a different search term or browse the suggestions above.
+                </p>
                 
-                <!-- Feeling Lucky Section -->
+    <!-- Feeling Lucky Section -->
                 <div class="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-md mx-auto">
                   <h3 class="text-lg font-bold font-mono text-yellow-400 mb-3">🎲 Feeling Lucky?</h3>
                   <p class="text-gray-300 text-sm mb-4 font-mono">
@@ -256,17 +262,19 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
               <div class="space-y-8">
                 <div class="flex items-center justify-between">
                   <h2 class="text-lg font-bold font-mono text-blue-400">
-                    Found <%= total_frame_count(@search_results) %> frames across <%= length(@search_results) %> episodes
+                    Found {total_frame_count(@search_results)} frames across {length(@search_results)} episodes
                   </h2>
                 </div>
-
-                <!-- Results grouped by video/episode -->
+                
+    <!-- Results grouped by video/episode -->
                 <%= for {video, frames} <- @search_results do %>
                   <div class="bg-gray-800 border border-gray-700 rounded-lg p-6">
                     <div class="flex items-center justify-between mb-4">
                       <div>
-                        <h3 class="text-xl font-bold font-mono text-white"><%= video.title %></h3>
-                        <p class="text-gray-400 text-sm font-mono"><%= length(frames) %> matching frames</p>
+                        <h3 class="text-xl font-bold font-mono text-white">{video.title}</h3>
+                        <p class="text-gray-400 text-sm font-mono">
+                          {length(frames)} matching frames
+                        </p>
                       </div>
                       <.link
                         navigate={build_timeline_link(video.id, frames, @search_term)}
@@ -275,20 +283,23 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
                         Create GIF →
                       </.link>
                     </div>
-
-                    <!-- Frame previews -->
+                    
+    <!-- Frame previews -->
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       <%= for frame <- Enum.take(frames, 12) do %>
                         <div class="group">
                           <%= if frame.image_data do %>
-                            <div class="relative cursor-pointer" onclick={"window.location.href = '#{build_frame_context_link(video.id, frame, @search_term)}'"}>
+                            <div
+                              class="relative cursor-pointer"
+                              onclick={"window.location.href = '#{build_frame_context_link(video.id, frame, @search_term)}'"}
+                            >
                               <img
                                 src={"data:image/jpeg;base64,#{encode_frame_image(frame.image_data)}"}
                                 alt={"Frame ##{frame.frame_number}"}
                                 class="w-full aspect-video object-cover rounded-lg border border-gray-600 group-hover:border-blue-500 transition-colors hover:scale-105 transform transition-transform duration-200"
                               />
                               <div class="absolute bottom-1 right-1 bg-black bg-opacity-75 text-white text-xs px-1 py-0.5 rounded font-mono">
-                                #<%= frame.frame_number %>
+                                #{frame.frame_number}
                               </div>
                               <div class="absolute inset-0 bg-blue-500 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
                                 <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs font-mono">
@@ -301,12 +312,15 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
                               <span class="text-gray-400 text-xs font-mono">No image</span>
                             </div>
                           <% end %>
-
-                          <!-- Quote preview -->
+                          
+    <!-- Quote preview -->
                           <%= if frame.caption_texts do %>
                             <div class="mt-2 p-2 bg-gray-700 rounded text-xs leading-tight">
                               <p class="text-gray-300 font-mono line-clamp-2">
-                                "<%= String.slice(frame.caption_texts, 0, 100) %><%= if String.length(frame.caption_texts) > 100, do: "..." %>"
+                                "{String.slice(frame.caption_texts, 0, 100)}{if String.length(
+                                                                                  frame.caption_texts
+                                                                                ) > 100,
+                                                                                do: "..."}"
                               </p>
                             </div>
                           <% end %>
@@ -316,7 +330,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
                       <%= if length(frames) > 12 do %>
                         <div class="col-span-full text-center mt-4">
                           <span class="text-gray-400 font-mono text-sm">
-                            + <%= length(frames) - 12 %> more frames
+                            + {length(frames) - 12} more frames
                           </span>
                         </div>
                       <% end %>
@@ -339,10 +353,11 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
     video_ids = search_results |> Enum.map(& &1.video_id) |> Enum.uniq()
 
     # Get video information
-    videos = VideoModel
-    |> where([v], v.id in ^video_ids)
-    |> Repo.all()
-    |> Enum.into(%{}, fn video -> {video.id, video} end)
+    videos =
+      VideoModel
+      |> where([v], v.id in ^video_ids)
+      |> Repo.all()
+      |> Enum.into(%{}, fn video -> {video.id, video} end)
 
     # Group frames by video
     search_results
@@ -368,18 +383,22 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
 
   defp build_frame_context_link(video_id, frame, search_term) do
     encoded_search_term = URI.encode(search_term)
+
     ~p"/video-timeline/#{video_id}?search=#{encoded_search_term}&context_frame=#{frame.frame_number}"
   end
 
   defp encode_frame_image(nil), do: ""
+
   defp encode_frame_image(hex_data) when is_binary(hex_data) do
     case String.starts_with?(hex_data, "\\x") do
       true ->
         hex_string = String.slice(hex_data, 2..-1//1)
+
         case Base.decode16(hex_string, case: :lower) do
           {:ok, binary_data} -> Base.encode64(binary_data)
           :error -> ""
         end
+
       false ->
         Base.encode64(hex_data)
     end

@@ -11,7 +11,8 @@ defmodule NathanForUs.Viral.ViralGif do
     field :share_count, :integer, default: 0
     field :is_featured, :boolean, default: false
     field :category, :string
-    field :frame_data, :string # JSON encoded frame data
+    # JSON encoded frame data
+    field :frame_data, :string
 
     belongs_to :video, NathanForUs.Video.Video
     belongs_to :created_by_user, NathanForUs.Accounts.User
@@ -23,8 +24,18 @@ defmodule NathanForUs.Viral.ViralGif do
   @doc false
   def changeset(viral_gif, attrs) do
     viral_gif
-    |> cast(attrs, [:title, :description, :start_frame_index, :end_frame_index, 
-                    :video_id, :created_by_user_id, :gif_id, :is_featured, :category, :frame_data])
+    |> cast(attrs, [
+      :title,
+      :description,
+      :start_frame_index,
+      :end_frame_index,
+      :video_id,
+      :created_by_user_id,
+      :gif_id,
+      :is_featured,
+      :category,
+      :frame_data
+    ])
     |> validate_required([:start_frame_index, :end_frame_index, :video_id, :created_by_user_id])
     |> validate_number(:start_frame_index, greater_than_or_equal_to: 0)
     |> validate_number(:end_frame_index, greater_than: 0)

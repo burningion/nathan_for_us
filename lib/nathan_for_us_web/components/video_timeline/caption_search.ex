@@ -1,12 +1,12 @@
 defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
   @moduledoc """
   Caption search component for video timeline pages.
-  
+
   Provides caption search functionality segmented to a specific video with autocomplete.
   """
-  
+
   use NathanForUsWeb, :html
-  
+
   @doc """
   Renders the caption search interface for a specific video.
   """
@@ -20,7 +20,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
   attr :is_context_view, :boolean, default: false
   attr :context_target_frame, :map, default: nil
   attr :expand_count, :integer, default: 3
-  
+
   def caption_search(assigns) do
     ~H"""
     <div class="bg-gray-800 border border-gray-600 rounded-lg p-4 mb-4">
@@ -59,15 +59,15 @@ defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
           <% end %>
         </div>
       </div>
-      
+
       <%= if @is_context_view and @context_target_frame do %>
         <div class="mb-3 p-2 bg-gray-700 rounded text-xs text-gray-300 font-mono">
-          Showing context around frame #<%= @context_target_frame.frame_number %>
-          <span class="text-blue-400">(<%= format_timestamp(@context_target_frame.timestamp_ms) %>)</span>
+          Showing context around frame #{@context_target_frame.frame_number}
+          <span class="text-blue-400">({format_timestamp(@context_target_frame.timestamp_ms)})</span>
         </div>
       <% end %>
-      
-      <.caption_search_form 
+
+      <.caption_search_form
         search_term={@search_term}
         search_form={@search_form}
         loading={@loading}
@@ -77,7 +77,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
     </div>
     """
   end
-  
+
   @doc """
   Renders the caption search form with autocomplete.
   """
@@ -86,7 +86,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
   attr :loading, :boolean, required: true
   attr :autocomplete_suggestions, :list, default: []
   attr :show_autocomplete, :boolean, default: false
-  
+
   def caption_search_form(assigns) do
     ~H"""
     <div class="relative">
@@ -103,19 +103,19 @@ defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
               phx-debounce="150"
               autocomplete="off"
             />
-            
-            <.caption_autocomplete_dropdown 
+
+            <.caption_autocomplete_dropdown
               :if={@show_autocomplete and length(@autocomplete_suggestions) > 0}
               suggestions={@autocomplete_suggestions}
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={@loading}
             class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-3 rounded font-mono text-sm transition-colors whitespace-nowrap"
           >
-            <%= if @loading, do: "SEARCHING", else: "SEARCH" %>
+            {if @loading, do: "SEARCHING", else: "SEARCH"}
           </button>
         </div>
       </.form>
@@ -130,7 +130,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
 
   def caption_autocomplete_dropdown(assigns) do
     ~H"""
-    <div 
+    <div
       class="absolute top-full left-0 right-0 z-50 bg-gray-700 border border-gray-600 border-t-0 rounded-b-lg shadow-lg max-h-48 overflow-y-auto"
       phx-click-away="hide_caption_autocomplete"
     >
@@ -145,7 +145,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
           class="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-blue-300 font-mono border-b border-gray-600 last:border-b-0 truncate"
           title={suggestion}
         >
-          <%= suggestion %>
+          {suggestion}
         </button>
       <% end %>
     </div>
@@ -154,11 +154,11 @@ defmodule NathanForUsWeb.Components.VideoTimeline.CaptionSearch do
 
   # Helper function to format timestamp
   defp format_timestamp(nil), do: "0:00"
+
   defp format_timestamp(ms) when is_integer(ms) do
     total_seconds = div(ms, 1000)
     minutes = div(total_seconds, 60)
     seconds = rem(total_seconds, 60)
     "#{minutes}:#{String.pad_leading(to_string(seconds), 2, "0")}"
   end
-  
 end

@@ -15,8 +15,8 @@ defmodule NathanForUs.SocialFixtures do
 
   def post_fixture(attrs \\ %{}) do
     user = attrs[:user] || AccountsFixtures.user_fixture()
-    
-    attrs = 
+
+    attrs =
       attrs
       |> Map.put(:user_id, user.id)
       |> valid_post_attributes()

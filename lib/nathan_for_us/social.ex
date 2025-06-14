@@ -14,8 +14,8 @@ defmodule NathanForUs.Social do
   """
   def list_feed_posts(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
-    
-    following_ids = 
+
+    following_ids =
       from(f in Follow, where: f.follower_id == ^user_id, select: f.following_id)
       |> Repo.all()
 
@@ -35,7 +35,7 @@ defmodule NathanForUs.Social do
   """
   def list_user_posts(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
-    
+
     from(p in Post,
       where: p.user_id == ^user_id,
       order_by: [desc: p.inserted_at],
@@ -132,25 +132,36 @@ defmodule NathanForUs.Social do
   """
   def create_bluesky_post_from_record(record_data) do
     attrs = BlueskyPost.from_firehose_record(record_data)
-    
+
     # Get or create the user if we have a repo (DID)
-    attrs_with_user = case record_data["repo"] do
-      nil -> attrs
-      repo_did ->
-        case get_or_create_bluesky_user_by_did(repo_did) do
-          {:ok, user} -> Map.put(attrs, :bluesky_user_id, user.id)
-          {:error, _reason} -> attrs  # Continue without user if API fails
-        end
-    end
-    
+    attrs_with_user =
+      case record_data["repo"] do
+        nil ->
+          attrs
+
+        repo_did ->
+          case get_or_create_bluesky_user_by_did(repo_did) do
+            {:ok, user} -> Map.put(attrs, :bluesky_user_id, user.id)
+            # Continue without user if API fails
+            {:error, _reason} -> attrs
+          end
+      end
+
     case %BlueskyPost{}
          |> BlueskyPost.changeset(attrs_with_user)
          |> Repo.insert() do
       {:ok, post} ->
         # Preload the user for the broadcast
         post_with_user = Repo.preload(post, :bluesky_user)
-        Phoenix.PubSub.broadcast(NathanForUs.PubSub, "nathan_fielder_skeets", {:new_nathan_fielder_skeet, post_with_user})
+
+        Phoenix.PubSub.broadcast(
+          NathanForUs.PubSub,
+          "nathan_fielder_skeets",
+          {:new_nathan_fielder_skeet, post_with_user}
+        )
+
         {:ok, post_with_user}
+
       {:error, changeset} ->
         {:error, changeset}
     end
@@ -161,7 +172,7 @@ defmodule NathanForUs.Social do
   """
   def list_bluesky_posts(opts \\ []) do
     limit = Keyword.get(opts, :limit, 50)
-    
+
     from(bp in BlueskyPost,
       order_by: [desc: bp.record_created_at],
       limit: ^limit
@@ -181,6 +192,7 @@ defmodule NathanForUs.Social do
     case Repo.get_by(BlueskyUser, did: did) do
       %BlueskyUser{} = user ->
         {:ok, user}
+
       nil ->
         fetch_and_store_bluesky_user(did)
     end
@@ -192,16 +204,17 @@ defmodule NathanForUs.Social do
   def fetch_and_store_bluesky_user(did) when is_binary(did) do
     require Logger
     Logger.info("Fetching Bluesky user profile for DID: #{did}")
-    
+
     case BlueskyAPI.get_profile_by_did(did) do
       {:ok, profile_data} ->
         Logger.info("Successfully fetched profile data for DID #{did}: #{inspect(profile_data)}")
         attrs = BlueskyUser.from_api_profile(profile_data)
         Logger.info("Mapped profile attributes: #{inspect(attrs)}")
-        
+
         %BlueskyUser{}
         |> BlueskyUser.changeset(attrs)
         |> Repo.insert()
+
       {:error, reason} ->
         Logger.error("Failed to fetch profile for DID #{did}: #{inspect(reason)}")
         {:error, reason}
@@ -214,24 +227,27 @@ defmodule NathanForUs.Social do
   def list_bluesky_posts_with_users(opts \\ []) do
     limit = Keyword.get(opts, :limit, 50)
     language_filter = Keyword.get(opts, :languages, [])
-    
+
     # Handles to filter out (test accounts)
     filtered_handles = ["bobbby.online", "yburyug.bsky.social"]
-    
-    query = from(bp in BlueskyPost,
-      left_join: bu in BlueskyUser, on: bp.bluesky_user_id == bu.id,
-      where: is_nil(bu.handle) or bu.handle not in ^filtered_handles,
-      order_by: [desc: bp.record_created_at],
-      limit: ^limit,
-      preload: [:bluesky_user]
-    )
-    
-    query = if language_filter != [] do
-      from(q in query, where: fragment("? && ?", q.record_langs, ^language_filter))
-    else
-      query
-    end
-    
+
+    query =
+      from(bp in BlueskyPost,
+        left_join: bu in BlueskyUser,
+        on: bp.bluesky_user_id == bu.id,
+        where: is_nil(bu.handle) or bu.handle not in ^filtered_handles,
+        order_by: [desc: bp.record_created_at],
+        limit: ^limit,
+        preload: [:bluesky_user]
+      )
+
+    query =
+      if language_filter != [] do
+        from(q in query, where: fragment("? && ?", q.record_langs, ^language_filter))
+      else
+        query
+      end
+
     Repo.all(query)
   end
 

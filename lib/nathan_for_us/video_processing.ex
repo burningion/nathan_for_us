@@ -1,7 +1,7 @@
 defmodule NathanForUs.VideoProcessing do
   @moduledoc """
   GenStage-based video processing pipeline for extracting frames and parsing captions.
-  
+
   The pipeline consists of:
   1. Producer - Monitors for new videos to process
   2. FrameExtractor - Extracts frames using ffmpeg  
@@ -20,13 +20,13 @@ defmodule NathanForUs.VideoProcessing do
     children = [
       # Producer that monitors for videos to process
       {NathanForUs.VideoProcessing.Producer, []},
-      
+
       # Frame extraction stage
       {NathanForUs.VideoProcessing.FrameExtractor, []},
-      
+
       # Caption parsing stage  
       {NathanForUs.VideoProcessing.CaptionParser, []},
-      
+
       # Database consumer that saves everything
       {NathanForUs.VideoProcessing.DatabaseConsumer, []}
     ]

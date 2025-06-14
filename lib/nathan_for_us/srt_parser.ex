@@ -18,7 +18,7 @@ defmodule NathanForUs.SrtParser do
   @doc """
   Parses an SRT file and returns a list of subtitle entries.
   Timestamps are converted to milliseconds for easier processing.
-  
+
   ## Example
       iex> NathanForUs.SrtParser.parse_file("path/to/subtitles.srt")
       {:ok, [

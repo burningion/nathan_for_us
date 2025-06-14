@@ -32,9 +32,9 @@ defmodule NathanForUs.SocialTest do
 
     test "list_feed_posts/2 with limit option" do
       user = user_fixture()
-      
+
       # Create 3 posts
-      Enum.each(1..3, fn i -> 
+      Enum.each(1..3, fn i ->
         post_fixture(%{user: user, content: "Post #{i}"})
       end)
 
@@ -72,8 +72,9 @@ defmodule NathanForUs.SocialTest do
 
     test "create_post/1 with image_url creates a post" do
       user = user_fixture()
+
       valid_attrs = %{
-        content: "Check out this graph", 
+        content: "Check out this graph",
         image_url: "/uploads/chart.png",
         user_id: user.id
       }
@@ -113,7 +114,10 @@ defmodule NathanForUs.SocialTest do
 
     test "update_post/2 with invalid data returns error changeset" do
       post = post_fixture()
-      assert {:error, %Ecto.Changeset{}} = Social.update_post(post, %{content: nil, image_url: nil})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Social.update_post(post, %{content: nil, image_url: nil})
+
       assert post == Social.get_post!(post.id)
     end
 
@@ -206,7 +210,8 @@ defmodule NathanForUs.SocialTest do
   describe "bluesky language filtering" do
     test "list_bluesky_post_languages/0 returns distinct languages" do
       # Create some test bluesky posts with different languages
-      {:ok, _post1} = %BlueskyPost{}
+      {:ok, _post1} =
+        %BlueskyPost{}
         |> BlueskyPost.changeset(%{
           cid: "test_cid_1",
           collection: "app.bsky.feed.post",
@@ -217,10 +222,11 @@ defmodule NathanForUs.SocialTest do
         })
         |> Repo.insert()
 
-      {:ok, _post2} = %BlueskyPost{}
+      {:ok, _post2} =
+        %BlueskyPost{}
         |> BlueskyPost.changeset(%{
           cid: "test_cid_2",
-          collection: "app.bsky.feed.post", 
+          collection: "app.bsky.feed.post",
           operation: "create",
           record_text: "Bonjour monde",
           record_langs: ["fr"],
@@ -228,11 +234,12 @@ defmodule NathanForUs.SocialTest do
         })
         |> Repo.insert()
 
-      {:ok, _post3} = %BlueskyPost{}
+      {:ok, _post3} =
+        %BlueskyPost{}
         |> BlueskyPost.changeset(%{
           cid: "test_cid_3",
           collection: "app.bsky.feed.post",
-          operation: "create", 
+          operation: "create",
           record_text: "Hola mundo",
           record_langs: ["es", "en"],
           record_created_at: ~U[2024-01-01 12:02:00Z]
@@ -241,29 +248,31 @@ defmodule NathanForUs.SocialTest do
 
       languages = Social.list_bluesky_post_languages()
       assert "en" in languages
-      assert "fr" in languages  
+      assert "fr" in languages
       assert "es" in languages
       assert length(languages) == 3
     end
 
     test "list_bluesky_posts_with_users/1 filters by languages" do
       # Create test posts with different languages
-      {:ok, post1} = %BlueskyPost{}
+      {:ok, post1} =
+        %BlueskyPost{}
         |> BlueskyPost.changeset(%{
           cid: "test_cid_filter_1",
           collection: "app.bsky.feed.post",
           operation: "create",
-          record_text: "English post", 
+          record_text: "English post",
           record_langs: ["en"],
           record_created_at: ~U[2024-01-01 12:00:00Z]
         })
         |> Repo.insert()
 
-      {:ok, post2} = %BlueskyPost{}
+      {:ok, post2} =
+        %BlueskyPost{}
         |> BlueskyPost.changeset(%{
           cid: "test_cid_filter_2",
           collection: "app.bsky.feed.post",
-          operation: "create", 
+          operation: "create",
           record_text: "French post",
           record_langs: ["fr"],
           record_created_at: ~U[2024-01-01 12:01:00Z]

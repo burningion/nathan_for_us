@@ -1,6 +1,6 @@
 defmodule NathanForUs.VideoProcessorTest do
   use ExUnit.Case, async: true
-  
+
   alias NathanForUs.VideoProcessor
 
   @moduletag :video_processor
@@ -8,7 +8,7 @@ defmodule NathanForUs.VideoProcessorTest do
   describe "new/2" do
     test "creates processor with default options" do
       processor = VideoProcessor.new("test.mp4")
-      
+
       assert processor.video_path == "test.mp4"
       assert processor.output_dir == "priv/static/frames"
       assert processor.fps == 1
@@ -25,9 +25,9 @@ defmodule NathanForUs.VideoProcessorTest do
         use_hardware_accel: false,
         scene_detection: true
       ]
-      
+
       processor = VideoProcessor.new("test.mp4", opts)
-      
+
       assert processor.video_path == "test.mp4"
       assert processor.output_dir == "custom/frames"
       assert processor.fps == 2
@@ -93,17 +93,18 @@ defmodule NathanForUs.VideoProcessorTest do
       # This test requires a real video file and ffmpeg installed
       if File.exists?("test/fixtures/sample.mp4") do
         output_dir = "test/tmp/frames_#{System.unique_integer()}"
-        
-        processor = VideoProcessor.new("test/fixtures/sample.mp4", 
-          output_dir: output_dir,
-          fps: 1
-        )
-        
+
+        processor =
+          VideoProcessor.new("test/fixtures/sample.mp4",
+            output_dir: output_dir,
+            fps: 1
+          )
+
         result = VideoProcessor.extract_frames(processor)
-        
+
         # Clean up
         File.rm_rf(output_dir)
-        
+
         assert {:ok, frame_paths} = result
         assert is_list(frame_paths)
       else
@@ -116,11 +117,11 @@ defmodule NathanForUs.VideoProcessorTest do
   describe "private function behavior" do
     test "build_ffmpeg_command with default settings" do
       processor = VideoProcessor.new("test.mp4")
-      
+
       # Test via extract_frames to ensure command building works
       # This will fail at execution but validates command structure
       result = VideoProcessor.extract_frames(processor)
-      
+
       # Should fail with video not found, not command building error
       assert {:error, reason} = result
       assert reason =~ "Video file not found" or reason =~ "ffmpeg extraction failed"
@@ -128,10 +129,10 @@ defmodule NathanForUs.VideoProcessorTest do
 
     test "build_ffmpeg_command with scene detection" do
       processor = VideoProcessor.new("test.mp4", scene_detection: true, fps: 2)
-      
+
       # Test via extract_frames to ensure command building works
       result = VideoProcessor.extract_frames(processor)
-      
+
       # Should fail with video not found, not command building error
       assert {:error, reason} = result
       assert reason =~ "Video file not found" or reason =~ "ffmpeg extraction failed"
@@ -139,10 +140,10 @@ defmodule NathanForUs.VideoProcessorTest do
 
     test "build_ffmpeg_command without hardware acceleration" do
       processor = VideoProcessor.new("test.mp4", use_hardware_accel: false)
-      
+
       # Test via extract_frames to ensure command building works
       result = VideoProcessor.extract_frames(processor)
-      
+
       # Should fail with video not found, not command building error
       assert {:error, reason} = result
       assert reason =~ "Video file not found" or reason =~ "ffmpeg extraction failed"

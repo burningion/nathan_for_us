@@ -21,9 +21,10 @@ defmodule NathanForUs.Admin do
     Logger.info("Starting Bluesky profile backfill (limit: #{limit}, dry_run: #{dry_run})")
 
     # Find posts without associated users
-    posts_without_users = 
+    posts_without_users =
       from(bp in BlueskyPost,
-        left_join: bu in BlueskyUser, on: bp.bluesky_user_id == bu.id,
+        left_join: bu in BlueskyUser,
+        on: bp.bluesky_user_id == bu.id,
         where: is_nil(bu.id),
         limit: ^limit,
         select: bp
@@ -33,24 +34,26 @@ defmodule NathanForUs.Admin do
     Logger.info("Found #{length(posts_without_users)} posts without user profiles")
 
     # Extract unique DIDs from posts
-    unique_dids = 
+    unique_dids =
       posts_without_users
       |> Enum.map(& &1.did)
-      |> Enum.filter(& &1 != nil)
+      |> Enum.filter(&(&1 != nil))
       |> Enum.uniq()
 
     Logger.info("Found #{length(unique_dids)} unique DIDs to process")
 
     if dry_run do
       Logger.info("DRY RUN: Would process DIDs: #{inspect(Enum.take(unique_dids, 5))}...")
-      {:ok, %{
-        posts_found: length(posts_without_users),
-        unique_dids: length(unique_dids),
-        processed: 0,
-        successful: 0,
-        failed: 0,
-        dry_run: true
-      }}
+
+      {:ok,
+       %{
+         posts_found: length(posts_without_users),
+         unique_dids: length(unique_dids),
+         processed: 0,
+         successful: 0,
+         failed: 0,
+         dry_run: true
+       }}
     else
       process_dids(unique_dids, posts_without_users)
     end
@@ -70,14 +73,20 @@ defmodule NathanForUs.Admin do
     |> Enum.with_index()
     |> Enum.reduce(results, fn {did, index}, acc ->
       Logger.info("Processing DID #{index + 1}/#{length(dids)}: #{String.slice(did, 0, 20)}...")
-      
+
       case fetch_and_link_profile(did, posts) do
         {:ok, _user} ->
-          Logger.info("Successfully fetched and linked profile for DID: #{String.slice(did, 0, 20)}")
+          Logger.info(
+            "Successfully fetched and linked profile for DID: #{String.slice(did, 0, 20)}"
+          )
+
           %{acc | processed: acc.processed + 1, successful: acc.successful + 1}
-        
+
         {:error, reason} ->
-          Logger.warning("Failed to fetch profile for DID #{String.slice(did, 0, 20)}: #{inspect(reason)}")
+          Logger.warning(
+            "Failed to fetch profile for DID #{String.slice(did, 0, 20)}: #{inspect(reason)}"
+          )
+
           %{acc | processed: acc.processed + 1, failed: acc.failed + 1}
       end
     end)
@@ -90,7 +99,7 @@ defmodule NathanForUs.Admin do
         # User exists, link posts to this user
         link_posts_to_user(posts, did, existing_user.id)
         {:ok, existing_user}
-      
+
       nil ->
         # User doesn't exist, fetch from API
         case Social.fetch_and_store_bluesky_user(did) do
@@ -98,7 +107,7 @@ defmodule NathanForUs.Admin do
             # Link posts to the newly created user
             link_posts_to_user(posts, did, new_user.id)
             {:ok, new_user}
-          
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -107,14 +116,14 @@ defmodule NathanForUs.Admin do
 
   defp link_posts_to_user(posts, did, user_id) do
     # Find posts with this DID and update them to reference the user
-    posts_to_update = Enum.filter(posts, & &1.did == did)
-    
+    posts_to_update = Enum.filter(posts, &(&1.did == did))
+
     Enum.each(posts_to_update, fn post ->
       post
       |> Ecto.Changeset.change(bluesky_user_id: user_id)
       |> Repo.update()
     end)
-    
+
     Logger.info("Linked #{length(posts_to_update)} posts to user #{user_id}")
   end
 
@@ -124,10 +133,14 @@ defmodule NathanForUs.Admin do
   def get_stats do
     %{
       total_posts: Repo.aggregate(BlueskyPost, :count),
-      posts_with_users: from(bp in BlueskyPost, where: not is_nil(bp.bluesky_user_id)) |> Repo.aggregate(:count),
-      posts_without_users: from(bp in BlueskyPost, where: is_nil(bp.bluesky_user_id)) |> Repo.aggregate(:count),
+      posts_with_users:
+        from(bp in BlueskyPost, where: not is_nil(bp.bluesky_user_id)) |> Repo.aggregate(:count),
+      posts_without_users:
+        from(bp in BlueskyPost, where: is_nil(bp.bluesky_user_id)) |> Repo.aggregate(:count),
       total_users: Repo.aggregate(BlueskyUser, :count),
-      unique_dids_in_posts: from(bp in BlueskyPost, where: not is_nil(bp.rkey), distinct: bp.rkey) |> Repo.aggregate(:count)
+      unique_dids_in_posts:
+        from(bp in BlueskyPost, where: not is_nil(bp.rkey), distinct: bp.rkey)
+        |> Repo.aggregate(:count)
     }
   end
 
@@ -143,9 +156,9 @@ defmodule NathanForUs.Admin do
   """
   def generate_usernames_from_emails do
     alias NathanForUs.Accounts.User
-    
+
     # Find all users without usernames
-    users_without_usernames = 
+    users_without_usernames =
       from(u in User,
         where: is_nil(u.username),
         select: u
@@ -155,17 +168,20 @@ defmodule NathanForUs.Admin do
     Logger.info("Found #{length(users_without_usernames)} users without usernames")
 
     # Generate and update usernames
-    updated_count = 
+    updated_count =
       users_without_usernames
       |> Enum.with_index()
       |> Enum.reduce(0, fn {user, index}, acc ->
         username = generate_username_from_email(user.email)
-        
-        Logger.info("Updating user #{index + 1}/#{length(users_without_usernames)}: #{user.email} -> #{username}")
-        
+
+        Logger.info(
+          "Updating user #{index + 1}/#{length(users_without_usernames)}: #{user.email} -> #{username}"
+        )
+
         case update_user_username(user, username) do
           {:ok, _updated_user} ->
             acc + 1
+
           {:error, reason} ->
             Logger.warning("Failed to update username for #{user.email}: #{inspect(reason)}")
             acc
@@ -186,7 +202,7 @@ defmodule NathanForUs.Admin do
 
   defp update_user_username(user, username) do
     alias NathanForUs.Accounts.User
-    
+
     user
     |> User.changeset(%{username: username})
     |> Repo.update()

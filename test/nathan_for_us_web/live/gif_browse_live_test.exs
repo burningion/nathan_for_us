@@ -19,11 +19,15 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
     # Create test video with frames
     {:ok, video} = create_test_video()
     frames = create_test_frames(video, 20)
-    
+
     # Create test GIFs for browsing
     {:ok, cached_gif} = create_test_gif(video, frames)
-    {:ok, browseable_gif1} = create_browseable_gif(video, regular_user1, cached_gif, "Nathan's Wisdom", 5)
-    {:ok, browseable_gif2} = create_browseable_gif(video, regular_user2, cached_gif, "Awkward Moments", 3)
+
+    {:ok, browseable_gif1} =
+      create_browseable_gif(video, regular_user1, cached_gif, "Nathan's Wisdom", 5)
+
+    {:ok, browseable_gif2} =
+      create_browseable_gif(video, regular_user2, cached_gif, "Awkward Moments", 3)
 
     %{
       admin_user: admin_user,
@@ -42,7 +46,8 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
       {:ok, _view, html} = live(conn, "/browse-gifs")
 
       assert html =~ "BROWSE GIFS"
-      assert html =~ "Hot" # Default sort
+      # Default sort
+      assert html =~ "Hot"
       assert html =~ "Top"
       assert html =~ "New"
     end
@@ -73,7 +78,7 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
     test "handles empty GIF list gracefully", %{conn: conn} do
       # Delete all browseable GIFs
       Repo.delete_all(BrowseableGif)
-      
+
       {:ok, _view, html} = live(conn, "/browse-gifs")
 
       assert html =~ "No GIFs created yet" or html =~ "BROWSE GIFS"
@@ -126,7 +131,11 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
   end
 
   describe "upvoting functionality" do
-    test "authenticated user can upvote GIF", %{conn: conn, regular_user1: user, browseable_gif2: gif} do
+    test "authenticated user can upvote GIF", %{
+      conn: conn,
+      regular_user1: user,
+      browseable_gif2: gif
+    } do
       conn = log_in_user(conn, user)
       {:ok, view, _html} = live(conn, "/browse-gifs")
 
@@ -138,7 +147,11 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
       assert html =~ "#{gif.upvotes_count + 1}" or html =~ "upvoted"
     end
 
-    test "user cannot upvote their own GIF", %{conn: conn, regular_user1: user, browseable_gif1: gif} do
+    test "user cannot upvote their own GIF", %{
+      conn: conn,
+      regular_user1: user,
+      browseable_gif1: gif
+    } do
       conn = log_in_user(conn, user)
       {:ok, view, _html} = live(conn, "/browse-gifs")
 
@@ -156,7 +169,7 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
 
       # Upvote first
       render_click(view, "upvote_gif", %{"gif_id" => to_string(gif.id)})
-      
+
       # Then remove upvote
       render_click(view, "upvote_gif", %{"gif_id" => to_string(gif.id)})
 
@@ -165,7 +178,10 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
       assert html =~ "#{gif.upvotes_count}" or html =~ "upvote"
     end
 
-    test "unauthenticated user sees register prompt when upvoting", %{conn: conn, browseable_gif1: gif} do
+    test "unauthenticated user sees register prompt when upvoting", %{
+      conn: conn,
+      browseable_gif1: gif
+    } do
       {:ok, view, _html} = live(conn, "/browse-gifs")
 
       render_click(view, "upvote_gif", %{"gif_id" => to_string(gif.id)})
@@ -180,7 +196,7 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
 
       # Trigger register flash
       render_click(view, "upvote_gif", %{"gif_id" => to_string(gif.id)})
-      
+
       # Close the flash
       render_click(view, "close_register_flash")
 
@@ -242,7 +258,7 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
     test "random GIF handles no videos gracefully", %{conn: conn} do
       # Delete all videos
       Repo.delete_all(VideoSchema)
-      
+
       {:ok, view, _html} = live(conn, "/browse-gifs")
 
       render_click(view, "random_gif")
@@ -278,7 +294,12 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
   end
 
   describe "loading and performance" do
-    test "handles large number of GIFs", %{conn: conn, video: video, regular_user1: user, cached_gif: gif} do
+    test "handles large number of GIFs", %{
+      conn: conn,
+      video: video,
+      regular_user1: user,
+      cached_gif: gif
+    } do
       # Create many browseable GIFs
       for i <- 1..20 do
         create_browseable_gif(video, user, gif, "Test GIF #{i}", i)
@@ -294,7 +315,8 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
       {:ok, view, _html} = live(conn, "/browse-gifs")
 
       state = :sys.get_state(view.pid).socket.assigns
-      assert state.loading == false  # Should not be loading after mount
+      # Should not be loading after mount
+      assert state.loading == false
     end
 
     test "handles sort change loading", %{conn: conn} do
@@ -317,7 +339,8 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
 
       # Should handle gracefully
       html = render(view)
-      assert html =~ "BROWSE GIFS"  # Page should still work
+      # Page should still work
+      assert html =~ "BROWSE GIFS"
     end
 
     test "malformed gif_id for upvote", %{conn: conn} do
@@ -343,7 +366,8 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
       {:ok, _view, html} = live(conn, "/browse-gifs")
 
       # Should show either captions or video title
-      assert html =~ "From:" or html =~ "\""  # Either caption or fallback
+      # Either caption or fallback
+      assert html =~ "From:" or html =~ "\""
     end
 
     test "GIFs handle missing captions gracefully", %{conn: conn} do
@@ -363,7 +387,11 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
       assert html =~ "upvote" or html =~ "👍"
     end
 
-    test "voting state persists across page loads", %{conn: conn, regular_user1: user, browseable_gif2: gif} do
+    test "voting state persists across page loads", %{
+      conn: conn,
+      regular_user1: user,
+      browseable_gif2: gif
+    } do
       conn = log_in_user(conn, user)
       {:ok, view, _html} = live(conn, "/browse-gifs")
 
@@ -387,12 +415,12 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
       password: "test123456789",
       is_admin: true
     }
-    
+
     {:ok, user} = Accounts.register_user(attrs)
     user = %{user | confirmed_at: DateTime.utc_now() |> DateTime.truncate(:second)}
     user = Repo.update!(Accounts.User.confirm_changeset(user))
     user = Repo.update!(Accounts.User.changeset(user, %{is_admin: true}))
-    
+
     {:ok, user}
   end
 
@@ -402,11 +430,11 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
       username: username,
       password: "test123456789"
     }
-    
+
     {:ok, user} = Accounts.register_user(attrs)
     user = %{user | confirmed_at: DateTime.utc_now() |> DateTime.truncate(:second)}
     user = Repo.update!(Accounts.User.confirm_changeset(user))
-    
+
     {:ok, user}
   end
 
@@ -424,19 +452,20 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
   end
 
   defp create_test_frames(video, count) do
-    frames = for i <- 1..count do
-      %{
-        frame_number: i,
-        timestamp_ms: i * 1000,
-        file_path: "frame_#{i}.jpg",
-        file_size: 1000,
-        width: 1920,
-        height: 1080,
-        video_id: video.id,
-        inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-        updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-      }
-    end
+    frames =
+      for i <- 1..count do
+        %{
+          frame_number: i,
+          timestamp_ms: i * 1000,
+          file_path: "frame_#{i}.jpg",
+          file_size: 1000,
+          width: 1920,
+          height: 1080,
+          video_id: video.id,
+          inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+          updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+        }
+      end
 
     {_count, frame_records} = Repo.insert_all(VideoFrame, frames, returning: true)
     frame_records
@@ -445,7 +474,7 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
   defp create_test_gif(video, frames) do
     frame_ids = frames |> Enum.take(5) |> Enum.map(& &1.id)
     hash = Gif.generate_hash(video.id, frame_ids)
-    
+
     %NathanForUs.Gif{}
     |> NathanForUs.Gif.changeset(%{
       hash: hash,
@@ -460,11 +489,12 @@ defmodule NathanForUsWeb.GifBrowseLiveTest do
   end
 
   defp create_browseable_gif(video, user, cached_gif, title, upvote_count) do
-    frame_data = Jason.encode!(%{
-      frame_ids: [1, 2, 3, 4, 5],
-      frame_numbers: [1, 2, 3, 4, 5],
-      timestamps: [1000, 2000, 3000, 4000, 5000]
-    })
+    frame_data =
+      Jason.encode!(%{
+        frame_ids: [1, 2, 3, 4, 5],
+        frame_numbers: [1, 2, 3, 4, 5],
+        timestamps: [1000, 2000, 3000, 4000, 5000]
+      })
 
     attrs = %{
       video_id: video.id,

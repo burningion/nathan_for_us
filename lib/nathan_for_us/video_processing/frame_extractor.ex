@@ -1,39 +1,39 @@
 defmodule NathanForUs.VideoProcessing.FrameExtractor do
   @moduledoc """
   GenStage producer-consumer for video frame extraction.
-  
+
   This stage receives video records from the Producer and performs frame extraction
   using ffmpeg through the VideoProcessor module. It handles:
-  
+
   - Frame extraction with configurable quality and frame rate
   - Video metadata retrieval (duration, frame count)
   - Error handling with proper video status updates
   - Efficient processing with hardware acceleration when available
-  
+
   ## Pipeline Position
-  
+
       Producer -> FrameExtractor -> CaptionParser -> DatabaseConsumer
       
   ## Processing Flow
-  
+
   1. Receives video records from Producer
   2. Extracts frames using VideoProcessor
   3. Retrieves video metadata (duration, etc.)
   4. Updates video record with metadata
   5. Emits processed events with frame data
   6. Handles errors by marking videos as failed
-  
+
   ## Configuration
-  
+
   Frame extraction uses these defaults:
   - FPS: 1 (one frame per second)
   - Quality: 3 (good quality, reasonable file size)
   - Hardware acceleration: enabled (VideoToolbox on macOS)
   """
-  
+
   use GenStage
   require Logger
-  
+
   alias NathanForUs.{VideoProcessor, Video, Errors}
 
   def start_link(opts) do
@@ -43,7 +43,7 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
   @impl true
   def init(_opts) do
     Logger.info("Frame extractor starting")
-    
+
     {:producer_consumer, %{},
      subscribe_to: [
        {NathanForUs.VideoProcessing.Producer, min_demand: 1, max_demand: 3}
@@ -53,24 +53,23 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
   @impl true
   def handle_events(videos, _from, state) do
     Logger.info("Frame extractor received #{length(videos)} videos")
-    
-    events = 
+
+    events =
       videos
       |> Enum.map(&process_video/1)
       |> Enum.reject(&is_nil/1)
-    
+
     {:noreply, events, state}
   end
 
   defp process_video(%Video.Video{} = video) do
     Logger.info("Processing video: #{video.title}")
-    
+
     with {:ok, frame_paths} <- extract_frames(video),
          {:ok, video_metadata} <- get_video_metadata(video),
          {:ok, _updated_video} <- update_video_metadata(video, video_metadata, frame_paths) do
-      
       frame_data = build_frame_data(frame_paths, video_metadata.duration_ms)
-      
+
       %{
         video: video,
         frame_data: frame_data,
@@ -78,13 +77,18 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
       }
     else
       {:error, reason} ->
-        error = Errors.VideoProcessingError.exception(
-          video_path: video.file_path,
-          stage: "frame_extraction",
-          reason: reason
+        error =
+          Errors.VideoProcessingError.exception(
+            video_path: video.file_path,
+            stage: "frame_extraction",
+            reason: reason
+          )
+
+        Errors.log_error("Frame extraction failed", error,
+          video_id: video.id,
+          video_title: video.title
         )
-        
-        Errors.log_error("Frame extraction failed", error, video_id: video.id, video_title: video.title)
+
         mark_video_failed(video)
         nil
     end
@@ -93,12 +97,12 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
   defp extract_frames(%Video.Video{} = video) do
     output_dir = build_output_dir(video)
     processor = build_frame_processor(video, output_dir)
-    
+
     case VideoProcessor.extract_frames(processor) do
       {:ok, frame_paths} ->
         Logger.info("Extracted #{length(frame_paths)} frames from #{video.title}")
         {:ok, frame_paths}
-      
+
       {:error, reason} ->
         {:error, "Frame extraction failed: #{reason}"}
     end
@@ -109,7 +113,7 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
       {:ok, video_info} ->
         duration_ms = extract_duration_ms(video_info)
         {:ok, %{duration_ms: duration_ms, video_info: video_info}}
-      
+
       {:error, reason} ->
         {:error, "Failed to get video metadata: #{reason}"}
     end
@@ -144,7 +148,7 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
 
   defp build_frame_data(frame_paths, duration_ms) do
     total_frames = length(frame_paths)
-    
+
     frame_paths
     |> Enum.with_index()
     |> Enum.map(fn {frame_path, index} ->
@@ -159,7 +163,7 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
 
   defp calculate_timestamp(index, total_frames, duration_ms) do
     if duration_ms && total_frames > 1 do
-      trunc((index / (total_frames - 1)) * duration_ms)
+      trunc(index / (total_frames - 1) * duration_ms)
     else
       index * 1000
     end
@@ -178,6 +182,6 @@ defmodule NathanForUs.VideoProcessing.FrameExtractor do
       :error -> nil
     end
   end
-  defp extract_duration_ms(_), do: nil
 
+  defp extract_duration_ms(_), do: nil
 end

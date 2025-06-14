@@ -16,7 +16,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
     # Create test video with frames
     {:ok, video} = create_test_video()
     frames = create_test_frames(video, 50)
-    
+
     # Create some test GIFs for caching tests
     {:ok, cached_gif} = create_test_gif(video, frames)
 
@@ -39,13 +39,15 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
     end
 
     test "redirects with error for invalid video ID", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/video-timeline", flash: %{"error" => "Video not found"}}}} = 
-        live(conn, "/video-timeline/99999")
+      assert {:error,
+              {:redirect, %{to: "/video-timeline", flash: %{"error" => "Video not found"}}}} =
+               live(conn, "/video-timeline/99999")
     end
 
     test "redirects with error for non-integer video ID", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/video-timeline", flash: %{"error" => "Invalid video ID"}}}} = 
-        live(conn, "/video-timeline/invalid")
+      assert {:error,
+              {:redirect, %{to: "/video-timeline", flash: %{"error" => "Invalid video ID"}}}} =
+               live(conn, "/video-timeline/invalid")
     end
 
     test "displays navigation links", %{conn: conn, video: video} do
@@ -99,7 +101,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
 
       # Wait for auto-check to complete
       :sys.get_state(view.pid)
-      
+
       # Should either show cached GIF or preview
       html = render(view)
       assert html =~ "GIF Preview" or html =~ "Generated GIF"
@@ -131,7 +133,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
 
       # Start playback first
       render_click(view, "toggle_playback")
-      
+
       # Click on timeline
       render_click(view, "timeline_click", %{"position" => "0.3"})
 
@@ -253,7 +255,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
 
       # Should trigger context view
       :sys.get_state(view.pid)
-      
+
       html = render(view)
       # Should show some indication of context view
       assert html =~ "Back to Search" or html =~ "Context"
@@ -264,7 +266,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
 
       # Apply filter first
       render_change(view, "caption_search", %{"caption_search" => %{"term" => "test"}})
-      
+
       # Clear filter
       render_click(view, "clear_caption_filter")
 
@@ -330,7 +332,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
 
       # Mock the random sequence generation
       assert render_click(view, "random_gif") =~ ""
-      
+
       # Would redirect to new random URL (hard to test exact redirect)
     end
 
@@ -372,7 +374,11 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
   end
 
   describe "posting to timeline" do
-    test "authenticated user can post GIF to timeline", %{conn: conn, regular_user: user, video: video} do
+    test "authenticated user can post GIF to timeline", %{
+      conn: conn,
+      regular_user: user,
+      video: video
+    } do
       conn = log_in_user(conn, user)
       {:ok, view, _html} = live(conn, "/video-timeline/#{video.id}")
 
@@ -416,7 +422,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
       {:ok, view, _html} = live(conn, "/video-timeline/#{video.id}")
 
       frame = List.first(frames)
-      
+
       # Open modal
       render_click(view, "show_frame_modal", %{"frame_id" => to_string(frame.id)})
 
@@ -454,7 +460,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
 
       # First do a search to get filtered results
       render_change(view, "caption_search", %{"caption_search" => %{"term" => "test"}})
-      
+
       # Then click a frame to show context
       render_click(view, "select_frame", %{"frame_index" => "0"})
 
@@ -483,6 +489,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
 
       # Set up context view state with a target frame
       target_frame = %{frame_number: 25, id: 1}
+
       :sys.replace_state(view.pid, fn state ->
         state
         |> put_in([:socket, :assigns, :is_context_view], true)
@@ -504,10 +511,15 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
       {:ok, _view, html} = live(conn, "/video-timeline/#{video.id}")
 
       # Should show admin-specific elements when GIF is generated
-      assert html =~ "ADMIN" or html =~ "cache" or true  # Admin features may be conditional
+      # Admin features may be conditional
+      assert html =~ "ADMIN" or html =~ "cache" or true
     end
 
-    test "regular users do not see admin features", %{conn: conn, regular_user: user, video: video} do
+    test "regular users do not see admin features", %{
+      conn: conn,
+      regular_user: user,
+      video: video
+    } do
       conn = log_in_user(conn, user)
       {:ok, _view, html} = live(conn, "/video-timeline/#{video.id}")
 
@@ -521,16 +533,16 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
   defp create_admin_user do
     attrs = %{
       email: "admin@test.com",
-      username: "testadmin", 
+      username: "testadmin",
       password: "test123456789",
       is_admin: true
     }
-    
+
     {:ok, user} = Accounts.register_user(attrs)
     user = %{user | confirmed_at: DateTime.utc_now() |> DateTime.truncate(:second)}
     user = Repo.update!(Accounts.User.confirm_changeset(user))
     user = Repo.update!(Accounts.User.changeset(user, %{is_admin: true}))
-    
+
     {:ok, user}
   end
 
@@ -540,11 +552,11 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
       username: "testuser",
       password: "test123456789"
     }
-    
+
     {:ok, user} = Accounts.register_user(attrs)
     user = %{user | confirmed_at: DateTime.utc_now() |> DateTime.truncate(:second)}
     user = Repo.update!(Accounts.User.confirm_changeset(user))
-    
+
     {:ok, user}
   end
 
@@ -562,19 +574,20 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
   end
 
   defp create_test_frames(video, count) do
-    frames = for i <- 1..count do
-      %{
-        frame_number: i,
-        timestamp_ms: i * 1000,
-        file_path: "frame_#{i}.jpg",
-        file_size: 1000,
-        width: 1920,
-        height: 1080,
-        video_id: video.id,
-        inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-        updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-      }
-    end
+    frames =
+      for i <- 1..count do
+        %{
+          frame_number: i,
+          timestamp_ms: i * 1000,
+          file_path: "frame_#{i}.jpg",
+          file_size: 1000,
+          width: 1920,
+          height: 1080,
+          video_id: video.id,
+          inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+          updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+        }
+      end
 
     {_count, frame_records} = Repo.insert_all(VideoFrame, frames, returning: true)
     frame_records
@@ -583,7 +596,7 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
   defp create_test_gif(video, frames) do
     frame_ids = frames |> Enum.take(5) |> Enum.map(& &1.id)
     hash = Gif.generate_hash(video.id, frame_ids)
-    
+
     %NathanForUs.Gif{}
     |> NathanForUs.Gif.changeset(%{
       hash: hash,

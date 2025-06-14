@@ -47,9 +47,17 @@ defmodule NathanForUs.Chat do
     |> case do
       {:ok, word} ->
         word_with_user = Repo.preload(word, :submitted_by)
-        Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:word_submitted, word_with_user})
+
+        Phoenix.PubSub.broadcast(
+          NathanForUs.PubSub,
+          "chat_room",
+          {:word_submitted, word_with_user}
+        )
+
         {:ok, word}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -75,6 +83,7 @@ defmodule NathanForUs.Chat do
         word
         |> Word.changeset(%{banned_forever: true})
         |> Repo.update()
+
         {:error, :banned_forever}
 
       %Word{status: "denied", submission_count: count} = word ->
@@ -89,9 +98,17 @@ defmodule NathanForUs.Chat do
         |> case do
           {:ok, updated_word} ->
             word_with_user = Repo.preload(updated_word, :submitted_by)
-            Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:word_submitted, word_with_user})
+
+            Phoenix.PubSub.broadcast(
+              NathanForUs.PubSub,
+              "chat_room",
+              {:word_submitted, word_with_user}
+            )
+
             {:ok, updated_word}
-          error -> error
+
+          error ->
+            error
         end
 
       %Word{status: "pending"} ->
@@ -114,20 +131,30 @@ defmodule NathanForUs.Chat do
       |> case do
         {:ok, updated_word} ->
           # Broadcast word approval
-          Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:word_approved, updated_word})
-          
+          Phoenix.PubSub.broadcast(
+            NathanForUs.PubSub,
+            "chat_room",
+            {:word_approved, updated_word}
+          )
+
           # Check if any previously rejected messages can now be validated
           case revalidate_rejected_messages() do
             {:ok, [_ | _] = newly_valid_messages} ->
               # Broadcast that messages were retroactively validated
-              Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:messages_revalidated, length(newly_valid_messages)})
-            
+              Phoenix.PubSub.broadcast(
+                NathanForUs.PubSub,
+                "chat_room",
+                {:messages_revalidated, length(newly_valid_messages)}
+              )
+
             {:ok, []} ->
               :ok
           end
-          
+
           {:ok, updated_word}
-        error -> error
+
+        error ->
+          error
       end
     end
   end
@@ -148,7 +175,9 @@ defmodule NathanForUs.Chat do
         {:ok, updated_word} ->
           Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:word_denied, updated_word})
           {:ok, updated_word}
-        error -> error
+
+        error ->
+          error
       end
     end
   end
@@ -165,8 +194,8 @@ defmodule NathanForUs.Chat do
 
     # Extract and remove URLs from validation
     words = String.split(content)
-    
-    text_words = 
+
+    text_words =
       words
       |> Enum.reject(&is_url?/1)
       |> Enum.join(" ")
@@ -265,7 +294,7 @@ defmodule NathanForUs.Chat do
   """
   def revalidate_rejected_messages do
     # Get all currently invalid messages
-    invalid_messages = 
+    invalid_messages =
       from(cm in ChatMessage,
         where: cm.valid == false,
         preload: [:user]
@@ -273,21 +302,21 @@ defmodule NathanForUs.Chat do
       |> Repo.all()
 
     # Check each message against current approved words
-    newly_valid_messages = 
+    newly_valid_messages =
       Enum.filter(invalid_messages, fn message ->
         validate_message_words(message.content)
       end)
 
     # Update the newly valid messages in the database
     case newly_valid_messages do
-      [] -> 
+      [] ->
         {:ok, []}
-      
+
       messages ->
         message_ids = Enum.map(messages, & &1.id)
-        
+
         # Update all newly valid messages in one query
-        {_updated_count, _} = 
+        {_updated_count, _} =
           from(cm in ChatMessage,
             where: cm.id in ^message_ids
           )
@@ -297,7 +326,12 @@ defmodule NathanForUs.Chat do
         Enum.each(messages, fn message ->
           # Update the message struct to reflect the new valid status
           updated_message = %{message | valid: true}
-          Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:new_message, updated_message})
+
+          Phoenix.PubSub.broadcast(
+            NathanForUs.PubSub,
+            "chat_room",
+            {:new_message, updated_message}
+          )
         end)
 
         {:ok, messages}
@@ -328,11 +362,17 @@ defmodule NathanForUs.Chat do
 
         # Only broadcast valid messages to the chat
         if is_valid do
-          Phoenix.PubSub.broadcast(NathanForUs.PubSub, "chat_room", {:new_message, message_with_user})
+          Phoenix.PubSub.broadcast(
+            NathanForUs.PubSub,
+            "chat_room",
+            {:new_message, message_with_user}
+          )
         end
 
         {:ok, message_with_user, is_valid}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -371,36 +411,127 @@ defmodule NathanForUs.Chat do
   """
   def seed_common_words(admin_user_id) do
     common_words = [
-      "the", "be", "to", "of", "and", "a", "in", "that", "have", "i",
-      "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
-      "this", "but", "his", "by", "from", "they", "we", "say", "her", "she",
-      "or", "an", "will", "my", "one", "all", "would", "there", "their", "what",
-      "so", "up", "out", "if", "about", "who", "get", "which", "go", "me",
-      "when", "make", "can", "like", "time", "no", "just", "him", "know", "take",
-      "people", "into", "year", "your", "good", "some", "could", "them", "see", "other",
-      "than", "then", "now", "look", "only", "come", "its", "over", "think", "also",
-      "back", "after", "use", "two", "how", "our", "work", "first", "well", "way",
-      "even", "new", "want", "because", "any", "these", "give", "day", "most", "us"
+      "the",
+      "be",
+      "to",
+      "of",
+      "and",
+      "a",
+      "in",
+      "that",
+      "have",
+      "i",
+      "it",
+      "for",
+      "not",
+      "on",
+      "with",
+      "he",
+      "as",
+      "you",
+      "do",
+      "at",
+      "this",
+      "but",
+      "his",
+      "by",
+      "from",
+      "they",
+      "we",
+      "say",
+      "her",
+      "she",
+      "or",
+      "an",
+      "will",
+      "my",
+      "one",
+      "all",
+      "would",
+      "there",
+      "their",
+      "what",
+      "so",
+      "up",
+      "out",
+      "if",
+      "about",
+      "who",
+      "get",
+      "which",
+      "go",
+      "me",
+      "when",
+      "make",
+      "can",
+      "like",
+      "time",
+      "no",
+      "just",
+      "him",
+      "know",
+      "take",
+      "people",
+      "into",
+      "year",
+      "your",
+      "good",
+      "some",
+      "could",
+      "them",
+      "see",
+      "other",
+      "than",
+      "then",
+      "now",
+      "look",
+      "only",
+      "come",
+      "its",
+      "over",
+      "think",
+      "also",
+      "back",
+      "after",
+      "use",
+      "two",
+      "how",
+      "our",
+      "work",
+      "first",
+      "well",
+      "way",
+      "even",
+      "new",
+      "want",
+      "because",
+      "any",
+      "these",
+      "give",
+      "day",
+      "most",
+      "us"
     ]
 
-    results = Enum.map(common_words, fn word ->
-      case from(w in Word, where: fragment("lower(?)", w.text) == ^word) |> Repo.one() do
-        nil ->
-          %Word{}
-          |> Word.changeset(%{
-            text: word,
-            status: "approved",
-            submitted_by_id: admin_user_id,
-            approved_by_id: admin_user_id
-          })
-          |> Repo.insert()
+    results =
+      Enum.map(common_words, fn word ->
+        case from(w in Word, where: fragment("lower(?)", w.text) == ^word) |> Repo.one() do
+          nil ->
+            %Word{}
+            |> Word.changeset(%{
+              text: word,
+              status: "approved",
+              submitted_by_id: admin_user_id,
+              approved_by_id: admin_user_id
+            })
+            |> Repo.insert()
 
-        existing_word ->
-          existing_word
-          |> Word.changeset(%{status: "approved", approved_by_id: admin_user_id})
-          |> Repo.update()
-      end
-    end)
+          existing_word ->
+            existing_word
+            |> Word.changeset(%{status: "approved", approved_by_id: admin_user_id})
+            |> Repo.update()
+        end
+      end)
 
     successes = Enum.count(results, fn {status, _} -> status == :ok end)
 

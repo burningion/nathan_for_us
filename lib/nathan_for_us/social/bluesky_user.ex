@@ -22,8 +22,18 @@ defmodule NathanForUs.Social.BlueskyUser do
   @doc false
   def changeset(bluesky_user, attrs) do
     bluesky_user
-    |> cast(attrs, [:did, :handle, :display_name, :description, :avatar_url, :banner_url, 
-                    :followers_count, :follows_count, :posts_count, :created_at_bluesky])
+    |> cast(attrs, [
+      :did,
+      :handle,
+      :display_name,
+      :description,
+      :avatar_url,
+      :banner_url,
+      :followers_count,
+      :follows_count,
+      :posts_count,
+      :created_at_bluesky
+    ])
     |> validate_required([:did, :handle])
     |> unique_constraint(:did)
     |> unique_constraint(:handle)
@@ -48,6 +58,7 @@ defmodule NathanForUs.Social.BlueskyUser do
   end
 
   defp parse_datetime(nil), do: nil
+
   defp parse_datetime(datetime_string) when is_binary(datetime_string) do
     case DateTime.from_iso8601(datetime_string) do
       {:ok, datetime, _} -> datetime

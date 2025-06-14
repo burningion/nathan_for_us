@@ -13,9 +13,10 @@ defmodule NathanForUs.Viral do
   def get_trending_gifs(limit \\ 6) do
     # Get GIFs that have been viewed in the last 7 days, ordered by engagement
     cutoff = DateTime.utc_now() |> DateTime.add(-7, :day)
-    
+
     from(g in ViralGif,
-      left_join: i in GifInteraction, on: g.id == i.viral_gif_id and i.inserted_at > ^cutoff,
+      left_join: i in GifInteraction,
+      on: g.id == i.viral_gif_id and i.inserted_at > ^cutoff,
       group_by: g.id,
       order_by: [desc: fragment("COUNT(?) + ? * 2", i.id, g.share_count), desc: g.view_count],
       limit: ^limit,
@@ -55,10 +56,12 @@ defmodule NathanForUs.Viral do
   def get_random_moment do
     # Get a random featured GIF or fall back to any popular one
     featured = get_featured_gifs(1)
-    
+
     case featured do
-      [gif] -> gif
-      [] -> 
+      [gif] ->
+        gif
+
+      [] ->
         from(g in ViralGif,
           where: g.view_count > 0,
           order_by: fragment("RANDOM()"),
@@ -143,7 +146,7 @@ defmodule NathanForUs.Viral do
   def nathan_categories do
     [
       "awkward_silence",
-      "business_genius", 
+      "business_genius",
       "confused_stare",
       "dramatic_pause",
       "summit_ice",
@@ -224,6 +227,7 @@ defmodule NathanForUs.Viral do
       {:ok, vote} ->
         update_gif_vote_counts(browseable_gif_id)
         {:ok, vote}
+
       {:error, changeset} ->
         # Handle existing vote - update instead of insert
         if changeset.errors[:user_id] || changeset.errors[:session_id] do
@@ -235,16 +239,22 @@ defmodule NathanForUs.Viral do
   end
 
   defp update_existing_vote(browseable_gif_id, vote_type, user_id, session_id) do
-    query = if user_id do
-      from(v in GifVote, where: v.browseable_gif_id == ^browseable_gif_id and v.user_id == ^user_id)
-    else
-      from(v in GifVote, where: v.browseable_gif_id == ^browseable_gif_id and v.session_id == ^session_id)
-    end
+    query =
+      if user_id do
+        from(v in GifVote,
+          where: v.browseable_gif_id == ^browseable_gif_id and v.user_id == ^user_id
+        )
+      else
+        from(v in GifVote,
+          where: v.browseable_gif_id == ^browseable_gif_id and v.session_id == ^session_id
+        )
+      end
 
     case Repo.update_all(query, set: [vote_type: vote_type, updated_at: DateTime.utc_now()]) do
       {1, _} ->
         update_gif_vote_counts(browseable_gif_id)
         {:ok, :updated}
+
       {0, _} ->
         {:error, :not_found}
     end
@@ -275,25 +285,31 @@ defmodule NathanForUs.Viral do
   Updates vote counts on the browseable GIF.
   """
   def update_gif_vote_counts(browseable_gif_id) do
-    upvotes = from(v in GifVote,
-      where: v.browseable_gif_id == ^browseable_gif_id and v.vote_type == "up",
-      select: count(v.id)
-    ) |> Repo.one()
+    upvotes =
+      from(v in GifVote,
+        where: v.browseable_gif_id == ^browseable_gif_id and v.vote_type == "up",
+        select: count(v.id)
+      )
+      |> Repo.one()
 
-    downvotes = from(v in GifVote,
-      where: v.browseable_gif_id == ^browseable_gif_id and v.vote_type == "down",
-      select: count(v.id)
-    ) |> Repo.one()
+    downvotes =
+      from(v in GifVote,
+        where: v.browseable_gif_id == ^browseable_gif_id and v.vote_type == "down",
+        select: count(v.id)
+      )
+      |> Repo.one()
 
     hot_score = calculate_hot_score(upvotes, downvotes, browseable_gif_id)
 
     from(g in BrowseableGif, where: g.id == ^browseable_gif_id)
-    |> Repo.update_all(set: [
-      upvotes_count: upvotes,
-      downvotes_count: downvotes,
-      hot_score: hot_score,
-      hot_score_updated_at: DateTime.utc_now()
-    ])
+    |> Repo.update_all(
+      set: [
+        upvotes_count: upvotes,
+        downvotes_count: downvotes,
+        hot_score: hot_score,
+        hot_score_updated_at: DateTime.utc_now()
+      ]
+    )
   end
 
   @doc """
@@ -301,10 +317,12 @@ defmodule NathanForUs.Viral do
   """
   def calculate_hot_score(upvotes, downvotes, browseable_gif_id) do
     # Get GIF creation time
-    gif_created_at = from(g in BrowseableGif,
-      where: g.id == ^browseable_gif_id,
-      select: g.inserted_at
-    ) |> Repo.one()
+    gif_created_at =
+      from(g in BrowseableGif,
+        where: g.id == ^browseable_gif_id,
+        select: g.inserted_at
+      )
+      |> Repo.one()
 
     if gif_created_at do
       calculate_hot_score_with_time(upvotes, downvotes, gif_created_at)
@@ -316,20 +334,21 @@ defmodule NathanForUs.Viral do
   defp calculate_hot_score_with_time(upvotes, downvotes, created_at) do
     # Reddit's hot algorithm with some modifications for our use case
     score = upvotes - downvotes
-    
+
     # Time decay: newer posts get higher scores
     age_hours = DateTime.diff(DateTime.utc_now(), created_at, :hour)
-    
+
     # Base score with logarithmic scaling for vote counts
-    base_score = if score > 0 do
-      :math.log10(max(score, 1))
-    else
-      -:math.log10(max(abs(score), 1))
-    end
-    
+    base_score =
+      if score > 0 do
+        :math.log10(max(score, 1))
+      else
+        -:math.log10(max(abs(score), 1))
+      end
+
     # Time factor: posts lose points over time, but good content persists longer
     time_factor = :math.pow(age_hours + 2, 1.5)
-    
+
     # Final hot score
     base_score / time_factor
   end
@@ -377,19 +396,24 @@ defmodule NathanForUs.Viral do
   Bulk update hot scores for all GIFs (for background job).
   """
   def update_all_hot_scores do
-    gifs = from(g in BrowseableGif,
-      where: g.is_public == true,
-      select: [:id, :upvotes_count, :downvotes_count, :inserted_at]
-    ) |> Repo.all()
+    gifs =
+      from(g in BrowseableGif,
+        where: g.is_public == true,
+        select: [:id, :upvotes_count, :downvotes_count, :inserted_at]
+      )
+      |> Repo.all()
 
     Enum.each(gifs, fn gif ->
-      hot_score = calculate_hot_score_with_time(gif.upvotes_count, gif.downvotes_count, gif.inserted_at)
-      
+      hot_score =
+        calculate_hot_score_with_time(gif.upvotes_count, gif.downvotes_count, gif.inserted_at)
+
       from(g in BrowseableGif, where: g.id == ^gif.id)
-      |> Repo.update_all(set: [
-        hot_score: hot_score,
-        hot_score_updated_at: DateTime.utc_now()
-      ])
+      |> Repo.update_all(
+        set: [
+          hot_score: hot_score,
+          hot_score_updated_at: DateTime.utc_now()
+        ]
+      )
     end)
   end
 end

@@ -6,7 +6,13 @@
         <p class="text-zinc-600">Great to see you again.</p>
       </div>
 
-      <.simple_form :let={f} for={@conn.params["user"]} as={:user} action={~p"/users/log_in"} class="space-y-6">
+      <.simple_form
+        :let={f}
+        for={@conn.params["user"]}
+        as={:user}
+        action={~p"/users/log_in"}
+        class="space-y-6"
+      >
         <.error :if={@error_message}>{@error_message}</.error>
 
         <div>
@@ -31,13 +37,19 @@
 
         <div class="flex items-center justify-between">
           <.input field={f[:remember_me]} type="checkbox" label="Keep me logged in" />
-          <.link href={~p"/users/reset_password"} class="text-zinc-600 hover:text-zinc-900 text-sm">
+          <.link
+            href={~p"/users/reset_password"}
+            class="text-zinc-600 hover:text-zinc-900 text-sm"
+          >
             Forgot password?
           </.link>
         </div>
 
         <:actions>
-          <.button phx-disable-with="Logging in..." class="w-full bg-zinc-900 text-white py-4 text-lg font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
+          <.button
+            phx-disable-with="Logging in..."
+            class="w-full bg-zinc-900 text-white py-4 text-lg font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+          >
             Log in
           </.button>
         </:actions>
@@ -46,7 +58,10 @@
       <div class="text-center mt-6">
         <p class="text-zinc-600">
           Don't have an account?
-          <.link navigate={~p"/users/register"} class="text-zinc-900 font-semibold hover:underline">
+          <.link
+            navigate={~p"/users/register"}
+            class="text-zinc-900 font-semibold hover:underline"
+          >
             Join us
           </.link>
         </p>

@@ -41,7 +41,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
             <% end %>
           </h3>
           <div class="text-sm font-mono text-gray-400">
-            <%= length(@selected_frames) %> frames selected
+            {length(@selected_frames)} frames selected
           </div>
         </div>
 
@@ -60,7 +60,9 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
             <div
               id="gif-preview-container"
               phx-hook="GifPreview"
-              data-frames={Jason.encode!(encode_frames_with_captions(@selected_frames, @selected_frame_captions))}
+              data-frames={
+                Jason.encode!(encode_frames_with_captions(@selected_frames, @selected_frame_captions))
+              }
               class="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-600"
               style="width: 400px; height: 225px;"
             >
@@ -68,13 +70,13 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
               <div class="absolute inset-0 flex items-center justify-center">
                 <div class="text-gray-500 font-mono text-sm">Loading preview...</div>
               </div>
-
-              <!-- Frame counter overlay -->
+              
+    <!-- Frame counter overlay -->
               <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono">
-                <span id="frame-counter">1 / <%= length(@selected_frames) %></span>
+                <span id="frame-counter">1 / {length(@selected_frames)}</span>
               </div>
-
-              <!-- Play/pause controls -->
+              
+    <!-- Play/pause controls -->
               <div class="absolute bottom-2 left-2 flex gap-2">
                 <button
                   id="gif-play-pause"
@@ -95,8 +97,8 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
             </div>
           <% end %>
         </div>
-
-        <!-- Caption Display Area -->
+        
+    <!-- Caption Display Area -->
         <%= if length(@selected_frames) > 0 do %>
           <div class="mt-4 max-w-2xl mx-auto">
             <div class="bg-gray-800 border border-gray-600 rounded-lg p-4">
@@ -104,7 +106,7 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
                 <h4 class="text-sm font-bold text-blue-400 uppercase tracking-wide font-mono">
                   Live Captions
                 </h4>
-                <select 
+                <select
                   id="caption-speed"
                   class="bg-gray-700 border border-gray-600 text-white px-2 py-1 rounded text-xs font-mono"
                 >
@@ -164,20 +166,24 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
                 New Preview
               </button>
             </div>
-
-            <!-- Admin-only cache status -->
+            
+    <!-- Admin-only cache status -->
             <%= if @is_admin and @gif_cache_status do %>
               <div class="mt-4 p-3 bg-yellow-900/30 border border-yellow-600/50 rounded-lg">
                 <div class="flex items-center justify-center gap-2 mb-2">
                   <span class="text-yellow-400 font-mono text-xs font-bold">⚡ ADMIN DEBUG</span>
                   <%= if @gif_from_cache do %>
-                    <span class="bg-green-600 text-white px-2 py-1 rounded text-xs font-mono">CACHED</span>
+                    <span class="bg-green-600 text-white px-2 py-1 rounded text-xs font-mono">
+                      CACHED
+                    </span>
                   <% else %>
-                    <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-mono">FRESH</span>
+                    <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-mono">
+                      FRESH
+                    </span>
                   <% end %>
                 </div>
                 <p class="text-yellow-300 text-xs font-mono text-center">
-                  <%= @gif_cache_status %>
+                  {@gif_cache_status}
                 </p>
                 <div class="text-center mt-2">
                   <span class="text-yellow-400 text-xs font-mono">
@@ -238,14 +244,17 @@ defmodule NathanForUsWeb.Components.VideoTimeline.GifPreview do
   end
 
   defp encode_frame_image(nil), do: ""
+
   defp encode_frame_image(hex_data) when is_binary(hex_data) do
     case String.starts_with?(hex_data, "\\x") do
       true ->
         hex_string = String.slice(hex_data, 2..-1//1)
+
         case Base.decode16(hex_string, case: :lower) do
           {:ok, binary_data} -> Base.encode64(binary_data)
           :error -> ""
         end
+
       false ->
         Base.encode64(hex_data)
     end

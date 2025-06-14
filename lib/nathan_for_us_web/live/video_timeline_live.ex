@@ -13,6 +13,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   on_mount {NathanForUsWeb.UserAuth, :mount_current_user}
   alias NathanForUs.Video.VideoFrame
   alias NathanForUs.Gif
+
   alias NathanForUsWeb.Components.VideoTimeline.{
     TimelinePlayer,
     FrameDisplay,
@@ -32,7 +33,6 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     start_frame = Map.get(params, "start_frame", "")
     selected_indices = Map.get(params, "selected_indices", "")
 
-
     socket =
       cond do
         search_term != "" ->
@@ -49,7 +49,11 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                 # If we have a context frame, trigger context view after search
                 try do
                   context_frame_number = String.to_integer(context_frame)
-                  send(self(), {:auto_search_from_params, decoded_search_term, context_frame_number})
+
+                  send(
+                    self(),
+                    {:auto_search_from_params, decoded_search_term, context_frame_number}
+                  )
                 rescue
                   ArgumentError ->
                     send(self(), {:auto_search_from_params, decoded_search_term})
@@ -58,6 +62,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                 send(self(), {:auto_search_from_params, decoded_search_term})
               end
             end
+
             socket
           end)
 
@@ -67,12 +72,15 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             start_frame_num = String.to_integer(start_frame)
             # Decode URL-encoded commas and parse indices
             decoded_indices = URI.decode(selected_indices)
-            indices_list = decoded_indices
-            |> String.split(",")
-            |> Enum.map(&String.to_integer/1)
+
+            indices_list =
+              decoded_indices
+              |> String.split(",")
+              |> Enum.map(&String.to_integer/1)
 
             # Load frames starting from the specified frame and mark as random selection
             send(self(), {:load_random_sequence, start_frame_num, indices_list})
+
             socket
             |> assign(:is_random_selection, true)
             |> assign(:random_start_frame, start_frame_num)
@@ -111,7 +119,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:video, video)
             |> assign(:frame_count, frame_count)
             |> assign(:video_duration_ms, video_duration_ms || 0)
-            |> assign(:timeline_position, 0.0)  # 0.0 to 1.0
+            # 0.0 to 1.0
+            |> assign(:timeline_position, 0.0)
             |> assign(:current_frames, [])
             |> assign(:loading_frames, false)
             |> assign(:frames_per_view, @default_frames_per_page)
@@ -164,7 +173,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   def handle_event("timeline_scrub", %{"position" => position_str}, socket) do
     try do
       position = String.to_float(position_str)
-      position = max(0.0, min(1.0, position))  # Clamp between 0 and 1
+      # Clamp between 0 and 1
+      position = max(0.0, min(1.0, position))
 
       socket = assign(socket, :timeline_position, position)
 
@@ -213,7 +223,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   def handle_event("set_playback_speed", %{"speed" => speed_str}, socket) do
     try do
       speed = String.to_float(speed_str)
-      speed = max(0.1, min(4.0, speed))  # Clamp between 0.1x and 4x
+      # Clamp between 0.1x and 4x
+      speed = max(0.1, min(4.0, speed))
 
       socket = assign(socket, :playback_speed, speed)
       {:noreply, socket}
@@ -226,7 +237,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   def handle_event("zoom_timeline", %{"zoom" => zoom_str}, socket) do
     try do
       zoom = String.to_float(zoom_str)
-      zoom = max(0.1, min(10.0, zoom))  # Clamp between 0.1x and 10x
+      # Clamp between 0.1x and 10x
+      zoom = max(0.1, min(10.0, zoom))
 
       socket = assign(socket, :timeline_zoom, zoom)
       {:noreply, socket}
@@ -249,7 +261,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         if clicked_frame do
           # Load context frames around this frame
           video_id = socket.assigns.video.id
-          context_frames = NathanForUs.Video.get_frames_with_context(video_id, clicked_frame.frame_number, 5, 5)
+
+          context_frames =
+            NathanForUs.Video.get_frames_with_context(video_id, clicked_frame.frame_number, 5, 5)
 
           socket =
             socket
@@ -257,7 +271,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             |> assign(:is_context_view, true)
             |> assign(:context_target_frame, clicked_frame)
             |> assign(:current_frames, context_frames)
-            |> assign(:selected_frame_indices, [])  # Clear selection
+            # Clear selection
+            |> assign(:selected_frame_indices, [])
 
           {:noreply, socket}
         else
@@ -272,8 +287,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             shift_key ->
               # For shift-click, we'll handle it in select_frame_range
               current_selected
+
             frame_index in current_selected ->
               List.delete(current_selected, frame_index)
+
             true ->
               [frame_index | current_selected] |> Enum.sort()
           end
@@ -282,6 +299,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           socket
           |> assign(:selected_frame_indices, new_selected)
           |> load_selected_frame_captions()
+
         {:noreply, socket}
       end
     rescue
@@ -290,7 +308,11 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     end
   end
 
-  def handle_event("select_frame_range", %{"start_index" => _start_str, "end_index" => _end_str, "indices" => indices_list}, socket) do
+  def handle_event(
+        "select_frame_range",
+        %{"start_index" => _start_str, "end_index" => _end_str, "indices" => indices_list},
+        socket
+      ) do
     try do
       range_indices = Enum.map(indices_list, &String.to_integer/1)
 
@@ -306,6 +328,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         socket
         |> assign(:selected_frame_indices, new_selected)
         |> load_selected_frame_captions()
+
       {:noreply, socket}
     rescue
       ArgumentError ->
@@ -364,7 +387,6 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     {:noreply, socket}
   end
 
-
   def handle_event("caption_autocomplete", %{"caption_search" => %{"term" => term}}, socket) do
     term = String.trim(term)
 
@@ -419,8 +441,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         |> assign(:current_frames, filtered_frames)
         |> assign(:caption_loading, false)
         |> assign(:show_caption_autocomplete, false)
-        |> assign(:selected_frame_indices, [])  # Clear selection
-        |> assign(:is_context_view, false)  # Reset context view
+        # Clear selection
+        |> assign(:selected_frame_indices, [])
+        # Reset context view
+        |> assign(:is_context_view, false)
         |> assign(:context_frames, [])
         |> assign(:context_target_frame, nil)
 
@@ -442,7 +466,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       |> assign(:context_frames, [])
       |> assign(:is_context_view, false)
       |> assign(:context_target_frame, nil)
-      |> assign(:expand_count, 3)  # Reset to default
+      # Reset to default
+      |> assign(:expand_count, 3)
 
     # Reload frames at current position
     send(self(), {:load_frames_at_position, socket.assigns.timeline_position})
@@ -485,7 +510,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   def handle_event("update_expand_count", %{"expand_count" => count_str}, socket) do
     try do
       count = String.to_integer(count_str)
-      count = max(1, min(20, count))  # Clamp between 1 and 20
+      # Clamp between 1 and 20
+      count = max(1, min(20, count))
 
       socket = assign(socket, :expand_count, count)
       {:noreply, socket}
@@ -509,20 +535,25 @@ defmodule NathanForUsWeb.VideoTimelineLive do
 
       if new_start_frame < earliest_frame_number do
         # Get additional frames
-        additional_frames = NathanForUs.Video.get_video_frames_in_range(
-          video_id,
-          new_start_frame,
-          earliest_frame_number - 1
-        )
+        additional_frames =
+          NathanForUs.Video.get_video_frames_in_range(
+            video_id,
+            new_start_frame,
+            earliest_frame_number - 1
+          )
 
         # Combine with existing frames
         new_frames = additional_frames ++ current_frames
 
         # Update selection indices to include the new frames
         additional_count = length(additional_frames)
-        updated_indices = socket.assigns.selected_frame_indices
-        |> Enum.map(&(&1 + additional_count))  # Shift existing indices
-        |> then(&(Enum.to_list(0..(additional_count - 1)) ++ &1))  # Add new indices
+
+        updated_indices =
+          socket.assigns.selected_frame_indices
+          # Shift existing indices
+          |> Enum.map(&(&1 + additional_count))
+          # Add new indices
+          |> then(&(Enum.to_list(0..(additional_count - 1)) ++ &1))
 
         socket =
           socket
@@ -552,11 +583,12 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       new_end_frame = latest_frame_number + expand_count
 
       # Get additional frames
-      additional_frames = NathanForUs.Video.get_video_frames_in_range(
-        video_id,
-        latest_frame_number + 1,
-        new_end_frame
-      )
+      additional_frames =
+        NathanForUs.Video.get_video_frames_in_range(
+          video_id,
+          latest_frame_number + 1,
+          new_end_frame
+        )
 
       if not Enum.empty?(additional_frames) do
         # Combine with existing frames
@@ -602,18 +634,20 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       target_frame = socket.assigns.context_target_frame
       expand_count = socket.assigns.expand_count
 
-      expanded_frames = NathanForUs.Video.expand_context_left(
-        video_id,
-        current_frames,
-        target_frame.frame_number,
-        expand_count
-      )
+      expanded_frames =
+        NathanForUs.Video.expand_context_left(
+          video_id,
+          current_frames,
+          target_frame.frame_number,
+          expand_count
+        )
 
       socket =
         socket
         |> assign(:current_frames, expanded_frames)
         |> assign(:context_frames, expanded_frames)
-        |> assign(:selected_frame_indices, [])  # Clear selection
+        # Clear selection
+        |> assign(:selected_frame_indices, [])
 
       {:noreply, socket}
     else
@@ -628,18 +662,20 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       target_frame = socket.assigns.context_target_frame
       expand_count = socket.assigns.expand_count
 
-      expanded_frames = NathanForUs.Video.expand_context_right(
-        video_id,
-        current_frames,
-        target_frame.frame_number,
-        expand_count
-      )
+      expanded_frames =
+        NathanForUs.Video.expand_context_right(
+          video_id,
+          current_frames,
+          target_frame.frame_number,
+          expand_count
+        )
 
       socket =
         socket
         |> assign(:current_frames, expanded_frames)
         |> assign(:context_frames, expanded_frames)
-        |> assign(:selected_frame_indices, [])  # Clear selection
+        # Clear selection
+        |> assign(:selected_frame_indices, [])
 
       {:noreply, socket}
     else
@@ -655,6 +691,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     case selected_frames do
       [] ->
         {:noreply, socket}
+
       frames ->
         # Check if GIF already exists
         case Gif.find_or_prepare(video_id, frames) do
@@ -674,27 +711,39 @@ defmodule NathanForUsWeb.VideoTimelineLive do
 
           {:generate, hash, frame_ids} ->
             # Need to generate new GIF
-            task = Task.async(fn ->
-              # Create a mock frame sequence for the existing GIF generation function
-              mock_sequence = %{sequence_frames: frames}
-              selected_indices = 0..(length(frames) - 1) |> Enum.to_list()
+            task =
+              Task.async(fn ->
+                # Create a mock frame sequence for the existing GIF generation function
+                mock_sequence = %{sequence_frames: frames}
+                selected_indices = 0..(length(frames) - 1) |> Enum.to_list()
 
-              case NathanForUs.AdminService.generate_gif_from_frames(mock_sequence, selected_indices) do
-                {:ok, gif_binary} ->
-                  # Save the generated GIF to database
-                  case Gif.save_generated_gif(hash, video_id, frame_ids, gif_binary) do
-                    {:ok, saved_gif} ->
-                      # Also create a browseable GIF entry automatically
-                      create_browseable_gif_from_generation(frames, socket.assigns.video, socket.assigns[:current_user], saved_gif)
-                      {:ok, gif_binary, saved_gif}
-                    {:error, _reason} ->
-                      # Still return the GIF even if saving failed
-                      {:ok, gif_binary, nil}
-                  end
-                {:error, reason} ->
-                  {:error, reason}
-              end
-            end)
+                case NathanForUs.AdminService.generate_gif_from_frames(
+                       mock_sequence,
+                       selected_indices
+                     ) do
+                  {:ok, gif_binary} ->
+                    # Save the generated GIF to database
+                    case Gif.save_generated_gif(hash, video_id, frame_ids, gif_binary) do
+                      {:ok, saved_gif} ->
+                        # Also create a browseable GIF entry automatically
+                        create_browseable_gif_from_generation(
+                          frames,
+                          socket.assigns.video,
+                          socket.assigns[:current_user],
+                          saved_gif
+                        )
+
+                        {:ok, gif_binary, saved_gif}
+
+                      {:error, _reason} ->
+                        # Still return the GIF even if saving failed
+                        {:ok, gif_binary, nil}
+                    end
+
+                  {:error, reason} ->
+                    {:error, reason}
+                end
+              end)
 
             socket =
               socket
@@ -724,7 +773,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         indices_param = Enum.join(frame_indices, ",")
 
         # Navigate to the video timeline with pre-selected frames
-        path = ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
+        path =
+          ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
+
         socket = redirect(socket, to: path)
         {:noreply, socket}
 
@@ -784,7 +835,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           socket
           |> assign(:current_frames, socket.assigns.caption_filtered_frames)
           |> assign(:loading_frames, false)
-          |> assign(:selected_frame_indices, [])  # Clear selection when moving
+          # Clear selection when moving
+          |> assign(:selected_frame_indices, [])
 
         {:noreply, socket}
       else
@@ -799,13 +851,19 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         end_frame = min(start_frame + frames_per_view - 1, frame_count - 1)
 
         # Load frames in this range
-        frames = NathanForUs.Video.get_video_frames_in_range(socket.assigns.video.id, start_frame, end_frame)
+        frames =
+          NathanForUs.Video.get_video_frames_in_range(
+            socket.assigns.video.id,
+            start_frame,
+            end_frame
+          )
 
         socket =
           socket
           |> assign(:current_frames, frames)
           |> assign(:loading_frames, false)
-          |> assign(:selected_frame_indices, [])  # Clear selection when moving
+          # Clear selection when moving
+          |> assign(:selected_frame_indices, [])
 
         {:noreply, socket}
       end
@@ -819,6 +877,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       # Calculate how much to advance based on playback speed
       # Advance by 1 frame worth of time
       frame_count = socket.assigns.frame_count
+
       if frame_count > 0 do
         frame_duration = 1.0 / frame_count
         speed_multiplier = socket.assigns.playback_speed
@@ -852,7 +911,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     # Only proceed if video is loaded
     if Map.has_key?(socket.assigns, :video) && socket.assigns.video do
       video_id = socket.assigns.video.id
-      filtered_frames = NathanForUs.Video.get_video_frames_with_caption_text(video_id, search_term)
+
+      filtered_frames =
+        NathanForUs.Video.get_video_frames_with_caption_text(video_id, search_term)
 
       socket =
         socket
@@ -862,7 +923,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         |> assign(:caption_loading, false)
         |> assign(:show_caption_autocomplete, false)
         |> assign(:selected_frame_indices, [])
-        |> assign(:is_context_view, false)  # Reset context view
+        # Reset context view
+        |> assign(:is_context_view, false)
         |> assign(:context_frames, [])
         |> assign(:context_target_frame, nil)
 
@@ -879,14 +941,18 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     # Only proceed if video is loaded
     if Map.has_key?(socket.assigns, :video) && socket.assigns.video do
       video_id = socket.assigns.video.id
-      filtered_frames = NathanForUs.Video.get_video_frames_with_caption_text(video_id, search_term)
+
+      filtered_frames =
+        NathanForUs.Video.get_video_frames_with_caption_text(video_id, search_term)
 
       # Find the target frame in the filtered results
-      target_frame = Enum.find(filtered_frames, fn frame -> frame.frame_number == context_frame_number end)
+      target_frame =
+        Enum.find(filtered_frames, fn frame -> frame.frame_number == context_frame_number end)
 
       if target_frame do
         # Load context frames around this frame
-        context_frames = NathanForUs.Video.get_frames_with_context(video_id, target_frame.frame_number, 5, 5)
+        context_frames =
+          NathanForUs.Video.get_frames_with_context(video_id, target_frame.frame_number, 5, 5)
 
         socket =
           socket
@@ -909,7 +975,12 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       end
     else
       # Video not loaded yet, reschedule the search
-      Process.send_after(self(), {:auto_search_from_params, search_term, context_frame_number}, 100)
+      Process.send_after(
+        self(),
+        {:auto_search_from_params, search_term, context_frame_number},
+        100
+      )
+
       {:noreply, socket}
     end
   end
@@ -924,10 +995,11 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           # Convert binary data to base64 for embedding
           gif_base64 = Base.encode64(gif_binary)
 
-          {cache_status, from_cache} = case saved_gif do
-            nil -> {"Generated fresh (save to DB failed)", false}
-            gif -> {"Generated fresh, saved to DB (ID: #{gif.id})", false}
-          end
+          {cache_status, from_cache} =
+            case saved_gif do
+              nil -> {"Generated fresh (save to DB failed)", false}
+              gif -> {"Generated fresh, saved to DB (ID: #{gif.id})", false}
+            end
 
           socket =
             socket
@@ -969,7 +1041,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   def handle_info({:load_random_sequence, start_frame_num, indices_list}, socket) do
     # Load frames starting from the specified frame number
     video_id = socket.assigns.video.id
-    end_frame_num = start_frame_num + 14  # 15 frames total (0-14 indices)
+    # 15 frames total (0-14 indices)
+    end_frame_num = start_frame_num + 14
 
     frames = NathanForUs.Video.get_video_frames_in_range(video_id, start_frame_num, end_frame_num)
 
@@ -1013,7 +1086,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               |> assign(:generated_gif_data, gif_base64)
               |> assign(:gif_generation_task, nil)
               |> assign(:gif_from_cache, true)
-              |> assign(:gif_cache_status, "Automatically loaded from database cache (ID: #{existing_gif.id})")
+              |> assign(
+                :gif_cache_status,
+                "Automatically loaded from database cache (ID: #{existing_gif.id})"
+              )
 
             {:noreply, socket}
 
@@ -1029,14 +1105,18 @@ defmodule NathanForUsWeb.VideoTimelineLive do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-900 text-white" phx-hook="TimelineTutorial" id="timeline-container">
+    <div
+      class="min-h-screen bg-gray-900 text-white"
+      phx-hook="TimelineTutorial"
+      id="timeline-container"
+    >
       <!-- Header -->
       <div class="bg-gray-800 border-b border-gray-700 px-6 py-4">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold font-mono"><%= @video.title %></h1>
+            <h1 class="text-2xl font-bold font-mono">{@video.title}</h1>
             <p class="text-gray-400 text-sm font-mono">
-              Timeline Browser • <%= @frame_count %> frames • <%= format_duration(@video_duration_ms) %>
+              Timeline Browser • {@frame_count} frames • {format_duration(@video_duration_ms)}
             </p>
           </div>
 
@@ -1095,22 +1175,23 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           </div>
         </div>
       </div>
-
-      <!-- Custom Posted Success Flash -->
+      
+    <!-- Custom Posted Success Flash -->
       <%= if @show_posted_success_flash do %>
         <div class="fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1 bg-emerald-50 text-emerald-800 ring-emerald-500 fill-cyan-900">
           <p class="flex items-center gap-1.5 text-sm font-semibold leading-6">
             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+              <path
+                fill-rule="evenodd"
+                d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
+                clip-rule="evenodd"
+              />
             </svg>
             Success!
           </p>
           <p class="mt-2 text-sm leading-5">
             GIF posted to timeline!
-            <.link
-              navigate={~p"/public-timeline"}
-              class="font-semibold underline hover:no-underline"
-            >
+            <.link navigate={~p"/public-timeline"} class="font-semibold underline hover:no-underline">
               Check it out in the Nathan timeline →
             </.link>
           </p>
@@ -1120,14 +1201,24 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             phx-click="close_posted_success_flash"
             aria-label="close"
           >
-            <svg class="h-5 w-5 opacity-40 group-hover:opacity-70" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              class="h-5 w-5 opacity-40 group-hover:opacity-70"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M6 18L18 6M6 6l12 12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
         </div>
       <% end %>
-
-      <!-- Caption Search -->
+      
+    <!-- Caption Search -->
       <div class="px-6">
         <CaptionSearch.caption_search
           search_term={@caption_search_term}
@@ -1142,8 +1233,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           expand_count={@expand_count}
         />
       </div>
-
-      <!-- Timeline Controls (hidden when searching or in context view) -->
+      
+    <!-- Timeline Controls (hidden when searching or in context view) -->
       <%= unless @is_caption_filtered or @is_context_view do %>
         <TimelineControls.timeline_controls
           timeline_position={@timeline_position}
@@ -1153,8 +1244,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           frame_count={@frame_count}
           video_duration_ms={@video_duration_ms}
         />
-
-        <!-- Timeline Player -->
+        
+    <!-- Timeline Player -->
         <TimelinePlayer.timeline_player
           timeline_position={@timeline_position}
           timeline_zoom={@timeline_zoom}
@@ -1163,8 +1254,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           video={@video}
         />
       <% end %>
-
-      <!-- GIF Preview (shows when frames are selected) -->
+      
+    <!-- GIF Preview (shows when frames are selected) -->
       <GifPreview.gif_preview
         current_frames={@current_frames}
         selected_frame_indices={@selected_frame_indices}
@@ -1177,15 +1268,17 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         video_id={@video.id}
         selected_frame_captions={@selected_frame_captions}
       />
-
-      <!-- Random Selection Controls (show when in random selection mode) -->
+      
+    <!-- Random Selection Controls (show when in random selection mode) -->
       <%= if @is_random_selection do %>
         <div class="px-6 py-4 bg-gray-800 border-b border-gray-700">
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="text-lg font-bold font-mono text-purple-400 mb-2">🎲 Random Selection Mode</h3>
+              <h3 class="text-lg font-bold font-mono text-purple-400 mb-2">
+                🎲 Random Selection Mode
+              </h3>
               <p class="text-gray-400 text-sm font-mono">
-                Selected <%= length(@selected_frame_indices) %> frames starting from frame #<%= @random_start_frame %>
+                Selected {length(@selected_frame_indices)} frames starting from frame #{@random_start_frame}
               </p>
             </div>
 
@@ -1198,7 +1291,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                   class="bg-gray-700 border border-gray-600 text-white px-2 py-1 rounded text-sm font-mono"
                 >
                   <%= for count <- [1, 2, 3, 5, 10] do %>
-                    <option value={count} selected={@expand_count == count}><%= count %> frames</option>
+                    <option value={count} selected={@expand_count == count}>{count} frames</option>
                   <% end %>
                 </select>
               </div>
@@ -1230,8 +1323,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           </div>
         </div>
       <% end %>
-
-      <!-- Frame Display -->
+      
+    <!-- Frame Display -->
       <FrameDisplay.frame_display
         current_frames={@current_frames}
         loading_frames={@loading_frames}
@@ -1241,65 +1334,91 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         is_caption_filtered={@is_caption_filtered}
         expand_count={@expand_count}
       />
-
-      <!-- Tutorial Modal -->
+      
+    <!-- Tutorial Modal -->
       <%= if @show_tutorial_modal do %>
         <div class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div class="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-600">
             <div class="p-8">
               <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold font-mono text-blue-400">Welcome to Timeline Browser</h2>
+                <h2 class="text-2xl font-bold font-mono text-blue-400">
+                  Welcome to Timeline Browser
+                </h2>
                 <button
                   phx-click="close_tutorial_modal"
                   class="text-gray-400 hover:text-white transition-colors"
                 >
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    >
+                    </path>
                   </svg>
                 </button>
               </div>
 
               <div class="space-y-6 text-gray-200">
                 <div class="flex items-start gap-4">
-                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">1</div>
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    1
+                  </div>
                   <div>
                     <h3 class="text-lg font-semibold mb-2 text-white">Navigate with the Timeline</h3>
-                    <p class="leading-relaxed">Drag the scrubber along the timeline to jump to any point in the video. Click anywhere on the timeline track to jump directly to that position. Use the zoom controls to get more precise control over smaller sections.</p>
+                    <p class="leading-relaxed">
+                      Drag the scrubber along the timeline to jump to any point in the video. Click anywhere on the timeline track to jump directly to that position. Use the zoom controls to get more precise control over smaller sections.
+                    </p>
                   </div>
                 </div>
 
                 <div class="flex items-start gap-4">
-                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">2</div>
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    2
+                  </div>
                   <div>
                     <h3 class="text-lg font-semibold mb-2 text-white">Playback Controls</h3>
-                    <p class="leading-relaxed">Use the play/pause button to automatically advance through the timeline. When playing, it cycles through frames at your selected speed (0.25x to 4x). The play button will automatically pause when it reaches the end of the video or when you interact with the timeline. The current frame position and timestamp are always displayed.</p>
+                    <p class="leading-relaxed">
+                      Use the play/pause button to automatically advance through the timeline. When playing, it cycles through frames at your selected speed (0.25x to 4x). The play button will automatically pause when it reaches the end of the video or when you interact with the timeline. The current frame position and timestamp are always displayed.
+                    </p>
                   </div>
                 </div>
 
-
                 <div class="flex items-start gap-4">
-                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">4</div>
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    4
+                  </div>
                   <div>
                     <h3 class="text-lg font-semibold mb-2 text-white">Search</h3>
-                    <p class="leading-relaxed">Search for quotes at the top and find video from specific portions</p>
+                    <p class="leading-relaxed">
+                      Search for quotes at the top and find video from specific portions
+                    </p>
                   </div>
                 </div>
 
                 <div class="flex items-start gap-4">
-                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">5</div>
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    5
+                  </div>
                   <div>
                     <h3 class="text-lg font-semibold mb-2 text-white">Contextual View</h3>
-                    <p class="leading-relaxed">Click a frame's image and get a contextual view to load frames before/after what you have and create a sequence</p>
+                    <p class="leading-relaxed">
+                      Click a frame's image and get a contextual view to load frames before/after what you have and create a sequence
+                    </p>
                   </div>
                 </div>
                 <div class="flex items-start gap-4">
-                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">6</div>
+                  <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    6
+                  </div>
                   <div>
                     <h3 class="text-lg font-semibold mb-2 text-white">Click and Draft</h3>
-                    <p class="leading-relaxed">Click and drag or click and then hold shift and click again for multi frame selection</p>
+                    <p class="leading-relaxed">
+                      Click and drag or click and then hold shift and click again for multi frame selection
+                    </p>
                   </div>
                 </div>
-
 
                 <div class="bg-gray-700 p-4 rounded-lg mt-6">
                   <h4 class="font-semibold text-white mb-2">💡 Pro Tips</h4>
@@ -1326,20 +1445,23 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           </div>
         </div>
       <% end %>
-
-      <!-- Frame Modal -->
+      
+    <!-- Frame Modal -->
       <%= if @show_frame_modal and @modal_frame do %>
         <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
           <div class="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="p-6">
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold font-mono">Frame #<%= @modal_frame.frame_number %></h3>
-                <button
-                  phx-click="close_frame_modal"
-                  class="text-gray-400 hover:text-white"
-                >
+                <h3 class="text-lg font-bold font-mono">Frame #{@modal_frame.frame_number}</h3>
+                <button phx-click="close_frame_modal" class="text-gray-400 hover:text-white">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    >
+                    </path>
                   </svg>
                 </button>
               </div>
@@ -1358,27 +1480,31 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                 <% end %>
 
                 <div class="mt-4 text-sm font-mono text-gray-300">
-                  <p>Timestamp: <%= format_timestamp(@modal_frame.timestamp_ms) %></p>
+                  <p>Timestamp: {format_timestamp(@modal_frame.timestamp_ms)}</p>
                   <%= if @modal_frame.width != nil and @modal_frame.height != nil do %>
-                    <p>Resolution: <%= @modal_frame.width %>x<%= @modal_frame.height %></p>
+                    <p>Resolution: {@modal_frame.width}x{@modal_frame.height}</p>
                   <% end %>
                 </div>
-
-                <!-- Frame Captions -->
+                
+    <!-- Frame Captions -->
                 <%= if length(@modal_frame_captions) > 0 do %>
                   <div class="mt-6 bg-gray-700 rounded-lg p-4">
-                    <h4 class="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wide">Captions</h4>
+                    <h4 class="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wide">
+                      Captions
+                    </h4>
                     <div class="space-y-2">
                       <%= for caption <- @modal_frame_captions do %>
                         <div class="bg-gray-600 rounded p-3 text-left">
-                          <p class="text-gray-200 text-sm leading-relaxed"><%= caption %></p>
+                          <p class="text-gray-200 text-sm leading-relaxed">{caption}</p>
                         </div>
                       <% end %>
                     </div>
                   </div>
                 <% else %>
                   <div class="mt-6 bg-gray-700 rounded-lg p-4">
-                    <h4 class="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wide">Captions</h4>
+                    <h4 class="text-sm font-bold text-blue-400 mb-3 uppercase tracking-wide">
+                      Captions
+                    </h4>
                     <p class="text-gray-400 text-sm italic">No captions found for this frame</p>
                   </div>
                 <% end %>
@@ -1397,15 +1523,17 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   defp load_selected_frame_captions(socket) do
     selected_frames = get_selected_frames(socket)
 
-    frame_captions = Enum.map(selected_frames, fn frame ->
-      captions = NathanForUs.Video.get_frame_captions(frame.id)
-      %{
-        frame_id: frame.id,
-        frame_number: frame.frame_number,
-        timestamp_ms: frame.timestamp_ms,
-        captions: captions
-      }
-    end)
+    frame_captions =
+      Enum.map(selected_frames, fn frame ->
+        captions = NathanForUs.Video.get_frame_captions(frame.id)
+
+        %{
+          frame_id: frame.id,
+          frame_number: frame.frame_number,
+          timestamp_ms: frame.timestamp_ms,
+          captions: captions
+        }
+      end)
 
     assign(socket, :selected_frame_captions, frame_captions)
   end
@@ -1440,16 +1568,18 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       category = determine_gif_category(frames)
 
       # Create frame data for storage
-      frame_data = Jason.encode!(%{
-        frame_ids: frame_ids,
-        frame_numbers: Enum.map(frames, & &1.frame_number),
-        timestamps: Enum.map(frames, & &1.timestamp_ms)
-      })
+      frame_data =
+        Jason.encode!(%{
+          frame_ids: frame_ids,
+          frame_numbers: Enum.map(frames, & &1.frame_number),
+          timestamps: Enum.map(frames, & &1.timestamp_ms)
+        })
 
       attrs = %{
         video_id: video.id,
         created_by_user_id: user.id,
-        gif_id: gif && gif.id, # Link to actual GIF binary
+        # Link to actual GIF binary
+        gif_id: gif && gif.id,
         start_frame_index: first_frame.frame_number,
         end_frame_index: last_frame.frame_number,
         category: category,
@@ -1483,15 +1613,17 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       last_frame = List.last(frames)
       category = determine_gif_category(frames)
 
-      frame_data = Jason.encode!(%{
-        frame_ids: Enum.map(frames, & &1.id),
-        frame_numbers: Enum.map(frames, & &1.frame_number),
-        timestamps: Enum.map(frames, & &1.timestamp_ms)
-      })
+      frame_data =
+        Jason.encode!(%{
+          frame_ids: Enum.map(frames, & &1.id),
+          frame_numbers: Enum.map(frames, & &1.frame_number),
+          timestamps: Enum.map(frames, & &1.timestamp_ms)
+        })
 
       attrs = %{
         video_id: video.id,
-        created_by_user_id: user && user.id, # Allow anonymous for now
+        # Allow anonymous for now
+        created_by_user_id: user && user.id,
         gif_id: saved_gif.id,
         start_frame_index: first_frame.frame_number,
         end_frame_index: last_frame.frame_number,
@@ -1509,8 +1641,8 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     end
   end
 
-
   defp format_duration(nil), do: "Unknown duration"
+
   defp format_duration(ms) when is_integer(ms) do
     total_seconds = div(ms, 1000)
     hours = div(total_seconds, 3600)
@@ -1525,6 +1657,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   end
 
   defp format_timestamp(nil), do: "0:00"
+
   defp format_timestamp(ms) when is_integer(ms) do
     total_seconds = div(ms, 1000)
     minutes = div(total_seconds, 60)
@@ -1533,17 +1666,19 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   end
 
   defp encode_frame_image(nil), do: ""
+
   defp encode_frame_image(hex_data) when is_binary(hex_data) do
     case String.starts_with?(hex_data, "\\x") do
       true ->
         hex_string = String.slice(hex_data, 2..-1//1)
+
         case Base.decode16(hex_string, case: :lower) do
           {:ok, binary_data} -> Base.encode64(binary_data)
           :error -> ""
         end
+
       false ->
         Base.encode64(hex_data)
     end
   end
-
 end

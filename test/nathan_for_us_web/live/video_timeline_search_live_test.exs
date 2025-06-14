@@ -14,7 +14,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
     # Create multiple test videos with frames for search testing
     {:ok, video1} = create_test_video("Test Video 1")
     {:ok, video2} = create_test_video("Test Video 2")
-    
+
     frames1 = create_test_frames(video1, 20)
     frames2 = create_test_frames(video2, 20)
 
@@ -41,7 +41,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       assert html =~ "Random GIF"
       assert html =~ "Browse GIFs"
-      assert html =~ "Nathan Timeline"
+      assert html =~ "NATHAN POST TIMELINE"
       assert html =~ "Sign Up"
     end
 
@@ -50,7 +50,8 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       assert html =~ "Try searching for these quotes:"
       # Should show some quote suggestions
-      assert html =~ "\""  # Should have quotes in the suggestions
+      # Should have quotes in the suggestions
+      assert html =~ "\""
     end
 
     test "displays search form", %{conn: conn} do
@@ -89,7 +90,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
       render_submit(view, "search", %{"search" => %{"term" => "test"}})
 
       html = render(view)
-      
+
       # Should show video titles in grouped results
       assert html =~ video1.title or html =~ video2.title or html =~ "No quotes found"
     end
@@ -119,7 +120,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       # Perform search first
       render_submit(view, "search", %{"search" => %{"term" => "hello"}})
-      
+
       # Clear search
       render_click(view, "clear_search")
 
@@ -182,7 +183,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       # Mock successful random sequence generation
       assert render_click(view, "random_gif") =~ ""
-      
+
       # Should redirect (hard to test exact redirect URL)
     end
 
@@ -191,10 +192,10 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       # Search first
       render_submit(view, "search", %{"search" => %{"term" => "test"}})
-      
+
       # Then click random from results
       render_click(view, "random_gif")
-      
+
       # Should redirect to random GIF
     end
 
@@ -213,10 +214,10 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
       {:ok, view, _html} = live(conn, "/video-timeline")
 
       render_submit(view, "search", %{"search" => %{"term" => "nonexistentquery123"}})
-      
+
       # Click the feeling lucky random GIF button
       render_click(view, "random_gif")
-      
+
       # Should redirect
     end
   end
@@ -230,6 +231,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       # If we have results, test frame clicking
       html = render(view)
+
       if html =~ "Create GIF" do
         # Frame clicks would navigate via onclick, which is hard to test directly
         assert html =~ "Click to compose GIF"
@@ -253,7 +255,8 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       html = render(view)
       # Should limit to 12 frames per video or show "more frames"
-      assert html =~ "more frames" or html =~ "No quotes found" or !String.contains?(html, "more frames")
+      assert html =~ "more frames" or html =~ "No quotes found" or
+               !String.contains?(html, "more frames")
     end
   end
 
@@ -285,7 +288,8 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       # May show different navigation for logged in users
       # (Exact behavior depends on implementation)
-      assert html =~ "Random GIF" # Should still show this
+      # Should still show this
+      assert html =~ "Random GIF"
     end
   end
 
@@ -364,7 +368,8 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
 
       # Should handle gracefully
       html = render(view)
-      assert html =~ "Timeline Search" # Page should still work
+      # Page should still work
+      assert html =~ "Timeline Search"
     end
   end
 
@@ -398,11 +403,11 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
       username: "testuser",
       password: "test123456789"
     }
-    
+
     {:ok, user} = Accounts.register_user(attrs)
     user = %{user | confirmed_at: DateTime.utc_now() |> DateTime.truncate(:second)}
     user = Repo.update!(Accounts.User.confirm_changeset(user))
-    
+
     {:ok, user}
   end
 
@@ -420,19 +425,20 @@ defmodule NathanForUsWeb.VideoTimelineSearchLiveTest do
   end
 
   defp create_test_frames(video, count) do
-    frames = for i <- 1..count do
-      %{
-        frame_number: i,
-        timestamp_ms: i * 1000,
-        file_path: "frame_#{i}.jpg",
-        file_size: 1000,
-        width: 1920,
-        height: 1080,
-        video_id: video.id,
-        inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-        updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-      }
-    end
+    frames =
+      for i <- 1..count do
+        %{
+          frame_number: i,
+          timestamp_ms: i * 1000,
+          file_path: "frame_#{i}.jpg",
+          file_size: 1000,
+          width: 1920,
+          height: 1080,
+          video_id: video.id,
+          inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+          updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+        }
+      end
 
     {_count, frame_records} = Repo.insert_all(VideoFrame, frames, returning: true)
     frame_records

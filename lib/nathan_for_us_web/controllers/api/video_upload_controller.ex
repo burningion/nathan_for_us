@@ -68,28 +68,38 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
     end
   end
 
-  defp upload_video_data(%{"video" => video_params, "frames" => frames_params, "captions" => captions_params}) do
+  defp upload_video_data(%{
+         "video" => video_params,
+         "frames" => frames_params,
+         "captions" => captions_params
+       }) do
     # Try to create or find existing video by file_path in production
     video_attrs = prepare_video_attrs(video_params)
-    video = case Video.create_video(video_attrs) do
-      {:ok, video} -> 
-        video
-      {:error, changeset} ->
-        # Check if it's a duplicate file_path error
-        case changeset.errors[:file_path] do
-          {"has already been taken", _} ->
-            # Find existing video by file_path in production
-            case Video.get_video_by_file_path(video_attrs.file_path) do
-              nil -> {:error, changeset}
-              existing_video -> existing_video
-            end
-          _ ->
-            {:error, changeset}
-        end
-    end
+
+    video =
+      case Video.create_video(video_attrs) do
+        {:ok, video} ->
+          video
+
+        {:error, changeset} ->
+          # Check if it's a duplicate file_path error
+          case changeset.errors[:file_path] do
+            {"has already been taken", _} ->
+              # Find existing video by file_path in production
+              case Video.get_video_by_file_path(video_attrs.file_path) do
+                nil -> {:error, changeset}
+                existing_video -> existing_video
+              end
+
+            _ ->
+              {:error, changeset}
+          end
+      end
 
     case video do
-      {:error, changeset} -> {:error, changeset}
+      {:error, changeset} ->
+        {:error, changeset}
+
       video ->
         # Now run the transaction for captions/frames
         Repo.transaction(fn ->
@@ -100,13 +110,14 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
           end
 
           # Create captions first (frames reference them) - only if provided
-          captions = if length(captions_params) > 0 do
-            caption_attrs = prepare_captions_attrs(captions_params, video.id)
-            create_captions_batch(caption_attrs)
-          else
-            # Get existing captions for linking
-            Video.get_video_captions(video.id)
-          end
+          captions =
+            if length(captions_params) > 0 do
+              caption_attrs = prepare_captions_attrs(captions_params, video.id)
+              create_captions_batch(caption_attrs)
+            else
+              # Get existing captions for linking
+              Video.get_video_captions(video.id)
+            end
 
           # Create frames with image data
           frame_attrs = prepare_frames_attrs(frames_params, video.id)
@@ -140,7 +151,7 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
 
   defp prepare_captions_attrs(captions_params, video_id) do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-    
+
     Enum.map(captions_params, fn caption ->
       %{
         video_id: video_id,
@@ -156,12 +167,13 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
 
   defp prepare_frames_attrs(frames_params, video_id) do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-    
+
     Enum.map(frames_params, fn frame ->
-      image_data = case frame["image_data"] do
-        nil -> nil
-        base64_data -> Base.decode64!(base64_data)
-      end
+      image_data =
+        case frame["image_data"] do
+          nil -> nil
+          base64_data -> Base.decode64!(base64_data)
+        end
 
       %{
         video_id: video_id,
@@ -191,8 +203,8 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
 
   defp link_frames_to_captions(frames, captions) do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-    
-    frame_caption_links = 
+
+    frame_caption_links =
       for frame <- frames,
           caption <- captions,
           frame_in_caption_timerange?(frame, caption) do
@@ -211,7 +223,7 @@ defmodule NathanForUsWeb.Api.VideoUploadController do
 
   defp frame_in_caption_timerange?(frame, caption) do
     frame.timestamp_ms >= caption.start_time_ms and
-    frame.timestamp_ms <= caption.end_time_ms
+      frame.timestamp_ms <= caption.end_time_ms
   end
 
   defp get_upload_stats(video_id) do

@@ -1,15 +1,15 @@
 defmodule NathanForUs.Video.Search do
   @moduledoc """
   Search functionality for video frames and sequences within the Video context.
-  
+
   This module provides business logic for:
   - Frame-based text search across video captions
   - Video filtering and selection management
   - Frame sequence operations for animation
   - Search mode determination and status reporting
-  
+
   ## Examples
-  
+
       # Perform a global search
       {:ok, results} = Video.Search.search_frames("hello", :global, [])
       
@@ -21,41 +21,41 @@ defmodule NathanForUs.Video.Search do
       {:ok, sequence} = Video.Search.get_frame_sequence(frame_id)
       all_indices = Video.Search.get_all_frame_indices(sequence)
   """
-  
+
   alias NathanForUs.Video
-  
+
   @type search_mode :: :global | :filtered
   @type video_result :: %{
-    video_id: integer(),
-    video_title: String.t(),
-    frame_count: integer(),
-    frames: list(),
-    expanded: boolean()
-  }
+          video_id: integer(),
+          video_title: String.t(),
+          frame_count: integer(),
+          frames: list(),
+          expanded: boolean()
+        }
   @type frame_sequence :: %{
-    target_frame: map(),
-    sequence_frames: list(),
-    sequence_captions: map(),
-    target_captions: String.t(),
-    sequence_info: map()
-  }
+          target_frame: map(),
+          sequence_frames: list(),
+          sequence_captions: map(),
+          target_captions: String.t(),
+          sequence_info: map()
+        }
 
   @doc """
   Performs a search across video frames based on the search mode and parameters.
-  
+
   ## Parameters
-  
+
   - `term`: The search query string
   - `search_mode`: Either `:global` (all videos) or `:filtered` (selected videos only)  
   - `selected_video_ids`: List of video IDs to search within (for filtered mode)
-  
+
   ## Returns
-  
+
   - `{:ok, results}`: List of matching frames with metadata
   - `{:error, reason}`: Error message if search fails
-  
+
   ## Examples
-  
+
       # Global search
       {:ok, frames} = search_frames("nathan", :global, [])
       
@@ -65,7 +65,8 @@ defmodule NathanForUs.Video.Search do
       # Empty search term always returns empty results
       {:ok, []} = search_frames("", :global, [])
   """
-  @spec search_frames(String.t(), search_mode(), list(integer())) :: {:ok, list()} | {:error, String.t()}
+  @spec search_frames(String.t(), search_mode(), list(integer())) ::
+          {:ok, list()} | {:error, String.t()}
   def search_frames(term, search_mode, selected_video_ids \\ [])
 
   def search_frames("", _search_mode, _selected_video_ids) do
@@ -107,7 +108,7 @@ defmodule NathanForUs.Video.Search do
       {:ok, frame_sequence} ->
         enriched_sequence = enrich_frame_sequence(frame_sequence)
         {:ok, enriched_sequence}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -145,7 +146,7 @@ defmodule NathanForUs.Video.Search do
           selected_count: 0,
           total_count: length(all_videos)
         }
-      
+
       :filtered ->
         %{
           mode: :filtered,
@@ -175,18 +176,21 @@ defmodule NathanForUs.Video.Search do
   def get_all_frame_indices(%{sequence_frames: frames}) when length(frames) > 0 do
     0..(length(frames) - 1) |> Enum.to_list()
   end
+
   def get_all_frame_indices(%{sequence_frames: []}), do: []
 
   @doc """
   Gets autocomplete suggestions based on search term and selected videos.
   """
-  @spec get_autocomplete_suggestions(String.t(), search_mode(), list(integer())) :: list(String.t())
+  @spec get_autocomplete_suggestions(String.t(), search_mode(), list(integer())) ::
+          list(String.t())
   def get_autocomplete_suggestions(search_term, search_mode, selected_video_ids) do
-    video_ids = case search_mode do
-      :global -> nil
-      :filtered -> selected_video_ids
-    end
-    
+    video_ids =
+      case search_mode do
+        :global -> nil
+        :filtered -> selected_video_ids
+      end
+
     Video.get_autocomplete_suggestions(search_term, video_ids, 5)
   end
 
@@ -197,15 +201,15 @@ defmodule NathanForUs.Video.Search do
   def get_selected_frames_captions(frame_sequence, selected_frame_indices) do
     if frame_sequence && Map.has_key?(frame_sequence, :sequence_captions) do
       selected_frames = get_selected_frames(frame_sequence, selected_frame_indices)
-      
-      all_captions = 
+
+      all_captions =
         selected_frames
         |> Enum.flat_map(fn frame ->
           Map.get(frame_sequence.sequence_captions, frame.id, [])
         end)
         |> Enum.uniq()
         |> Enum.reject(&(is_nil(&1) or String.trim(&1) == ""))
-      
+
       case all_captions do
         [] -> "No dialogue found for selected frames"
         captions -> Enum.join(captions, " ")
@@ -218,13 +222,14 @@ defmodule NathanForUs.Video.Search do
   @doc """
   Expands frame sequence backward by adding the previous frame.
   """
-  @spec expand_frame_sequence_backward(frame_sequence()) :: {:ok, frame_sequence()} | {:error, term()}
+  @spec expand_frame_sequence_backward(frame_sequence()) ::
+          {:ok, frame_sequence()} | {:error, term()}
   def expand_frame_sequence_backward(frame_sequence) do
     case Video.expand_frame_sequence_backward(frame_sequence) do
       {:ok, expanded_sequence} ->
         enriched_sequence = enrich_frame_sequence(expanded_sequence)
         {:ok, enriched_sequence}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -233,13 +238,14 @@ defmodule NathanForUs.Video.Search do
   @doc """
   Expands frame sequence forward by adding the next frame.
   """
-  @spec expand_frame_sequence_forward(frame_sequence()) :: {:ok, frame_sequence()} | {:error, term()}
+  @spec expand_frame_sequence_forward(frame_sequence()) ::
+          {:ok, frame_sequence()} | {:error, term()}
   def expand_frame_sequence_forward(frame_sequence) do
     case Video.expand_frame_sequence_forward(frame_sequence) do
       {:ok, expanded_sequence} ->
         enriched_sequence = enrich_frame_sequence(expanded_sequence)
         {:ok, enriched_sequence}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -247,18 +253,20 @@ defmodule NathanForUs.Video.Search do
 
   @doc """
   Groups frames by video for organized display.
-  
+
   Returns a list of video result maps with frames grouped by video.
   All videos start in collapsed state (expanded: false).
   """
   @spec group_frames_by_video(list()) :: list(video_result())
   def group_frames_by_video(frames) do
     frames
-    |> Enum.group_by(fn frame -> 
-      video_title = case Map.get(frame, :video_title) do
-        nil -> "Unknown Video"
-        title -> title
-      end
+    |> Enum.group_by(fn frame ->
+      video_title =
+        case Map.get(frame, :video_title) do
+          nil -> "Unknown Video"
+          title -> title
+        end
+
       {Map.get(frame, :video_id), video_title}
     end)
     |> Enum.map(fn {{video_id, video_title}, video_frames} ->
@@ -267,7 +275,8 @@ defmodule NathanForUs.Video.Search do
         video_title: video_title,
         frame_count: length(video_frames),
         frames: video_frames,
-        expanded: false  # All videos start collapsed
+        # All videos start collapsed
+        expanded: false
       }
     end)
     |> Enum.sort_by(& &1.video_title)
@@ -283,7 +292,7 @@ defmodule NathanForUs.Video.Search do
 
   defp get_selected_frames(frame_sequence, selected_frame_indices) do
     selected_frame_indices
-    |> Enum.map(fn index -> 
+    |> Enum.map(fn index ->
       Enum.at(frame_sequence.sequence_frames, index)
     end)
     |> Enum.reject(&is_nil/1)

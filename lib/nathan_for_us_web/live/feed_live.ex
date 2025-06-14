@@ -17,12 +17,16 @@ defmodule NathanForUsWeb.FeedLive do
       <!-- Hero Section -->
       <div class="flex items-start justify-center pt-[8vh] text-center">
         <div class="max-w-4xl px-8">
-          <img src={~p"/images/fellow-pilot.png"} alt="Nathan Fielder" style="max-width: 100%; height: auto; margin: 0 auto 2rem auto; display: block;" />
+          <img
+            src={~p"/images/fellow-pilot.png"}
+            alt="Nathan Fielder"
+            style="max-width: 100%; height: auto; margin: 0 auto 2rem auto; display: block;"
+          />
           <h1 class="text-4xl md:text-6xl lg:text-7xl font-normal text-gray-900 mb-8 leading-tight tracking-tight">
-            Do you enjoy<br>Nathan Fielder?
+            Do you enjoy<br />Nathan Fielder?
           </h1>
-
-          <!-- Call to Action Buttons -->
+          
+    <!-- Call to Action Buttons -->
           <div class="space-y-4 mb-12">
             <.link
               navigate={~p"/users/register"}
@@ -30,9 +34,9 @@ defmodule NathanForUsWeb.FeedLive do
             >
               Yes, I do
             </.link>
-            
-            <br>
-            
+
+            <br />
+
             <div class="flex gap-4 justify-center">
               <.link
                 navigate={~p"/video-timeline"}
@@ -40,7 +44,7 @@ defmodule NathanForUsWeb.FeedLive do
               >
                 make some GIFs
               </.link>
-              
+
               <.link
                 navigate={~p"/skeets"}
                 class="inline-block bg-blue-600 text-white px-12 py-4 text-xl font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
@@ -51,8 +55,6 @@ defmodule NathanForUsWeb.FeedLive do
           </div>
         </div>
       </div>
-
-
     </div>
     """
   end

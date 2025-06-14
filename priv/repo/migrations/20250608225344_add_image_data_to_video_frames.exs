@@ -3,8 +3,10 @@ defmodule NathanForUs.Repo.Migrations.AddImageDataToVideoFrames do
 
   def change do
     alter table(:video_frames) do
-      add :image_data, :binary  # Compressed JPEG binary data
-      add :compression_ratio, :float  # Track compression efficiency
+      # Compressed JPEG binary data
+      add :image_data, :binary
+      # Track compression efficiency
+      add :compression_ratio, :float
     end
 
     # Make file_path nullable since we'll store binary data instead

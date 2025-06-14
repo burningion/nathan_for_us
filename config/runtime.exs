@@ -66,7 +66,7 @@ if config_env() == :prod do
     secret_key_base: secret_key_base,
     check_origin: [
       "https://www.nathanforus.com",
-      "https://nathanforus.com", 
+      "https://nathanforus.com",
       "//www.nathanforus.com",
       "//nathanforus.com",
       "https://sick-motionless-roach.gigalixirapp.com"
@@ -108,8 +108,7 @@ if config_env() == :prod do
   #
   # For now, we'll use a Test adapter that doesn't actually send emails
   # but logs them instead for development purposes
-  config :nathan_for_us, NathanForUs.Mailer,
-    adapter: Swoosh.Adapters.Test
+  config :nathan_for_us, NathanForUs.Mailer, adapter: Swoosh.Adapters.Test
 
   # For this example you need include a HTTP client required by Swoosh API client.
   # Swoosh supports Hackney and Finch out of the box:
