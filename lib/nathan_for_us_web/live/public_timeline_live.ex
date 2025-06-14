@@ -148,7 +148,7 @@ defmodule NathanForUsWeb.PublicTimelineLive do
             <% end %>
           </div>
         <% else %>
-          <div class="max-w-2xl mx-auto space-y-6">
+          <div class="max-w-xl mx-auto space-y-4">
             <%= for gif <- @gifs, gif.gif && gif.gif.gif_data do %>
               <div 
                 class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors"
@@ -169,7 +169,7 @@ defmodule NathanForUsWeb.PublicTimelineLive do
 
           <!-- Call-to-Action for Signed Out Users -->
           <%= unless @current_user do %>
-            <div class="mt-12 max-w-2xl mx-auto">
+            <div class="mt-12 max-w-xl mx-auto">
               <div class="bg-gradient-to-r from-green-900/20 to-blue-900/20 border border-green-600/30 rounded-lg p-6 text-center">
                 <h3 class="text-xl font-bold font-mono text-green-400 mb-3">Ready to Create Your Own Nathan GIFs?</h3>
                 <p class="text-gray-300 font-mono text-sm mb-6">

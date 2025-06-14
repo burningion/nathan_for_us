@@ -60,7 +60,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             end
             socket
           end)
-        
+
         is_random and start_frame != "" and selected_indices != "" ->
           # Handle random GIF generation
           try do
@@ -70,7 +70,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             indices_list = decoded_indices
             |> String.split(",")
             |> Enum.map(&String.to_integer/1)
-            
+
             # Load frames starting from the specified frame and mark as random selection
             send(self(), {:load_random_sequence, start_frame_num, indices_list})
             socket
@@ -80,7 +80,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             ArgumentError ->
               socket |> put_flash(:error, "Invalid random parameters")
           end
-        
+
         true ->
           socket
       end
@@ -278,7 +278,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               [frame_index | current_selected] |> Enum.sort()
           end
 
-        socket = 
+        socket =
           socket
           |> assign(:selected_frame_indices, new_selected)
           |> load_selected_frame_captions()
@@ -302,7 +302,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         |> Enum.uniq()
         |> Enum.sort()
 
-      socket = 
+      socket =
         socket
         |> assign(:selected_frame_indices, new_selected)
         |> load_selected_frame_captions()
@@ -500,30 +500,30 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       video_id = socket.assigns.video.id
       current_frames = socket.assigns.current_frames
       expand_count = socket.assigns.expand_count
-      
+
       # Find the earliest frame number in current selection
       earliest_frame_number = current_frames |> Enum.map(& &1.frame_number) |> Enum.min()
-      
+
       # Calculate new start frame
       new_start_frame = max(1, earliest_frame_number - expand_count)
-      
+
       if new_start_frame < earliest_frame_number do
         # Get additional frames
         additional_frames = NathanForUs.Video.get_video_frames_in_range(
-          video_id, 
-          new_start_frame, 
+          video_id,
+          new_start_frame,
           earliest_frame_number - 1
         )
-        
+
         # Combine with existing frames
         new_frames = additional_frames ++ current_frames
-        
+
         # Update selection indices to include the new frames
         additional_count = length(additional_frames)
         updated_indices = socket.assigns.selected_frame_indices
         |> Enum.map(&(&1 + additional_count))  # Shift existing indices
         |> then(&(Enum.to_list(0..(additional_count - 1)) ++ &1))  # Add new indices
-        
+
         socket =
           socket
           |> assign(:current_frames, new_frames)
@@ -544,30 +544,30 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       video_id = socket.assigns.video.id
       current_frames = socket.assigns.current_frames
       expand_count = socket.assigns.expand_count
-      
+
       # Find the latest frame number in current selection
       latest_frame_number = current_frames |> Enum.map(& &1.frame_number) |> Enum.max()
-      
+
       # Calculate new end frame
       new_end_frame = latest_frame_number + expand_count
-      
+
       # Get additional frames
       additional_frames = NathanForUs.Video.get_video_frames_in_range(
-        video_id, 
-        latest_frame_number + 1, 
+        video_id,
+        latest_frame_number + 1,
         new_end_frame
       )
-      
+
       if not Enum.empty?(additional_frames) do
         # Combine with existing frames
         new_frames = current_frames ++ additional_frames
-        
+
         # Update selection indices to include the new frames
         current_count = length(current_frames)
         additional_count = length(additional_frames)
         new_indices = Enum.to_list(current_count..(current_count + additional_count - 1))
         updated_indices = socket.assigns.selected_frame_indices ++ new_indices
-        
+
         socket =
           socket
           |> assign(:current_frames, new_frames)
@@ -588,10 +588,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       |> assign(:is_random_selection, false)
       |> assign(:random_start_frame, nil)
       |> assign(:selected_frame_indices, [])
-    
+
     # Reload frames at current position
     send(self(), {:load_frames_at_position, socket.assigns.timeline_position})
-    
+
     {:noreply, socket}
   end
 
@@ -651,7 +651,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     # Generate GIF on server side using selected frames
     selected_frames = get_selected_frames(socket)
     video_id = socket.assigns.video.id
-    
+
     case selected_frames do
       [] ->
         {:noreply, socket}
@@ -661,7 +661,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           {:ok, existing_gif} ->
             # GIF already exists, use cached version
             gif_base64 = Gif.to_base64(existing_gif)
-            
+
             socket =
               socket
               |> assign(:gif_generation_status, :completed)
@@ -678,7 +678,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               # Create a mock frame sequence for the existing GIF generation function
               mock_sequence = %{sequence_frames: frames}
               selected_indices = 0..(length(frames) - 1) |> Enum.to_list()
-              
+
               case NathanForUs.AdminService.generate_gif_from_frames(mock_sequence, selected_indices) do
                 {:ok, gif_binary} ->
                   # Save the generated GIF to database
@@ -722,12 +722,12 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         # Generate a range of 15 frame indices starting from the random frame
         frame_indices = Enum.to_list(0..14)
         indices_param = Enum.join(frame_indices, ",")
-        
+
         # Navigate to the video timeline with pre-selected frames
         path = ~p"/video-timeline/#{video_id}?random=true&start_frame=#{start_frame}&selected_indices=#{indices_param}"
         socket = redirect(socket, to: path)
         {:noreply, socket}
-      
+
       {:error, _reason} ->
         socket = put_flash(socket, :error, "No suitable videos found for random GIF generation")
         {:noreply, socket}
@@ -747,7 +747,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         selected_frames = get_selected_frames(socket)
         video = socket.assigns.video
         user = socket.assigns.current_user
-        
+
         # Create viral GIF entry
         case create_viral_gif_from_selection(selected_frames, video, user) do
           {:ok, _viral_gif} ->
@@ -756,9 +756,9 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               |> assign(:show_posted_success_flash, true)
               |> assign(:gif_generation_status, nil)
               |> assign(:generated_gif_data, nil)
-            
+
             {:noreply, socket}
-          
+
           {:error, _reason} ->
             socket = put_flash(socket, :error, "Failed to post GIF to timeline")
             {:noreply, socket}
@@ -970,13 +970,13 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     # Load frames starting from the specified frame number
     video_id = socket.assigns.video.id
     end_frame_num = start_frame_num + 14  # 15 frames total (0-14 indices)
-    
+
     frames = NathanForUs.Video.get_video_frames_in_range(video_id, start_frame_num, end_frame_num)
-    
+
     # Update timeline position to the start of the sequence
     frame_count = socket.assigns.frame_count
     timeline_position = if frame_count > 0, do: start_frame_num / frame_count, else: 0.0
-    
+
     socket =
       socket
       |> assign(:current_frames, frames)
@@ -998,7 +998,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     # Automatically check if GIF exists for the currently selected frames
     selected_frames = get_selected_frames(socket)
     video_id = socket.assigns.video.id
-    
+
     case selected_frames do
       frames when length(frames) >= 2 ->
         # Check if GIF already exists
@@ -1006,7 +1006,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           {:ok, existing_gif} ->
             # GIF already exists, load it automatically
             gif_base64 = Gif.to_base64(existing_gif)
-            
+
             socket =
               socket
               |> assign(:gif_generation_status, :completed)
@@ -1021,7 +1021,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             # GIF doesn't exist yet, just show preview
             {:noreply, socket}
         end
-      
+
       _ ->
         {:noreply, socket}
     end
@@ -1043,7 +1043,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
           <div class="flex items-center gap-4">
             <.link
               navigate={~p"/video-timeline"}
-              class="text-blue-400 hover:text-blue-300 font-mono text-sm"
+              class="text-blue-400 hover:text-blue-300 font-mono font-medium text-sm px-4 py-2"
             >
               ← Back to timeline editor
             </.link>
@@ -1073,10 +1073,10 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             <button
               phx-click="reload_all_frames"
               class={[
-                "text-white px-4 py-2 rounded font-mono transition-all",
+                "text-white px-4 py-2 rounded font-mono font-medium transition-colors text-sm",
                 if(@is_caption_filtered or @is_context_view,
-                  do: "bg-blue-600 hover:bg-blue-700 text-sm font-bold shadow-lg",
-                  else: "bg-gray-600 hover:bg-gray-500 text-xs px-3 py-1"
+                  do: "bg-blue-600 hover:bg-blue-700",
+                  else: "bg-gray-600 hover:bg-gray-500"
                 )
               ]}
               title={
@@ -1087,7 +1087,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               }
             >
               <%= if @is_caption_filtered or @is_context_view do %>
-                ← Back to Timeline
+                ← Back to Timeline Editor
               <% else %>
                 Reload All
               <% end %>
@@ -1106,17 +1106,17 @@ defmodule NathanForUsWeb.VideoTimelineLive do
             Success!
           </p>
           <p class="mt-2 text-sm leading-5">
-            GIF posted to timeline! 
-            <.link 
-              navigate={~p"/public-timeline"} 
+            GIF posted to timeline!
+            <.link
+              navigate={~p"/public-timeline"}
               class="font-semibold underline hover:no-underline"
             >
               Check it out in the Nathan timeline →
             </.link>
           </p>
-          <button 
-            type="button" 
-            class="group absolute top-1 right-1 p-2" 
+          <button
+            type="button"
+            class="group absolute top-1 right-1 p-2"
             phx-click="close_posted_success_flash"
             aria-label="close"
           >
@@ -1188,11 +1188,11 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                 Selected <%= length(@selected_frame_indices) %> frames starting from frame #<%= @random_start_frame %>
               </p>
             </div>
-            
+
             <div class="flex items-center gap-4">
               <div class="flex items-center gap-2">
                 <label class="text-gray-300 text-sm font-mono">Expand by:</label>
-                <select 
+                <select
                   phx-change="update_expand_count"
                   name="expand_count"
                   class="bg-gray-700 border border-gray-600 text-white px-2 py-1 rounded text-sm font-mono"
@@ -1202,7 +1202,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
                   <% end %>
                 </select>
               </div>
-              
+
               <button
                 phx-click="expand_random_left"
                 class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded font-mono text-sm transition-colors"
@@ -1210,7 +1210,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               >
                 ← Add Left
               </button>
-              
+
               <button
                 phx-click="expand_random_right"
                 class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded font-mono text-sm transition-colors"
@@ -1218,7 +1218,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
               >
                 Add Right →
               </button>
-              
+
               <button
                 phx-click="clear_random_selection"
                 class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded font-mono text-sm transition-colors"
@@ -1396,7 +1396,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
   # Load captions for selected frames
   defp load_selected_frame_captions(socket) do
     selected_frames = get_selected_frames(socket)
-    
+
     frame_captions = Enum.map(selected_frames, fn frame ->
       captions = NathanForUs.Video.get_frame_captions(frame.id)
       %{
@@ -1406,7 +1406,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         captions: captions
       }
     end)
-    
+
     assign(socket, :selected_frame_captions, frame_captions)
   end
 
@@ -1430,22 +1430,22 @@ defmodule NathanForUsWeb.VideoTimelineLive do
     if length(frames) >= 2 do
       first_frame = List.first(frames)
       last_frame = List.last(frames)
-      
+
       # Find the GIF in the database by generating hash
       frame_ids = Enum.map(frames, & &1.id)
       hash = NathanForUs.Gif.generate_hash(video.id, frame_ids)
       gif = NathanForUs.Gif.find_by_hash(hash)
-      
+
       # Determine category based on frame content or default
       category = determine_gif_category(frames)
-      
+
       # Create frame data for storage
       frame_data = Jason.encode!(%{
         frame_ids: frame_ids,
         frame_numbers: Enum.map(frames, & &1.frame_number),
         timestamps: Enum.map(frames, & &1.timestamp_ms)
       })
-      
+
       attrs = %{
         video_id: video.id,
         created_by_user_id: user.id,
@@ -1456,7 +1456,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         frame_data: frame_data,
         title: generate_gif_title(category, video.title)
       }
-      
+
       NathanForUs.Viral.create_viral_gif(attrs)
     else
       {:error, :insufficient_frames}
@@ -1482,13 +1482,13 @@ defmodule NathanForUsWeb.VideoTimelineLive do
       first_frame = List.first(frames)
       last_frame = List.last(frames)
       category = determine_gif_category(frames)
-      
+
       frame_data = Jason.encode!(%{
         frame_ids: Enum.map(frames, & &1.id),
         frame_numbers: Enum.map(frames, & &1.frame_number),
         timestamps: Enum.map(frames, & &1.timestamp_ms)
       })
-      
+
       attrs = %{
         video_id: video.id,
         created_by_user_id: user && user.id, # Allow anonymous for now
@@ -1500,7 +1500,7 @@ defmodule NathanForUsWeb.VideoTimelineLive do
         title: NathanForUs.Viral.BrowseableGif.generate_title(category, video.title),
         is_public: true
       }
-      
+
       # Don't fail the main flow if this fails
       case NathanForUs.Viral.create_browseable_gif(attrs) do
         {:ok, _browseable_gif} -> :ok
