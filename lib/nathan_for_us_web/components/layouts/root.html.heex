@@ -47,6 +47,20 @@
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
+    
+    <!-- Google Analytics -->
+    <%= if google_analytics_id = Application.get_env(:nathan_for_us, :google_analytics_id) do %>
+      <script async src={"https://www.googletagmanager.com/gtag/js?id=#{google_analytics_id}"}></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '<%= google_analytics_id %>');
+        
+        // Store GA ID for client-side access
+        window.GA_MEASUREMENT_ID = '<%= google_analytics_id %>';
+      </script>
+    <% end %>
   </head>
   <body class="bg-white">
     {@inner_content}

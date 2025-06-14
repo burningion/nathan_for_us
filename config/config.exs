@@ -57,6 +57,10 @@ config :nathan_for_us, :feature_flags,
   frame_animation_enabled: true,
   search_suggestions_enabled: true
 
+# Analytics configuration
+# Google Analytics ID (set in environment-specific configs)
+config :nathan_for_us, :google_analytics_id, nil
+
 # Configures the endpoint
 config :nathan_for_us, NathanForUsWeb.Endpoint,
   url: [host: "localhost"],

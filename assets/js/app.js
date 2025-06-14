@@ -29,6 +29,9 @@ import FrameMultiSelect from './hooks/frame_multi_select.js'
 import FrameSelection from './hooks/frame_selection.js'
 import { SlidingBackground } from './hooks/sliding_background.js'
 
+// Import analytics for custom event tracking
+import './analytics.js'
+
 // Frame Animator Hook for cycling through frame sequences
 let Hooks = {}
 

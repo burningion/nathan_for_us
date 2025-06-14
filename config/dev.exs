@@ -1,5 +1,17 @@
 import Config
 
+# Load environment variables from .env file in development
+if File.exists?(".env") do
+  File.read!(".env")
+  |> String.split("\n", trim: true)
+  |> Enum.each(fn line ->
+    case String.split(line, "=", parts: 2) do
+      [key, value] -> System.put_env(key, value)
+      _ -> :ok
+    end
+  end)
+end
+
 # Configure your database
 config :nathan_for_us, NathanForUs.Repo,
   username: "postgres",
@@ -85,3 +97,8 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Configure Google Analytics for development if provided in .env
+if ga_id = System.get_env("GOOGLE_ANALYTICS_ID") do
+  config :nathan_for_us, :google_analytics_id, ga_id
+end

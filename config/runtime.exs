@@ -52,6 +52,11 @@ if config_env() == :prod do
   port = String.to_integer(System.get_env("PORT") || "4000")
 
   config :nathan_for_us, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  
+  # Configure Google Analytics if provided
+  if ga_id = System.get_env("GOOGLE_ANALYTICS_ID") do
+    config :nathan_for_us, :google_analytics_id, ga_id
+  end
 
   config :nathan_for_us, NathanForUsWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
