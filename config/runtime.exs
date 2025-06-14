@@ -68,7 +68,8 @@ if config_env() == :prod do
       "https://www.nathanforus.com",
       "https://nathanforus.com", 
       "//www.nathanforus.com",
-      "//nathanforus.com"
+      "//nathanforus.com",
+      "https://sick-motionless-roach.gigalixirapp.com"
     ]
 
   # ## SSL Support

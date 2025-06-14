@@ -584,8 +584,8 @@ defmodule NathanForUsWeb.VideoTimelineLiveTest do
     frame_ids = frames |> Enum.take(5) |> Enum.map(& &1.id)
     hash = Gif.generate_hash(video.id, frame_ids)
     
-    %NathanForUs.Gif.Gif{}
-    |> NathanForUs.Gif.Gif.changeset(%{
+    %NathanForUs.Gif{}
+    |> NathanForUs.Gif.changeset(%{
       hash: hash,
       frame_ids: frame_ids,
       gif_data: "fake_gif_data",
