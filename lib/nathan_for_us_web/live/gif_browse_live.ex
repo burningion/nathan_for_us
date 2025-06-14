@@ -24,6 +24,30 @@ defmodule NathanForUsWeb.GifBrowseLive do
     # Add caption data to GIFs
     gifs_with_captions = add_caption_data_to_gifs(gifs)
 
+    # Check if we should open a GIF modal based on query params
+    {show_gif_modal, modal_gif, modal_captions} = 
+      case Map.get(params, "gif_id") do
+        nil -> 
+          {false, nil, []}
+        gif_id_str ->
+          case Integer.parse(gif_id_str) do
+            {gif_id_int, ""} ->
+              case Enum.find(gifs_with_captions, fn gif -> gif.id == gif_id_int end) do
+                nil -> 
+                  {false, nil, []}
+                found_gif ->
+                  if found_gif.gif && found_gif.gif.frame_ids do
+                    captions = NathanForUs.Video.get_gif_captions(found_gif.gif.frame_ids)
+                    {true, found_gif, captions}
+                  else
+                    {false, nil, []}
+                  end
+              end
+            _ ->
+              {false, nil, []}
+          end
+      end
+
     socket =
       socket
       |> assign(:page_title, "Browse Nathan GIFs")
@@ -32,9 +56,9 @@ defmodule NathanForUsWeb.GifBrowseLive do
       |> assign(:sort, sort)
       |> assign(:session_id, session_id)
       |> assign(:show_register_flash, false)
-      |> assign(:show_gif_modal, false)
-      |> assign(:modal_gif, nil)
-      |> assign(:modal_captions, [])
+      |> assign(:show_gif_modal, show_gif_modal)
+      |> assign(:modal_gif, modal_gif)
+      |> assign(:modal_captions, modal_captions)
       |> load_user_votes()
 
     {:ok, socket}
@@ -42,6 +66,36 @@ defmodule NathanForUsWeb.GifBrowseLive do
 
   def handle_params(params, _url, socket) do
     sort = Map.get(params, "sort", "hot")
+    
+    # Handle GIF modal parameter
+    {show_gif_modal, modal_gif, modal_captions} = 
+      case Map.get(params, "gif_id") do
+        nil -> 
+          {false, nil, []}
+        gif_id_str ->
+          case Integer.parse(gif_id_str) do
+            {gif_id_int, ""} ->
+              current_gifs = if sort != socket.assigns.sort do
+                load_gifs_by_sort(sort) |> add_caption_data_to_gifs()
+              else
+                socket.assigns.gifs
+              end
+              
+              case Enum.find(current_gifs, fn gif -> gif.id == gif_id_int end) do
+                nil -> 
+                  {false, nil, []}
+                found_gif ->
+                  if found_gif.gif && found_gif.gif.frame_ids do
+                    captions = NathanForUs.Video.get_gif_captions(found_gif.gif.frame_ids)
+                    {true, found_gif, captions}
+                  else
+                    {false, nil, []}
+                  end
+              end
+            _ ->
+              {false, nil, []}
+          end
+      end
 
     if sort != socket.assigns.sort do
       gifs = load_gifs_by_sort(sort)
@@ -51,15 +105,21 @@ defmodule NathanForUsWeb.GifBrowseLive do
         socket
         |> assign(:sort, sort)
         |> assign(:loading, true)
-        |> assign(:show_gif_modal, false)
-        |> assign(:modal_gif, nil)
-        |> assign(:modal_captions, [])
+        |> assign(:show_gif_modal, show_gif_modal)
+        |> assign(:modal_gif, modal_gif)
+        |> assign(:modal_captions, modal_captions)
         |> assign(:gifs, gifs_with_captions)
         |> assign(:loading, false)
         |> load_user_votes()
 
       {:noreply, socket}
     else
+      socket =
+        socket
+        |> assign(:show_gif_modal, show_gif_modal)
+        |> assign(:modal_gif, modal_gif)
+        |> assign(:modal_captions, modal_captions)
+      
       {:noreply, socket}
     end
   end
@@ -123,11 +183,19 @@ defmodule NathanForUsWeb.GifBrowseLive do
       # Get captions for this GIF
       captions = NathanForUs.Video.get_gif_captions(modal_gif.gif.frame_ids)
       
+      # Construct URL with both sort and gif_id params
+      url_params = if socket.assigns.sort != "hot" do
+        "/browse-gifs?sort=#{socket.assigns.sort}&gif_id=#{gif_id}"
+      else
+        "/browse-gifs?gif_id=#{gif_id}"
+      end
+      
       socket = 
         socket
         |> assign(:show_gif_modal, true)
         |> assign(:modal_gif, modal_gif)
         |> assign(:modal_captions, captions)
+        |> push_patch(to: url_params)
       
       {:noreply, socket}
     else
@@ -137,11 +205,19 @@ defmodule NathanForUsWeb.GifBrowseLive do
   end
 
   def handle_event("close_gif_modal", _params, socket) do
+    # Construct URL to preserve sort parameter but remove gif_id
+    url_path = if socket.assigns.sort != "hot" do
+      "/browse-gifs?sort=#{socket.assigns.sort}"
+    else
+      "/browse-gifs"
+    end
+    
     socket = 
       socket
       |> assign(:show_gif_modal, false)
       |> assign(:modal_gif, nil)
       |> assign(:modal_captions, [])
+      |> push_patch(to: url_path)
     
     {:noreply, socket}
   end
@@ -420,18 +496,18 @@ defmodule NathanForUsWeb.GifBrowseLive do
                           phx-click="repost_gif"
                           phx-value-gif_id={gif.id}
                           class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-mono transition-colors flex items-center gap-1"
-                          title="Share this GIF to the public Nathan timeline"
+                          title="Repost this GIF to the public Nathan timeline"
                         >
-                          <span>📤</span> Share
+                          <span>📤</span> Repost
                         </button>
                       <% else %>
                         <button
                           phx-click="repost_gif"
                           phx-value-gif_id={gif.id}
                           class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-xs font-mono transition-colors flex items-center gap-1"
-                          title="Login to share this GIF to the public timeline"
+                          title="Login to repost this GIF to the public timeline"
                         >
-                          <span>📤</span> Share
+                          <span>📤</span> Repost
                         </button>
                       <% end %>
                     </div>

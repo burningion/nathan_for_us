@@ -14,21 +14,88 @@ defmodule NathanForUsWeb.PublicTimelineLive do
 
   on_mount {NathanForUsWeb.UserAuth, :mount_current_user}
 
-  def mount(_params, _session, socket) do
+  def mount(params, session, socket) do
     # Load 25 most recent GIFs with all associations for GIF display
     recent_gifs = Viral.get_recent_gifs(25)
+
+    # Get session ID for interaction tracking
+    session_id = Map.get(session, "live_socket_id")
+
+    # Check if we should open a GIF modal based on query params
+    {show_gif_modal, modal_gif, modal_captions} = 
+      case Map.get(params, "gif_id") do
+        nil -> 
+          {false, nil, []}
+        gif_id_str ->
+          case Integer.parse(gif_id_str) do
+            {gif_id_int, ""} ->
+              case Enum.find(recent_gifs, fn gif -> gif.id == gif_id_int end) do
+                nil -> 
+                  {false, nil, []}
+                found_gif ->
+                  if found_gif.gif && found_gif.gif.frame_ids do
+                    captions = NathanForUs.Video.get_gif_captions(found_gif.gif.frame_ids)
+                    {true, found_gif, captions}
+                  else
+                    {false, nil, []}
+                  end
+              end
+            _ ->
+              {false, nil, []}
+          end
+      end
 
     socket =
       socket
       |> assign(:page_title, "Nathan Timeline")
       |> assign(:gifs, recent_gifs)
       |> assign(:show_post_modal, false)
-      |> assign(:show_gif_modal, false)
-      |> assign(:modal_gif, nil)
-      |> assign(:modal_captions, [])
+      |> assign(:show_gif_modal, show_gif_modal)
+      |> assign(:modal_gif, modal_gif)
+      |> assign(:modal_captions, modal_captions)
       |> assign(:loading, false)
+      |> assign(:session_id, session_id)
 
     {:ok, socket}
+  end
+
+  def handle_params(params, _url, socket) do
+    # Handle URL parameter changes (e.g., when someone shares a direct link)
+    {show_gif_modal, modal_gif, modal_captions} = 
+      case Map.get(params, "gif_id") do
+        nil -> 
+          {false, nil, []}
+        gif_id_str ->
+          case Integer.parse(gif_id_str) do
+            {gif_id_int, ""} ->
+              case Enum.find(socket.assigns.gifs, fn gif -> gif.id == gif_id_int end) do
+                nil -> 
+                  {false, nil, []}
+                found_gif ->
+                  if found_gif.gif && found_gif.gif.frame_ids do
+                    captions = NathanForUs.Video.get_gif_captions(found_gif.gif.frame_ids)
+                    # Record view interaction when opened via URL
+                    Viral.record_interaction(gif_id_str, "view",
+                      user_id: get_user_id(socket),
+                      session_id: socket.assigns.session_id
+                    )
+                    {true, found_gif, captions}
+                  else
+                    {false, nil, []}
+                  end
+              end
+            _ ->
+              {false, nil, []}
+          end
+      end
+
+    socket =
+      socket
+      |> assign(:show_gif_modal, show_gif_modal)
+      |> assign(:modal_gif, modal_gif)
+      |> assign(:modal_captions, modal_captions)
+
+    {:noreply, socket}
   end
 
   def handle_event("show_post_modal", _params, socket) do
@@ -70,7 +137,7 @@ defmodule NathanForUsWeb.PublicTimelineLive do
     # Record view interaction
     Viral.record_interaction(gif_id, "view",
       user_id: get_user_id(socket),
-      session_id: get_connect_info(socket, :session)["live_socket_id"]
+      session_id: socket.assigns.session_id
     )
 
     # Find the GIF data
@@ -86,6 +153,7 @@ defmodule NathanForUsWeb.PublicTimelineLive do
         |> assign(:show_gif_modal, true)
         |> assign(:modal_gif, modal_gif)
         |> assign(:modal_captions, captions)
+        |> push_patch(to: ~p"/public-timeline?gif_id=#{gif_id}")
       
       {:noreply, socket}
     else
@@ -100,6 +168,7 @@ defmodule NathanForUsWeb.PublicTimelineLive do
       |> assign(:show_gif_modal, false)
       |> assign(:modal_gif, nil)
       |> assign(:modal_captions, [])
+      |> push_patch(to: ~p"/public-timeline")
     
     {:noreply, socket}
   end
@@ -112,6 +181,7 @@ defmodule NathanForUsWeb.PublicTimelineLive do
       |> assign(:show_gif_modal, false)
       |> assign(:modal_gif, nil)
       |> assign(:modal_captions, [])
+      |> push_patch(to: ~p"/public-timeline")
     
     {:noreply, socket}
   end

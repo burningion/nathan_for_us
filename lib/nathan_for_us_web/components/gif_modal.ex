@@ -111,7 +111,7 @@ defmodule NathanForUsWeb.Components.GifModal do
                 phx-value-gif_id={@gif_data.id}
                 class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-mono transition-colors"
               >
-                📤 Share to Timeline
+                📤 Repost to Timeline
               </button>
             <% end %>
           </div>
