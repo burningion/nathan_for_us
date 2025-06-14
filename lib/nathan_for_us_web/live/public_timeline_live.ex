@@ -78,27 +78,28 @@ defmodule NathanForUsWeb.PublicTimelineLive do
     <div class="min-h-screen bg-gray-900 text-white">
       <!-- Simple Header -->
       <div class="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 class="text-2xl font-bold font-mono">Nathan Timeline</h1>
 
-          <div class="flex items-center gap-4">
+          <!-- Mobile: Stack buttons vertically, Desktop: Horizontal -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <.link
               navigate={~p"/video-timeline"}
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors text-center"
             >
               SEARCH QUOTES
             </.link>
 
             <.link
               navigate={~p"/browse-gifs"}
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors text-center"
             >
               BROWSE GIFS
             </.link>
 
             <button
               phx-click="random_gif"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors text-center"
               title="Generate random GIF from any video"
             >
               🎲 Random GIF
@@ -107,20 +108,20 @@ defmodule NathanForUsWeb.PublicTimelineLive do
             <%= if @current_user do %>
               <button
                 phx-click="show_post_modal"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors text-center"
               >
                 Post GIF
               </button>
             <% else %>
               <.link
                 navigate={~p"/video-timeline"}
-                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors text-center"
               >
                 MAKE A GIF
               </.link>
               <.link
                 navigate={~p"/users/register"}
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono font-medium transition-colors text-center"
               >
                 Sign Up
               </.link>
@@ -159,23 +160,26 @@ defmodule NathanForUsWeb.PublicTimelineLive do
             <% end %>
           </div>
         <% else %>
-          <div class="max-w-xl mx-auto space-y-4">
-            <%= for gif <- @gifs, gif.gif && gif.gif.gif_data do %>
-              <div
-                class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors"
-                phx-click="view_gif"
-                phx-value-gif_id={gif.id}
-              >
-                <!-- Just the GIF - no metadata -->
-                <div class="aspect-video bg-gray-700">
-                  <img
-                    src={"data:image/gif;base64,#{NathanForUs.Gif.to_base64(gif.gif)}"}
-                    alt="Nathan GIF"
-                    class="w-full h-full object-cover"
-                  />
+          <!-- GIF Mosaic: 1 column on mobile, 3 columns on desktop -->
+          <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <%= for gif <- @gifs, gif.gif && gif.gif.gif_data do %>
+                <div
+                  class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors cursor-pointer"
+                  phx-click="view_gif"
+                  phx-value-gif_id={gif.id}
+                >
+                  <!-- Just the GIF - no metadata -->
+                  <div class="aspect-video bg-gray-700">
+                    <img
+                      src={"data:image/gif;base64,#{NathanForUs.Gif.to_base64(gif.gif)}"}
+                      alt="Nathan GIF"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
-              </div>
-            <% end %>
+              <% end %>
+            </div>
           </div>
           
     <!-- Call-to-Action for Signed Out Users -->

@@ -15,6 +15,9 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
   def mount(_params, _session, socket) do
     # Get random quote suggestions for initial display
     random_quotes = Video.get_sample_caption_suggestions(18)
+    
+    # Get all videos for the video list
+    all_videos = Video.list_videos() |> Enum.sort_by(& &1.title)
 
     socket =
       socket
@@ -22,6 +25,7 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
       |> assign(:search_term, "")
       |> assign(:search_form, to_form(%{}))
       |> assign(:random_quotes, random_quotes)
+      |> assign(:all_videos, all_videos)
       |> assign(:search_results, [])
       |> assign(:loading, false)
       |> assign(:has_searched, false)
@@ -227,6 +231,43 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
                 <% end %>
               </div>
             </div>
+            
+            <!-- Video List -->
+            <div class="mt-8">
+              <h2 class="text-lg font-bold font-mono text-green-400 mb-4">
+                Browse by Episode:
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <%= for video <- @all_videos do %>
+                  <.link
+                    navigate={~p"/video-timeline/#{video.id}"}
+                    class="bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-green-500 rounded-lg p-4 transition-all group"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1">
+                        <h3 class="text-white font-mono font-medium group-hover:text-green-400 transition-colors">
+                          <%= video.title %>
+                        </h3>
+                        <div class="flex items-center gap-4 mt-2 text-xs text-gray-400 font-mono">
+                          <%= if video.frame_count do %>
+                            <span>📸 <%= video.frame_count %> frames</span>
+                          <% end %>
+                          <%= if video.duration_ms do %>
+                            <span>⏱️ <%= format_duration(video.duration_ms) %></span>
+                          <% end %>
+                          <span class={"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium #{status_badge_class(video.status)}"}>
+                            <%= video.status %>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="text-gray-400 group-hover:text-green-400 transition-colors">
+                        →
+                      </div>
+                    </div>
+                  </.link>
+                <% end %>
+              </div>
+            </div>
           <% end %>
           
     <!-- Search Results -->
@@ -403,4 +444,19 @@ defmodule NathanForUsWeb.VideoTimelineSearchLive do
         Base.encode64(hex_data)
     end
   end
+
+  defp format_duration(duration_ms) when is_integer(duration_ms) do
+    total_seconds = div(duration_ms, 1000)
+    minutes = div(total_seconds, 60)
+    seconds = rem(total_seconds, 60)
+    "#{minutes}:#{String.pad_leading(Integer.to_string(seconds), 2, "0")}"
+  end
+
+  defp format_duration(_), do: "Unknown"
+
+  defp status_badge_class("completed"), do: "bg-green-100 text-green-800"
+  defp status_badge_class("processing"), do: "bg-yellow-100 text-yellow-800"
+  defp status_badge_class("pending"), do: "bg-gray-100 text-gray-800"
+  defp status_badge_class("failed"), do: "bg-red-100 text-red-800"
+  defp status_badge_class(_), do: "bg-gray-100 text-gray-800"
 end
